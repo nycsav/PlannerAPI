@@ -8,19 +8,21 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
   <script>
     tailwind.config = {
       theme: {
         extend: {
           spacing: {
-            'xs': '8px',
-            'sm': '16px',
-            'md': '24px',
-            'lg': '32px',
-            'xl': '48px',
-            '2xl': '64px',
-            '3xl': '96px',
+            '1': '4px',
+            '2': '8px',
+            '3': '12px',
+            '4': '16px',
+            '6': '24px',
+            '8': '32px',
+            '12': '48px',
+            '16': '64px',
+            '24': '96px',
           },
           maxWidth: {
             'hero': '1000px',
@@ -28,23 +30,25 @@
             'wide': '1400px',
           },
           colors: {
-            'bureau-surface': '#FFFFFF', 
-            'bureau-ink': '#0F172A',     
-            'bureau-signal': '#2563EB',  
-            'bureau-slate': '#475569',
-            'bureau-border': '#E2E8F0',    
+            'planner-navy': '#1A2332',
+            'planner-orange': '#E67E22',
+            'planner-offwhite': '#F8F6F3',
+            'planner-navy-light': '#2A3342',
+            'planner-orange-dark': '#D66E12',
           },
           fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-            display: ['Outfit', 'sans-serif'],
-            mono: ['"Roboto Mono"', 'monospace'],
+            sans: ['Roboto', 'sans-serif'],
+            display: ['Roboto', 'sans-serif'],
+            mono: ['Roboto', 'sans-serif'],
           },
           fontSize: {
-            'display-xl': ['4rem', { lineHeight: '1', letterSpacing: '-0.04em' }],
-            'display-lg': ['2rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
-            'display-md': ['1.25rem', { lineHeight: '1.2', letterSpacing: '-0.01em' }],
-            'body-base': ['0.9375rem', { lineHeight: '1.6' }], 
-            'system-xs': ['0.75rem', { lineHeight: '1', letterSpacing: '0.05em' }],
+            'display': ['clamp(2.5rem, 5vw + 1rem, 4rem)', { lineHeight: '1.1', fontWeight: '700', letterSpacing: '-0.02em' }],
+            'headline': ['clamp(2rem, 3vw + 1rem, 2.5rem)', { lineHeight: '1.2', fontWeight: '700', letterSpacing: '-0.01em' }],
+            'title': ['1.75rem', { lineHeight: '1.3', fontWeight: '700' }],
+            'subhead': ['1.25rem', { lineHeight: '1.4', fontWeight: '500' }],
+            'body': ['1.25rem', { lineHeight: '1.6', fontWeight: '400' }],
+            'small': ['1rem', { lineHeight: '1.5', fontWeight: '400' }],
+            'caption': ['0.875rem', { lineHeight: '1.4', fontWeight: '400' }],
           }
         }
       }
@@ -52,17 +56,20 @@
   </script>
   <style>
     :root {
-      --color-surface: #FFFFFF;
-      --color-ink: #0F172A;
+      --planner-navy: #1A2332;
+      --planner-orange: #E67E22;
+      --planner-offwhite: #F8F6F3;
     }
     body {
-      background-color: var(--color-surface);
+      background-color: var(--planner-offwhite);
       margin: 0;
-      color: var(--color-ink);
+      color: var(--planner-navy);
       -webkit-font-smoothing: antialiased;
+      font-family: 'Roboto', sans-serif;
     }
     .section-divider {
-      border-top: 1px solid #E2E8F0;
+      border-top: 2px solid var(--planner-navy);
+      opacity: 0.1;
     }
     .app-padding-x {
       padding-left: 24px;
@@ -75,12 +82,42 @@
       }
     }
     .btn-action {
-      padding: 10px 20px;
-      font-family: "Roboto Mono", monospace;
-      font-size: 0.75rem;
+      padding: 16px 32px;
+      font-family: "Roboto", sans-serif;
+      font-size: 1rem;
       text-transform: uppercase;
       font-weight: 700;
       letter-spacing: 0.05em;
+      background-color: var(--planner-orange);
+      color: white;
+      border: none;
+      cursor: pointer;
+      min-height: 48px;
+      position: relative;
+    }
+    /* Focus state for keyboard navigation */
+    .btn-action:focus {
+      outline: none;
+    }
+    .btn-action:focus-visible {
+      outline: 3px solid var(--planner-orange);
+      outline-offset: 3px;
+    }
+    /* Hover only for devices with hover capability */
+    @media (hover: hover) {
+      .btn-action:hover {
+        background-color: #D66E12;
+      }
+    }
+    /* Active state */
+    .btn-action:active {
+      background-color: #C65E02;
+      transform: translateY(1px);
+    }
+    /* Disabled state */
+    .btn-action:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
     /* Removal of all animations per requirement */
     * {
