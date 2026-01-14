@@ -5,6 +5,7 @@ import { IntelligenceCard } from './components/IntelligenceCard';
 import { AISearchInterface } from './components/AISearchInterface';
 import { EngineInstructions } from './components/EngineInstructions';
 import { HeroSearch } from './components/HeroSearch';
+import { ExecutiveStrategyChat } from './components/ExecutiveStrategyChat';
 
 const SectionHeader: React.FC<{ id: string; title: string; subtitle?: string }> = ({ id, title, subtitle }) => (
   <div className="mb-xl border-b border-bureau-ink/10 pb-md">
@@ -159,6 +160,11 @@ const App: React.FC = () => {
             />
             <EngineInstructions />
           </section>
+        </div>
+
+        {/* EXECUTIVE STRATEGY CHAT - 24H MVP */}
+        <div className="section-zebra border-t border-bureau-border bg-white">
+          <ExecutiveStrategyChat />
         </div>
       </main>
 
