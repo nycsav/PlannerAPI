@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Search, MessageSquare, ArrowRight, FileText, Clock, Hash } from 'lucide-react';
+import { Search, MessageSquare, ArrowRight, Sparkles } from 'lucide-react';
 
 interface IntelligenceCardProps {
   id: string;
@@ -11,65 +11,88 @@ interface IntelligenceCardProps {
   onDeepResearch?: (query: string, source: 'Claude' | 'Perplexity' | 'Gemini') => void;
 }
 
+// Dynamic color mapping for categories
+const getCategoryColor = (tag: string) => {
+  const colorMap: Record<string, string> = {
+    'AI Strategy': 'from-purple-500 to-pink-500',
+    'Revenue Growth': 'from-emerald-500 to-teal-500',
+    'Market Trends': 'from-blue-500 to-cyan-500',
+    'Competitive Analysis': 'from-orange-500 to-red-500',
+    'Brand Intelligence': 'from-indigo-500 to-purple-500',
+    'Customer Retention': 'from-green-500 to-emerald-500',
+  };
+  return colorMap[tag] || 'from-blue-500 to-purple-500';
+};
+
+const getCategoryBg = (tag: string) => {
+  const bgMap: Record<string, string> = {
+    'AI Strategy': 'bg-purple-50 text-purple-700 border-purple-200',
+    'Revenue Growth': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Market Trends': 'bg-blue-50 text-blue-700 border-blue-200',
+    'Competitive Analysis': 'bg-orange-50 text-orange-700 border-orange-200',
+    'Brand Intelligence': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    'Customer Retention': 'bg-green-50 text-green-700 border-green-200',
+  };
+  return bgMap[tag] || 'bg-blue-50 text-blue-700 border-blue-200';
+};
+
 export const IntelligenceCard: React.FC<IntelligenceCardProps> = ({ id, date, title, description, tag, onDeepResearch }) => {
+  const gradientClass = getCategoryColor(tag || '');
+  const categoryClass = getCategoryBg(tag || '');
+
   return (
-    <div className="bg-white border border-bureau-border rounded-sm hover:border-bureau-ink flex flex-col h-full relative group">
+    <div className="bg-white border border-gray-200 rounded-lg hover:shadow-lg transition-all duration-300 flex flex-col h-full relative group">
       {/* Card Header */}
-      <div className="px-md py-sm border-b border-bureau-border bg-bureau-ink/[0.02] flex items-center justify-between">
-        <div className="flex items-center gap-xs">
-          <Hash className="w-3 h-3 text-bureau-slate/40" />
-          <span className="font-mono text-system-xs font-bold text-bureau-slate/60 uppercase">Dossier: {id}</span>
-        </div>
-        <div className="flex items-center gap-xs">
-           <Clock className="w-3 h-3 text-bureau-slate/40" />
-           <span className="font-mono text-system-xs font-bold text-bureau-slate/60 uppercase">{date}</span>
-        </div>
+      <div className="px-6 py-4 flex items-center justify-between border-b border-gray-100">
+        <span className="text-xs font-semibold text-gray-600">{id}</span>
+        <span className="text-xs text-gray-400">{date}</span>
       </div>
-      
+
       {/* Card Body */}
-      <div className="p-md md:p-md lg:p-md flex-grow space-y-md">
-        <div className="space-y-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 bg-bureau-signal"></div>
-            <span className="font-mono text-system-xs font-bold text-bureau-signal uppercase tracking-widest">{tag || "Strategic Report"}</span>
-          </div>
-          <h3 className="font-display text-display-md font-black text-bureau-ink uppercase italic leading-tight tracking-tight">
-            {title}
-          </h3>
+      <div className="px-6 pb-6 flex-grow space-y-4">
+        {/* Category Tag - More prominent */}
+        <div className="flex items-center gap-2">
+          <span className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border ${categoryClass}`}>
+            {tag || "Strategic Report"}
+          </span>
         </div>
 
-        <div className="relative">
-          <p className="font-sans text-body-base text-bureau-slate font-medium leading-relaxed line-clamp-4">
-            {description}
-          </p>
-        </div>
+        {/* Title - Bolder, more dynamic */}
+        <h3 className="font-display text-2xl font-black text-gray-900 leading-tight group-hover:text-bureau-signal transition-colors italic">
+          {title}
+        </h3>
+
+        {/* Description - Better readability */}
+        <p className="text-base text-gray-600 leading-relaxed line-clamp-3">
+          {description}
+        </p>
       </div>
 
-      {/* Card Footer */}
-      <div className="p-md bg-white border-t border-bureau-border mt-auto">
-        <div className="flex items-center justify-between gap-sm">
+      {/* Card Footer - Modern action buttons */}
+      <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 mt-auto">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex gap-2">
-            <button 
+            <button
               onClick={(e) => { e.stopPropagation(); onDeepResearch?.(`Analyze brief: ${title}`, 'Claude'); }}
-              className="w-10 h-10 border border-bureau-border hover:bg-bureau-ink hover:text-white flex items-center justify-center"
-              title="Draft Brief"
+              className="w-9 h-9 rounded-lg border border-gray-200 hover:bg-purple-50 hover:border-purple-300 hover:text-purple-600 flex items-center justify-center transition-all"
+              title="Analyze with Claude"
             >
               <MessageSquare className="w-4 h-4" />
             </button>
-            <button 
+            <button
               onClick={(e) => { e.stopPropagation(); onDeepResearch?.(`Verify sources for: ${title}`, 'Perplexity'); }}
-              className="w-10 h-10 border border-bureau-border hover:bg-bureau-ink hover:text-white flex items-center justify-center"
-              title="Verify Sources"
+              className="w-9 h-9 rounded-lg border border-gray-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 flex items-center justify-center transition-all"
+              title="Research with Perplexity"
             >
               <Search className="w-4 h-4" />
             </button>
           </div>
-          
-          <button 
+
+          <button
             onClick={() => onDeepResearch?.(`Strategic breakdown: ${title}`, 'Perplexity')}
-            className="btn-action flex items-center gap-2 text-bureau-ink hover:text-bureau-signal"
+            className="text-sm font-bold flex items-center gap-2 px-5 py-2.5 rounded-lg bg-bureau-ink text-white hover:bg-gray-800 transition-all"
           >
-            Review Full Analysis <ArrowRight className="w-4 h-4" />
+            Read Analysis <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>

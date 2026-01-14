@@ -1,0 +1,63 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-surface: #FFFFFF;
+    --color-ink: #0F172A;
+  }
+
+  body {
+    background-color: var(--color-surface);
+    margin: 0;
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-family: 'Roboto', 'Inter', sans-serif;
+  }
+}
+
+@layer utilities {
+  .section-divider {
+    border-top: 1px solid #E2E8F0;
+  }
+
+  .app-padding-x {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  @media (min-width: 1280px) {
+    .app-padding-x {
+      padding-left: 48px;
+      padding-right: 48px;
+    }
+  }
+
+  .btn-action {
+    padding: 10px 20px;
+    font-family: "Roboto Mono", monospace;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+
+  /* Removal of all animations per requirement */
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
