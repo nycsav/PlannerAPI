@@ -104,21 +104,6 @@ export const ExecutiveStrategyChat: React.FC<ExecutiveStrategyChatProps> = ({
 
   return (
     <div className="w-full max-w-wide mx-auto app-padding-x py-2xl">
-      {/* Only show header when virgin idle (not used yet) */}
-      {!hasBeenUsed && state === 'idle' && (
-        <>
-          {/* Header */}
-          <div className="mb-lg">
-            <h2 className="font-display text-3xl md:text-4xl font-black text-bureau-ink italic uppercase tracking-tight mb-sm">
-              Executive Strategy Intelligence
-            </h2>
-            <p className="text-base text-bureau-slate/70">
-              Use the search above to get strategic intelligence on marketing trends, competitive analysis, or growth opportunities.
-            </p>
-          </div>
-        </>
-      )}
-
       {/* Show input form when retrying after error or when idle after being used */}
       {hasBeenUsed && (state === 'idle' || state === 'error') && (
         <div className="mb-xl">
