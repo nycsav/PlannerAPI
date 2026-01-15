@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Layout } from './components/Layout';
 import { IntelligenceCard } from './components/IntelligenceCard';
-import { AISearchInterface } from './components/AISearchInterface';
+import { ConversationalBrief } from './components/ConversationalBrief';
 import { EngineInstructions } from './components/EngineInstructions';
 import { HeroSearch } from './components/HeroSearch';
 import { ExecutiveStrategyChat } from './components/ExecutiveStrategyChat';
@@ -216,12 +216,10 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      <AISearchInterface 
-        isOpen={searchState.isOpen} 
-        onClose={() => setSearchState({ ...searchState, isOpen: false })} 
+      <ConversationalBrief
+        isOpen={searchState.isOpen}
+        onClose={() => setSearchState({ ...searchState, isOpen: false })}
         initialQuery={searchState.query}
-        sourceType={searchState.source}
-        data={searchState.data}
       />
     </Layout>
   );
