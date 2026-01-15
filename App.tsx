@@ -107,8 +107,13 @@ const App: React.FC = () => {
           </section>
         </div>
 
+        {/* EXECUTIVE STRATEGY CHAT - Primary Interactive Feature */}
+        <div className="section-zebra py-2xl border-b border-bureau-border bg-white">
+          <ExecutiveStrategyChat />
+        </div>
+
         {/* INTELLIGENCE BRIEFINGS - Executive Content */}
-        <div className="section-zebra py-2xl bg-white">
+        <div className="section-zebra py-2xl bg-bureau-surface">
           <section className="max-w-content mx-auto w-full app-padding-x">
             <SectionHeader
               id="01"
@@ -166,7 +171,7 @@ const App: React.FC = () => {
         </div>
 
         {/* STRATEGIC FRAMEWORKS - Decision Support Tools */}
-        <div className="section-zebra py-2xl border-t border-bureau-border bg-bureau-surface">
+        <div className="section-zebra py-2xl border-t border-bureau-border bg-white">
           <section className="max-w-wide mx-auto w-full app-padding-x">
             <SectionHeader
               id="02"
@@ -175,11 +180,6 @@ const App: React.FC = () => {
             />
             <EngineInstructions />
           </section>
-        </div>
-
-        {/* EXECUTIVE STRATEGY CHAT - 24H MVP */}
-        <div className="section-zebra border-t border-bureau-border bg-white">
-          <ExecutiveStrategyChat />
         </div>
       </main>
 
