@@ -142,7 +142,7 @@ This file contains the complete `/chat-intel` endpoint implementation ready to a
 ```bash
 # Frontend (.env)
 VITE_FIREBASE_API_KEY=your_firebase_api_key_here
-VITE_FIREBASE_SENDER_ID=903606095d
+VITE_FIREBASE_SENDER_ID=your_firebase_sender_id_here
 VITE_PPLX_API_KEY=your_perplexity_api_key_here
 VITE_PPLX_MODEL_FAST=sonar
 
