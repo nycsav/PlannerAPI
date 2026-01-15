@@ -35,6 +35,7 @@ export const ExecutiveStrategyChat: React.FC<ExecutiveStrategyChatProps> = ({
   const [state, setState] = useState<ChatState>('idle');
   const [response, setResponse] = useState<PlannerChatResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [hasBeenUsed, setHasBeenUsed] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
@@ -61,6 +62,7 @@ export const ExecutiveStrategyChat: React.FC<ExecutiveStrategyChatProps> = ({
 
     if (!query.trim()) return;
 
+    setHasBeenUsed(true);
     setState('loading');
     setErrorMessage('');
     setResponse(null);
@@ -102,54 +104,54 @@ export const ExecutiveStrategyChat: React.FC<ExecutiveStrategyChatProps> = ({
 
   return (
     <div className="w-full max-w-wide mx-auto app-padding-x py-2xl">
-      {/* Header */}
-      <div className="mb-lg">
-        <h2 className="font-display text-3xl md:text-4xl font-black text-bureau-ink italic uppercase tracking-tight mb-sm">
-          Executive Strategy Intelligence
-        </h2>
-        <p className="text-base text-bureau-slate/70">
-          Ask questions about marketing trends, competitive intelligence, or strategic opportunities.
-        </p>
-      </div>
+      {/* Only show header when virgin idle (not used yet) */}
+      {!hasBeenUsed && state === 'idle' && (
+        <>
+          {/* Header */}
+          <div className="mb-lg">
+            <h2 className="font-display text-3xl md:text-4xl font-black text-bureau-ink italic uppercase tracking-tight mb-sm">
+              Executive Strategy Intelligence
+            </h2>
+            <p className="text-base text-bureau-slate/70">
+              Use the search above to get strategic intelligence on marketing trends, competitive analysis, or growth opportunities.
+            </p>
+          </div>
+        </>
+      )}
 
-      {/* Input Form */}
-      <form onSubmit={handleSubmit} className="mb-xl">
-        <div className="flex flex-col sm:flex-row gap-sm">
-          <label htmlFor="strategy-query" className="sr-only">
-            Strategic intelligence query
-          </label>
-          <input
-            ref={inputRef}
-            id="strategy-query"
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="What are the latest trends in AI-driven personalization?"
-            className="flex-1 px-md py-3 border-2 border-bureau-ink/20 text-base focus:outline-none focus:border-bureau-signal focus:ring-2 focus:ring-bureau-signal/20 disabled:bg-bureau-border/30 disabled:cursor-not-allowed"
-            disabled={state === 'loading'}
-            aria-label="Enter your strategic intelligence query"
-            aria-describedby={state === 'error' ? 'error-message' : undefined}
-          />
-          <button
-            type="submit"
-            disabled={state === 'loading' || !query.trim()}
-            className="bg-bureau-ink text-white px-6 py-3 font-semibold hover:bg-bureau-ink/90 active:bg-bureau-ink focus:outline-none focus:ring-2 focus:ring-bureau-signal focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap min-w-[180px] sm:min-w-0"
-            aria-live="polite"
-          >
-            {state === 'loading' ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
-                Analyzing...
-              </>
-            ) : (
-              <>
-                Get Intelligence
+      {/* Show input form when retrying after error or when idle after being used */}
+      {hasBeenUsed && (state === 'idle' || state === 'error') && (
+        <div className="mb-xl">
+          <h3 className="font-display text-lg font-bold text-bureau-ink mb-sm uppercase tracking-tight">
+            {state === 'error' ? 'Try Another Query' : 'New Question'}
+          </h3>
+          <form onSubmit={handleSubmit}>
+            <div className="flex flex-col sm:flex-row gap-sm">
+              <label htmlFor="retry-query" className="sr-only">
+                Strategic intelligence query
+              </label>
+              <input
+                ref={inputRef}
+                id="retry-query"
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="What would you like to know?"
+                className="flex-1 px-md py-3 border-2 border-bureau-ink/20 text-base focus:outline-none focus:border-bureau-signal focus:ring-2 focus:ring-bureau-signal/20"
+                aria-label="Enter your strategic intelligence query"
+              />
+              <button
+                type="submit"
+                disabled={!query.trim()}
+                className="bg-bureau-ink text-white px-6 py-3 font-semibold hover:bg-bureau-ink/90 active:bg-bureau-ink focus:outline-none focus:ring-2 focus:ring-bureau-signal focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap min-w-[140px] sm:min-w-0"
+              >
+                Ask
                 <ArrowRight className="w-5 h-5" aria-hidden="true" />
-              </>
-            )}
-          </button>
+              </button>
+            </div>
+          </form>
         </div>
-      </form>
+      )}
 
       {/* Loading State */}
       {state === 'loading' && (
@@ -169,7 +171,7 @@ export const ExecutiveStrategyChat: React.FC<ExecutiveStrategyChatProps> = ({
       {state === 'error' && (
         <div
           id="error-message"
-          className="border-2 border-red-300 bg-red-50 p-lg rounded-sm"
+          className="border-2 border-red-300 bg-red-50 p-lg rounded-sm mb-xl"
           role="alert"
           aria-live="assertive"
         >
@@ -177,13 +179,7 @@ export const ExecutiveStrategyChat: React.FC<ExecutiveStrategyChatProps> = ({
             <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
             <div className="flex-1">
               <h3 className="font-semibold text-red-900 mb-2">Unable to Generate Intelligence</h3>
-              <p className="text-sm text-red-700 mb-3 leading-relaxed">{errorMessage}</p>
-              <button
-                onClick={handleRetry}
-                className="text-sm font-semibold text-red-900 hover:text-red-700 underline focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded-sm px-1"
-              >
-                Try again
-              </button>
+              <p className="text-sm text-red-700 leading-relaxed">{errorMessage}</p>
             </div>
           </div>
         </div>
@@ -270,6 +266,38 @@ export const ExecutiveStrategyChat: React.FC<ExecutiveStrategyChatProps> = ({
             ) : (
               <p className="text-sm text-bureau-slate/60 italic">No signals available</p>
             )}
+          </div>
+
+          {/* Follow-up Question Input - Only shown after results */}
+          <div className="border-t-2 border-bureau-border pt-lg mt-xl">
+            <h3 className="font-display text-lg font-bold text-bureau-ink mb-sm uppercase tracking-tight">
+              Ask a Follow-Up Question
+            </h3>
+            <form onSubmit={handleSubmit}>
+              <div className="flex flex-col sm:flex-row gap-sm">
+                <label htmlFor="followup-query" className="sr-only">
+                  Follow-up question
+                </label>
+                <input
+                  ref={inputRef}
+                  id="followup-query"
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Dig deeper into this analysis..."
+                  className="flex-1 px-md py-3 border-2 border-bureau-ink/20 text-base focus:outline-none focus:border-bureau-signal focus:ring-2 focus:ring-bureau-signal/20"
+                  aria-label="Enter your follow-up question"
+                />
+                <button
+                  type="submit"
+                  disabled={!query.trim()}
+                  className="bg-bureau-ink text-white px-6 py-3 font-semibold hover:bg-bureau-ink/90 active:bg-bureau-ink focus:outline-none focus:ring-2 focus:ring-bureau-signal focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap min-w-[140px] sm:min-w-0"
+                >
+                  Ask
+                  <ArrowRight className="w-5 h-5" aria-hidden="true" />
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
