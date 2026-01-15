@@ -1,12 +1,14 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ArrowRight, CornerDownRight, ShieldCheck, Database, TrendingUp } from 'lucide-react';
+import { Search, ArrowRight, CornerDownRight, ShieldCheck, Database, TrendingUp, MessageSquare } from 'lucide-react';
+import { TrustStrip } from './TrustStrip';
 
 interface HeroSearchProps {
   onSearch: (q: string, data?: any) => void;
+  onOpenChat?: () => void;
 }
 
-export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch }) => {
+export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) => {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
@@ -169,7 +171,27 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch }) => {
             </button>
           ))}
         </div>
+
+        {/* Above-the-fold Chat CTA */}
+        {onOpenChat && (
+          <div className="pt-lg border-t border-bureau-border/50 mt-lg">
+            <button
+              onClick={onOpenChat}
+              className="mx-auto flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-bureau-signal to-blue-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all group"
+            >
+              <MessageSquare className="w-5 h-5" />
+              <span>Ask a Strategic Question</span>
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </button>
+            <p className="text-center text-sm text-bureau-slate/60 mt-2">
+              Get structured analysis in 30 seconds
+            </p>
+          </div>
+        )}
       </div>
+
+      {/* Trust Strip */}
+      <TrustStrip />
     </div>
   );
 };

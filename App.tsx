@@ -35,42 +35,42 @@ const App: React.FC = () => {
   const exampleBriefings = [
     {
       id: "LOG-104",
-      date: "24.05.2024",
+      date: "14.01.2026",
       title: "Post-Cookie Attribution: $4.2B Market Shift",
       description: "Privacy-first tracking drives major budget reallocation. CMOs reallocating $4.2B toward contextual and first-party data strategies as third-party cookies decline. Early movers gaining 23% competitive advantage in attribution accuracy.",
       theme: "AI Strategy"
     },
     {
       id: "LOG-105",
-      date: "23.05.2024",
+      date: "13.01.2026",
       title: "AI-Powered Supply Path: 92% Automation Achieved",
       description: "Marketing operations efficiency breakthrough. Leading brands achieve 92% automation in media buying workflows, reducing costs 34% while improving campaign performance. Average time-to-market decreased from 5 days to 8 hours.",
       theme: "Revenue Growth"
     },
     {
       id: "LOG-106",
-      date: "22.05.2024",
+      date: "10.01.2026",
       title: "Retail Media Networks Capture 18% of Digital Spend",
       description: "New competitive landscape for brand visibility. Amazon, Walmart, and Target retail media networks now command $42B annually, forcing strategic shifts in brand allocation. First-party shopper data creates measurable ROAS advantages.",
       theme: "Market Trends"
     },
     {
       id: "LOG-107",
-      date: "21.05.2024",
+      date: "08.01.2026",
       title: "CMO Tenure Drives AI ROI: 2.7x Higher Returns",
       description: "Leadership stability correlates with technology adoption success. Organizations with CMO tenure exceeding 3 years demonstrate 2.7x higher AI tool integration rates and 41% better marketing ROI. Board-level implications for succession planning.",
       theme: "Competitive Analysis"
     },
     {
       id: "LOG-108",
-      date: "20.05.2024",
+      date: "06.01.2026",
       title: "Gen Z Brand Loyalty Down 14% YoY: AI Personalization Impact",
       description: "Competitive threats from AI-driven targeting. 62% of Gen Z consumers switching brands based on personalized AI offers. Traditional loyalty programs losing effectiveness. Market share vulnerability for established brands without AI capabilities.",
       theme: "Brand Intelligence"
     },
     {
       id: "LOG-109",
-      date: "19.05.2024",
+      date: "03.01.2026",
       title: "First-Party Data Strategy: 34% LTV Increase",
       description: "Direct-to-consumer brands prove proprietary data advantage. Companies building first-party data platforms achieve 34% higher customer lifetime value versus third-party reliance. Strategic imperative for sustainable competitive positioning.",
       theme: "Customer Retention"
@@ -81,14 +81,29 @@ const App: React.FC = () => {
     setSearchState({ isOpen: true, query, source, data });
   };
 
+  const scrollToChat = () => {
+    const chatSection = document.querySelector('[class*="Executive Strategy"]')?.closest('div');
+    if (chatSection) {
+      chatSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Focus the input after scrolling
+      setTimeout(() => {
+        const input = chatSection.querySelector('input');
+        input?.focus();
+      }, 800);
+    }
+  };
+
   return (
     <Layout>
       <main className="w-full">
-        
+
         {/* HERO SECTION */}
         <div className="section-zebra py-2xl border-b border-bureau-border bg-bureau-surface">
           <section className="max-w-hero mx-auto w-full app-padding-x">
-            <HeroSearch onSearch={(q, data) => openSearch(q, 'Perplexity', data)} />
+            <HeroSearch
+              onSearch={(q, data) => openSearch(q, 'Perplexity', data)}
+              onOpenChat={scrollToChat}
+            />
           </section>
         </div>
 

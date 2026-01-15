@@ -78,9 +78,12 @@ export const Navbar: React.FC = () => {
             )}
           </div>
 
-          <button className="bg-bureau-ink text-white px-6 py-3 text-sm font-semibold hover:bg-bureau-signal transition-all rounded-lg">
-            Request Access
-          </button>
+          <div className="flex flex-col items-end">
+            <button className="bg-bureau-ink text-white px-6 py-3 text-sm font-semibold hover:bg-bureau-signal transition-all rounded-lg">
+              Start Executive Preview
+            </button>
+            <span className="text-xs text-bureau-slate/60 mt-1 hidden md:block">Join in 60 seconds</span>
+          </div>
         </div>
       </div>
     </nav>
