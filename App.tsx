@@ -32,6 +32,7 @@ const App: React.FC = () => {
   });
 
   const [chatQuery, setChatQuery] = useState<string>('');
+  const [isChatActive, setIsChatActive] = useState<boolean>(false);
 
   // Example briefings - business impact focus for C-suite marketing leaders
   const exampleBriefings = [
@@ -84,18 +85,22 @@ const App: React.FC = () => {
   };
 
   const scrollToChat = (query?: string) => {
+    setIsChatActive(true);
     if (query) {
       setChatQuery(query);
     }
-    const chatSection = document.querySelector('[class*="Executive Strategy"]')?.closest('div');
-    if (chatSection) {
-      chatSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      // Focus the input after scrolling
-      setTimeout(() => {
-        const input = chatSection.querySelector('input');
-        input?.focus();
-      }, 800);
-    }
+    // Wait for component to render before scrolling
+    setTimeout(() => {
+      const chatSection = document.querySelector('[class*="Executive Strategy"]')?.closest('div');
+      if (chatSection) {
+        chatSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Focus the input after scrolling
+        setTimeout(() => {
+          const input = chatSection.querySelector('input');
+          input?.focus();
+        }, 800);
+      }
+    }, 50);
   };
 
   const handleChatQueryProcessed = () => {
@@ -116,13 +121,15 @@ const App: React.FC = () => {
           </section>
         </div>
 
-        {/* EXECUTIVE STRATEGY CHAT - Primary Interactive Feature */}
-        <div className="section-zebra py-2xl border-b border-bureau-border bg-white">
-          <ExecutiveStrategyChat
-            externalQuery={chatQuery}
-            onExternalQueryProcessed={handleChatQueryProcessed}
-          />
-        </div>
+        {/* EXECUTIVE STRATEGY CHAT - Primary Interactive Feature (only shown after activation) */}
+        {isChatActive && (
+          <div className="section-zebra py-2xl border-b border-bureau-border bg-white">
+            <ExecutiveStrategyChat
+              externalQuery={chatQuery}
+              onExternalQueryProcessed={handleChatQueryProcessed}
+            />
+          </div>
+        )}
 
         {/* INTELLIGENCE BRIEFINGS - Executive Content */}
         <div className="section-zebra py-2xl bg-bureau-surface">
@@ -133,7 +140,7 @@ const App: React.FC = () => {
               subtitle="Data-driven market analysis for strategic decision-making"
             />
             <div className="grid grid-cols-1 md:grid-cols-4 gap-md auto-rows-auto">
-              {/* Featured card - spans 2 columns */}
+              {/* Featured card - spans 2 columns, 2 rows */}
               <div className="md:col-span-2 md:row-span-2">
                 <IntelligenceCard
                   key={exampleBriefings[0].id}
@@ -146,7 +153,7 @@ const App: React.FC = () => {
                 />
               </div>
 
-              {/* Standard cards */}
+              {/* Right column cards (cards 2 & 3) - each spans 2 columns */}
               {exampleBriefings.slice(1, 3).map((item) => (
                 <div key={item.id} className="md:col-span-2">
                   <IntelligenceCard
@@ -160,9 +167,23 @@ const App: React.FC = () => {
                 </div>
               ))}
 
-              {/* Bottom row - varied layout */}
-              {exampleBriefings.slice(3).map((item, idx) => (
-                <div key={item.id} className={idx === 0 ? "md:col-span-3" : "md:col-span-2"}>
+              {/* Row 3: Cards 4 & 5 - each spans 2 columns */}
+              {exampleBriefings.slice(3, 5).map((item) => (
+                <div key={item.id} className="md:col-span-2">
+                  <IntelligenceCard
+                    id={item.id}
+                    date={item.date}
+                    title={item.title}
+                    description={item.description}
+                    tag={item.theme}
+                    onDeepResearch={(q, source) => openSearch(q, source)}
+                  />
+                </div>
+              ))}
+
+              {/* Row 4: Card 6 - full width */}
+              {exampleBriefings.slice(5).map((item) => (
+                <div key={item.id} className="md:col-span-4">
                   <IntelligenceCard
                     id={item.id}
                     date={item.date}
