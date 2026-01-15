@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Layout } from './components/Layout';
 import { IntelligenceCard } from './components/IntelligenceCard';
 import { ConversationalBrief } from './components/ConversationalBrief';
+import { IntelligenceModal, IntelligencePayload } from './components/IntelligenceModal';
 import { EngineInstructions } from './components/EngineInstructions';
 import { HeroSearch } from './components/HeroSearch';
 import { ExecutiveStrategyChat } from './components/ExecutiveStrategyChat';
@@ -33,6 +34,11 @@ const App: React.FC = () => {
 
   const [chatQuery, setChatQuery] = useState<string>('');
   const [isChatActive, setIsChatActive] = useState<boolean>(false);
+
+  // Intelligence Modal state
+  const [intelligenceOpen, setIntelligenceOpen] = useState(false);
+  const [intelligencePayload, setIntelligencePayload] = useState<IntelligencePayload | null>(null);
+  const [isLoadingIntelligence, setIsLoadingIntelligence] = useState(false);
 
   // Example briefings - business impact focus for C-suite marketing leaders
   const exampleBriefings = [
@@ -80,8 +86,55 @@ const App: React.FC = () => {
     }
   ];
 
+  // Fetch intelligence and open modal
+  const fetchIntelligence = async (query: string) => {
+    setIsLoadingIntelligence(true);
+
+    try {
+      const res = await fetch('https://planners-backend-865025512785.us-central1.run.app/chat-intel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query })
+      });
+
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+
+      const data = await res.json();
+
+      // Build payload for modal
+      const payload: IntelligencePayload = {
+        query,
+        summary: data.implications?.join(' ') || 'No summary available.',
+        keySignals: data.signals?.map((s: any) => s.title || s.summary || s) || [],
+        movesForLeaders: data.actions || [],
+        // frameworks will use defaults in modal if not provided
+        followUps: [
+          { label: 'Break down financial impact', question: `What is the financial impact of: ${query}` },
+          { label: 'Show competitive analysis', question: `Who are the top competitors for: ${query}` },
+          { label: 'Implementation timeline', question: `What is the implementation timeline for: ${query}` }
+        ]
+      };
+
+      setIntelligencePayload(payload);
+      setIntelligenceOpen(true);
+    } catch (error) {
+      console.error('Intelligence fetch failed:', error);
+      // Show error modal
+      setIntelligencePayload({
+        query,
+        summary: 'Unable to retrieve intelligence. Please try again.',
+        keySignals: [],
+        movesForLeaders: []
+      });
+      setIntelligenceOpen(true);
+    } finally {
+      setIsLoadingIntelligence(false);
+    }
+  };
+
   const openSearch = (query: string, source: 'Claude' | 'Perplexity' | 'Gemini' = 'Perplexity', data?: any) => {
-    setSearchState({ isOpen: true, query, source, data });
+    // Use the new intelligence modal for briefing cards
+    fetchIntelligence(query);
   };
 
   const scrollToChat = (query?: string) => {
@@ -220,6 +273,17 @@ const App: React.FC = () => {
         isOpen={searchState.isOpen}
         onClose={() => setSearchState({ ...searchState, isOpen: false })}
         initialQuery={searchState.query}
+      />
+
+      <IntelligenceModal
+        open={intelligenceOpen}
+        payload={intelligencePayload}
+        onClose={() => setIntelligenceOpen(false)}
+        onFollowUp={(question) => {
+          // Close current modal and fetch new intelligence for follow-up
+          setIntelligenceOpen(false);
+          fetchIntelligence(question);
+        }}
       />
     </Layout>
   );
