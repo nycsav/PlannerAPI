@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, ArrowRight, CornerDownRight, ShieldCheck, Database, TrendingUp, MessageSquare } from 'lucide-react';
 import { TrustStrip } from './TrustStrip';
+import { TypewriterText } from './TypewriterText';
 
 interface HeroSearchProps {
   onSearch: (q: string, data?: any) => void;
@@ -110,8 +111,20 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
       
       <div className="text-center space-y-sm">
         <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-black text-bureau-ink leading-tight tracking-tight italic">
-          STRATEGIC INTELLIGENCE FOR<br className="hidden sm:block" />
-          <span className="text-bureau-signal">MARKETING LEADERS</span>
+          STRATEGIC INTELLIGENCE FOR<br />
+          <TypewriterText
+            phrases={[
+              'MARKETING LEADERS',
+              'GROWTH TEAMS',
+              'AGENCY STRATEGISTS',
+              'CX EXECUTIVES',
+              'BRAND DIRECTORS',
+            ]}
+            typingSpeed={50}
+            deletingSpeed={30}
+            pauseDuration={2000}
+            className="text-bureau-signal"
+          />
         </h1>
         <p className="text-bureau-slate text-lg md:text-xl font-normal max-w-3xl mx-auto pt-md leading-relaxed">
           Real-time market analysis and competitive intelligence for CMOs, VP Marketing, Brand Directors, and Growth Leaders driving measurable business outcomes.
