@@ -5,6 +5,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { parseMarkdown, parseInlineMarkdown } from '../utils/markdown';
 
 const API_ENDPOINT = 'https://planners-backend-865025512785.us-central1.run.app/chat-intel';
 
@@ -173,90 +174,109 @@ export const ExecutiveStrategyChat: React.FC<ExecutiveStrategyChatProps> = ({
       {/* Success State - Display Response */}
       {state === 'success' && response && (
         <div ref={resultsRef} className="space-y-lg" role="region" aria-label="Intelligence results">
-          {/* Implications Section */}
-          <div className="border-2 border-bureau-border bg-white p-lg rounded-sm shadow-sm">
-            <h3 className="font-display text-xl font-bold text-bureau-ink mb-md uppercase tracking-tight">
-              What This Means
-            </h3>
-            {response.implications.length > 0 ? (
-              <ul className="space-y-3" role="list">
+
+          {/* SUMMARY: Executive Takeaway (2-3 sentences, no bullets) */}
+          {response.implications.length > 0 && (
+            <div className="border-2 border-bureau-border bg-white p-lg rounded-sm shadow-sm">
+              <h3 className="font-display text-xl font-bold text-bureau-ink mb-md uppercase tracking-tight">
+                Summary
+              </h3>
+              <div className="prose prose-sm max-w-none">
                 {response.implications.map((implication, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <span className="text-bureau-signal font-bold mt-0.5 text-lg leading-none" aria-hidden="true">•</span>
-                    <span className="text-base text-bureau-ink leading-relaxed">{implication}</span>
+                  <p key={index} className="text-base text-bureau-ink leading-relaxed mb-3 last:mb-0">
+                    {parseInlineMarkdown(implication)}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* KEY SIGNALS: Bulleted list with bold headlines */}
+          {response.signals.length > 0 && (
+            <div className="border-2 border-bureau-border bg-white p-lg rounded-sm shadow-sm">
+              <h3 className="font-display text-xl font-bold text-bureau-ink mb-md uppercase tracking-tight">
+                Key Signals
+              </h3>
+              <ul className="space-y-0" role="list">
+                {response.signals.map((signal, index) => (
+                  <li key={signal.id} className="flex items-start gap-3 mb-4 last:mb-0">
+                    <span className="text-bureau-signal font-bold mt-0.5 text-lg leading-none flex-shrink-0">•</span>
+                    <div className="flex-1">
+                      <span className="text-base text-bureau-ink leading-relaxed">
+                        <strong className="font-bold">{signal.title}.</strong> {parseInlineMarkdown(signal.summary)}
+                        {signal.sourceUrl && signal.sourceUrl !== '#' && (
+                          <a
+                            href={signal.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ml-1 text-xs font-medium text-bureau-signal hover:text-bureau-signal/80 inline-flex items-center gap-1"
+                          >
+                            [{index + 1}]
+                          </a>
+                        )}
+                      </span>
+                    </div>
                   </li>
                 ))}
               </ul>
-            ) : (
-              <p className="text-sm text-bureau-slate/60 italic">No implications available</p>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* Actions Section */}
-          <div className="border-2 border-bureau-border bg-white p-lg rounded-sm shadow-sm">
-            <h3 className="font-display text-xl font-bold text-bureau-ink mb-md uppercase tracking-tight">
-              Suggested Actions
-            </h3>
-            {response.actions.length > 0 ? (
-              <ol className="space-y-3" role="list">
+          {/* MOVES FOR LEADERS: Actionable directives */}
+          {response.actions.length > 0 && (
+            <div className="border-2 border-bureau-border bg-white p-lg rounded-sm shadow-sm">
+              <h3 className="font-display text-xl font-bold text-bureau-ink mb-md uppercase tracking-tight">
+                Moves for Leaders
+              </h3>
+              <ul className="space-y-0" role="list">
                 {response.actions.map((action, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <span className="text-bureau-ink font-bold mt-0.5 min-w-[24px]">{index + 1}.</span>
-                    <span className="text-base text-bureau-ink leading-relaxed">{action}</span>
+                  <li key={index} className="flex items-start gap-3 mb-4 last:mb-0">
+                    <span className="text-bureau-signal font-bold mt-0.5 text-lg leading-none flex-shrink-0">•</span>
+                    <span className="text-base text-bureau-ink leading-relaxed flex-1">
+                      {parseInlineMarkdown(action)}
+                    </span>
                   </li>
                 ))}
-              </ol>
-            ) : (
-              <p className="text-sm text-bureau-slate/60 italic">No actions available</p>
-            )}
-          </div>
+              </ul>
+            </div>
+          )}
 
-          {/* Signals Section */}
-          <div className="border-2 border-bureau-border bg-white p-lg rounded-sm shadow-sm">
-            <h3 className="font-display text-xl font-bold text-bureau-ink mb-sm uppercase tracking-tight">
-              Signals
-            </h3>
-            <p className="text-xs text-bureau-slate/60 mb-md italic leading-relaxed">
-              Additional context and data sources supporting this analysis
-            </p>
-            {response.signals.length > 0 ? (
-              <div className="space-y-md" role="list">
-                {response.signals.map((signal) => (
-                  <article key={signal.id} className="border-l-3 border-bureau-signal pl-md py-2">
-                    <div className="flex items-start justify-between gap-md mb-2">
-                      <h4 className="font-semibold text-bureau-ink text-base leading-snug flex-1">
-                        {signal.title}
-                      </h4>
-                      <span className="text-xs font-mono text-bureau-slate/60 flex-shrink-0 bg-bureau-border px-2 py-1 rounded">
-                        {signal.id}
-                      </span>
-                    </div>
-                    <p className="text-sm text-bureau-slate/90 mb-3 leading-relaxed">{signal.summary}</p>
-                    {signal.sourceUrl && signal.sourceUrl !== '#' ? (
-                      <a
-                        href={signal.sourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs font-medium text-bureau-signal hover:text-bureau-signal/80 inline-flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-bureau-signal focus:ring-offset-2 rounded-sm px-1"
-                      >
-                        <span>Source: {signal.sourceName}</span>
-                        <span aria-hidden="true">↗</span>
-                      </a>
-                    ) : (
-                      <span className="text-xs text-bureau-slate/60">Source: {signal.sourceName}</span>
-                    )}
-                  </article>
+          {/* SOURCES: Chip badges for citations */}
+          {response.signals.length > 0 && (
+            <div className="border-t border-bureau-border pt-md">
+              <p className="text-xs font-mono text-bureau-slate/60 mb-sm uppercase tracking-wide">Sources</p>
+              <div className="flex flex-wrap gap-2">
+                {response.signals.map((signal, index) => (
+                  signal.sourceUrl && signal.sourceUrl !== '#' ? (
+                    <a
+                      key={signal.id}
+                      href={signal.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-bureau-border hover:bg-bureau-signal/10 rounded-full text-xs font-medium text-bureau-slate hover:text-bureau-signal transition-colors"
+                    >
+                      <span>[{index + 1}]</span>
+                      <span>{signal.sourceName}</span>
+                      <span aria-hidden="true">↗</span>
+                    </a>
+                  ) : (
+                    <span
+                      key={signal.id}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-bureau-border rounded-full text-xs font-medium text-bureau-slate"
+                    >
+                      <span>[{index + 1}]</span>
+                      <span>{signal.sourceName}</span>
+                    </span>
+                  )
                 ))}
               </div>
-            ) : (
-              <p className="text-sm text-bureau-slate/60 italic">No signals available</p>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* Follow-up Question Input - Only shown after results */}
+          {/* CONTINUE EXPLORING: Follow-up Question Input */}
           <div className="border-t-2 border-bureau-border pt-lg mt-xl">
             <h3 className="font-display text-lg font-bold text-bureau-ink mb-sm uppercase tracking-tight">
-              Ask a Follow-Up Question
+              Continue Exploring
             </h3>
             <form onSubmit={handleSubmit}>
               <div className="flex flex-col sm:flex-row gap-sm">
