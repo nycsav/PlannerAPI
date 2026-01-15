@@ -5,7 +5,7 @@ import { TrustStrip } from './TrustStrip';
 
 interface HeroSearchProps {
   onSearch: (q: string, data?: any) => void;
-  onOpenChat?: () => void;
+  onOpenChat?: (query?: string) => void;
 }
 
 export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) => {
@@ -93,8 +93,15 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (query.trim()) {
-      runPerplexitySearch(query);
-      inputRef.current?.blur();
+      if (onOpenChat) {
+        // Use consolidated chat interface
+        onOpenChat(query);
+        inputRef.current?.blur();
+      } else {
+        // Fallback to old search modal
+        runPerplexitySearch(query);
+        inputRef.current?.blur();
+      }
     }
   };
 
@@ -163,7 +170,16 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
           ].map((item) => (
             <button
               key={item.label}
-              onClick={() => { setQuery(item.label); runPerplexitySearch(item.label); }}
+              onClick={() => {
+                setQuery(item.label);
+                if (onOpenChat) {
+                  // Use chat interface for quick topics
+                  setTimeout(() => onOpenChat(item.label), 100);
+                } else {
+                  // Fallback to old search
+                  runPerplexitySearch(item.label);
+                }
+              }}
               className="group px-4 py-2.5 border border-gray-200 bg-white rounded-lg text-sm font-semibold text-gray-700 hover:border-bureau-signal hover:bg-bureau-signal hover:text-white transition-all shadow-sm hover:shadow-md flex items-center gap-2"
             >
               {item.trending && <TrendingUp className="w-3.5 h-3.5 text-bureau-signal group-hover:text-white" />}
@@ -171,23 +187,6 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
             </button>
           ))}
         </div>
-
-        {/* Above-the-fold Chat CTA */}
-        {onOpenChat && (
-          <div className="pt-lg border-t border-bureau-border/50 mt-lg">
-            <button
-              onClick={onOpenChat}
-              className="mx-auto flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-bureau-signal to-blue-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all group"
-            >
-              <MessageSquare className="w-5 h-5" />
-              <span>Ask a Strategic Question</span>
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
-            <p className="text-center text-sm text-bureau-slate/60 mt-2">
-              Get structured analysis in 30 seconds
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Trust Strip */}

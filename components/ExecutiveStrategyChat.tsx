@@ -22,7 +22,15 @@ type PlannerChatResponse = {
 
 type ChatState = 'idle' | 'loading' | 'success' | 'error';
 
-export const ExecutiveStrategyChat: React.FC = () => {
+interface ExecutiveStrategyChatProps {
+  externalQuery?: string;
+  onExternalQueryProcessed?: () => void;
+}
+
+export const ExecutiveStrategyChat: React.FC<ExecutiveStrategyChatProps> = ({
+  externalQuery,
+  onExternalQueryProcessed
+}) => {
   const [query, setQuery] = useState('');
   const [state, setState] = useState<ChatState>('idle');
   const [response, setResponse] = useState<PlannerChatResponse | null>(null);
@@ -35,6 +43,18 @@ export const ExecutiveStrategyChat: React.FC = () => {
       resultsRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }, [state]);
+
+  // Handle external query from hero search
+  useEffect(() => {
+    if (externalQuery && externalQuery.trim()) {
+      setQuery(externalQuery);
+      // Auto-submit after setting query
+      setTimeout(() => {
+        handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+        onExternalQueryProcessed?.();
+      }, 100);
+    }
+  }, [externalQuery]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

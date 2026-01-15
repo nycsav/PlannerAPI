@@ -19,9 +19,9 @@ const SectionHeader: React.FC<{ id: string; title: string; subtitle?: string }> 
 );
 
 const App: React.FC = () => {
-  const [searchState, setSearchState] = useState<{ 
-    isOpen: boolean; 
-    query: string; 
+  const [searchState, setSearchState] = useState<{
+    isOpen: boolean;
+    query: string;
     source: 'Claude' | 'Perplexity' | 'Gemini';
     data?: any;
   }>({
@@ -30,6 +30,8 @@ const App: React.FC = () => {
     source: 'Perplexity',
     data: null
   });
+
+  const [chatQuery, setChatQuery] = useState<string>('');
 
   // Example briefings - business impact focus for C-suite marketing leaders
   const exampleBriefings = [
@@ -81,7 +83,10 @@ const App: React.FC = () => {
     setSearchState({ isOpen: true, query, source, data });
   };
 
-  const scrollToChat = () => {
+  const scrollToChat = (query?: string) => {
+    if (query) {
+      setChatQuery(query);
+    }
     const chatSection = document.querySelector('[class*="Executive Strategy"]')?.closest('div');
     if (chatSection) {
       chatSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -91,6 +96,10 @@ const App: React.FC = () => {
         input?.focus();
       }, 800);
     }
+  };
+
+  const handleChatQueryProcessed = () => {
+    setChatQuery(''); // Reset after processing
   };
 
   return (
@@ -109,7 +118,10 @@ const App: React.FC = () => {
 
         {/* EXECUTIVE STRATEGY CHAT - Primary Interactive Feature */}
         <div className="section-zebra py-2xl border-b border-bureau-border bg-white">
-          <ExecutiveStrategyChat />
+          <ExecutiveStrategyChat
+            externalQuery={chatQuery}
+            onExternalQueryProcessed={handleChatQueryProcessed}
+          />
         </div>
 
         {/* INTELLIGENCE BRIEFINGS - Executive Content */}
