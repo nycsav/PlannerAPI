@@ -201,12 +201,70 @@ This session focused on major UX improvements to the PlannerAPI landing page and
 
 ---
 
-## Files Created (Total: 4)
+## 6. IntelligenceModal Component
+
+### Problem
+- Needed a full-screen modal for displaying intelligence briefs
+- Required strategic frameworks panel with tabs
+- Wanted cleaner, more focused presentation than conversational panel
+
+### Solution
+**Built complete IntelligenceModal component**:
+
+#### Layout Structure
+- **Full-screen modal** with dark navy overlay (60% opacity)
+- **White content card** centered, max-w-7xl, responsive
+- **Close button** X in top-right corner
+- **Roboto typography** for body content
+
+#### Content Sections
+1. **Query Label** - Shows original user query at top
+2. **Big Heading** - "INTELLIGENCE BRIEF" in Outfit display font
+3. **Summary** - Executive takeaway paragraph
+4. **Key Signals** - Simple `<ul>/<li>` list (NO icons or bullets)
+5. **Moves for Leaders** - Bulleted list with orange bullets
+6. **Strategic Frameworks** - Right side panel with tabs
+7. **Continue Exploring** - Conditional follow-up buttons
+
+#### Default Frameworks
+If no frameworks provided, shows 3 defaults:
+- **Digital Strategy**: AI enhancement, data mapping, stakeholder alignment
+- **Media Strategy**: AI-readiness ranking, optimization pilots, brand safety
+- **CX Strategy**: Touchpoint audits, AI-powered prototypes, success metrics
+
+Each framework has 3 actionable bullets
+
+#### Follow-Up Handling
+- Small secondary buttons (only if followUps provided)
+- Click triggers new intelligence fetch
+- Closes current modal and opens new one with results
+
+### Files Created
+- `components/IntelligenceModal.tsx` (226 lines)
+
+### Files Modified
+- `App.tsx`:
+  - Added `intelligenceOpen`, `intelligencePayload`, `isLoadingIntelligence` state
+  - Created `fetchIntelligence()` handler
+  - Updated `openSearch()` to use modal instead of conversational panel
+  - Integrated modal with follow-up support
+  - Intelligence cards now trigger modal
+
+### Result
+- Professional, focused intelligence brief presentation
+- Strategic frameworks always visible
+- Clean, scannable format
+- Follow-up capability built in
+
+---
+
+## Files Created (Total: 5)
 
 1. **`components/TypewriterText.tsx`** - Animated headline component
 2. **`utils/markdown.tsx`** - Markdown parser for bold text and bullets
 3. **`components/ConversationalBrief.tsx`** - Full conversational thread experience
-4. **`CLAUDE.md`** - Comprehensive design context documentation (from earlier session)
+4. **`components/IntelligenceModal.tsx`** - Full-screen intelligence brief modal
+5. **`CLAUDE.md`** - Comprehensive design context documentation (from earlier session)
 
 ---
 
@@ -403,6 +461,57 @@ Firebase Console: https://console.firebase.google.com/project/plannerapi-prod/ov
 **Session Complete**
 All changes committed, pushed to GitHub, and deployed to production.
 Live site: https://plannerapi-prod.web.app
+
+## 7. Executive UX Audit (neo-user-journey)
+
+### Problem
+- Needed comprehensive UX review from busy CMO/VP Marketing perspective
+- Landing page had unclear conversion path and missing credibility signals
+- No strategic roadmap for product improvements
+
+### Solution
+**Created comprehensive executive UX audit** (`ux/executive-landing-page-audit.md`):
+
+#### User Journey Mapping
+- **Phase 1 (0-15s):** Arrival/scan mode - evaluating credibility and value prop
+- **Phase 2 (15-60s):** Exploration/evaluate mode - testing quality and assessing fit
+- **Phase 3 (60-120s):** Decision point - commit or bounce (CRITICAL GAP IDENTIFIED)
+
+#### Top 7 Critical Issues Identified
+1. **🔴 CRITICAL: No Conversion Path** - "Start Executive Preview" CTA unclear, no signup flow
+2. **🔴 CRITICAL: Zero Social Proof** - No customer logos, testimonials, credibility markers
+3. **🔴 CRITICAL: No Persistence** - Conversations lost on refresh, no save/export
+4. **🟡 MEDIUM: Static Briefings** - Hardcoded data, not personalized by audience
+5. **🟡 MEDIUM: Unclear Product Stage** - No beta badge or roadmap visibility
+6. **🟡 MEDIUM: No Enterprise CTAs** - No "Contact Sales" or "Book Demo" for teams
+7. **🟢 LOW: Non-functional Links** - Strategic Frameworks "Learn more" goes nowhere
+
+#### Top 7 Recommended Enhancements
+**Phase 1 (Week 1-2): Trust & Conversion**
+1. Add social proof section (testimonials + logos) - 1 day
+2. Build signup flow (Firebase Auth) - 3-5 days
+3. Add beta badge + roadmap modal - 2 hours
+4. Add "Contact Sales" CTA + enterprise section - 1 day
+
+**Phase 2 (Week 3-4): Engagement & Retention**
+5. Build conversation persistence (Firestore + sidebar) - 5-7 days
+6. Personalize intelligence briefings by audience - 2-3 days
+7. Make Strategic Frameworks section interactive - 1 day
+
+#### Key Metrics to Track
+- Landing page conversion rate (% visitors who create accounts)
+- 7-day return rate (% users who return within week)
+- Free → Paid conversion (% upgrading to $99/mo plan)
+- Enterprise pipeline (demo requests, close rate, ACV)
+
+### Files Created
+- `ux/executive-landing-page-audit.md` (comprehensive 400+ line strategic analysis)
+
+### Result
+- Complete strategic roadmap for product improvements
+- Prioritized implementation sequence (Phase 1-3)
+- Business impact analysis for each enhancement
+- References to existing plan file for persistence architecture
 
 ---
 
