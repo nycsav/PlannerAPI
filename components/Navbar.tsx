@@ -1,13 +1,28 @@
 
 import React, { useState, useEffect } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, User, LogOut, History } from 'lucide-react';
 import { Logo } from './Logo';
-import { useAudience, AudienceType } from '../contexts/AudienceContext';
+import { useAuth } from '../contexts/AuthContext';
+import { logout } from '../utils/firebase';
 
-export const Navbar: React.FC = () => {
+type NavbarProps = {
+  onSignupClick?: () => void;
+};
+
+export const Navbar: React.FC<NavbarProps> = ({ onSignupClick }) => {
   const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const { audience, setAudience } = useAudience();
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const { user, loading } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setIsUserMenuOpen(false);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -16,22 +31,18 @@ export const Navbar: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const audienceLabels: Record<AudienceType, string> = {
-    'CMO': 'CMO',
-    'VP_Marketing': 'VP Marketing',
-    'Brand_Director': 'Brand Director',
-    'Growth_Leader': 'Growth Leader'
-  };
-
-  const audienceOptions: AudienceType[] = ['CMO', 'VP_Marketing', 'Brand_Director', 'Growth_Leader'];
-
   return (
     <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-bureau-ink/5 app-padding-x">
       <div className="max-w-wide mx-auto h-[80px] flex items-center justify-between">
         <div className="flex items-center gap-lg">
-          <a href="/" className="hover:opacity-80 transition-opacity">
-            <Logo variant="terminal" className="h-[32px] md:h-[40px]" />
-          </a>
+          <div className="flex items-center gap-3">
+            <a href="/" className="hover:opacity-80 transition-opacity">
+              <Logo variant="terminal" className="h-[32px] md:h-[40px]" />
+            </a>
+            <span className="bg-planner-orange text-white text-xs font-bold px-2 py-1 rounded uppercase tracking-wide">
+              BETA
+            </span>
+          </div>
 
           <div className="hidden lg:flex items-center gap-md border-l border-bureau-ink/10 pl-md">
             <span className="text-xs text-bureau-slate/40">
@@ -41,46 +52,74 @@ export const Navbar: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          {/* View as dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg border border-gray-200 transition-all"
-            >
-              <span className="text-xs text-gray-500">View as:</span>
-              <span className="font-semibold">{audienceLabels[audience]}</span>
-              <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
+          {/* Show user menu if logged in, otherwise show signup button */}
+          {user ? (
+            <div className="relative">
+              <button
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-all"
+              >
+                {user.photoURL && !imageError ? (
+                  <img
+                    src={user.photoURL}
+                    alt={user.displayName || 'User'}
+                    className="w-8 h-8 rounded-full object-cover"
+                    onError={() => setImageError(true)}
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-planner-orange/10 flex items-center justify-center">
+                    <User className="w-4 h-4 text-planner-orange" />
+                  </div>
+                )}
+                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
 
-            {isDropdownOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setIsDropdownOpen(false)}
-                />
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
-                  {audienceOptions.map((option) => (
+              {isUserMenuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setIsUserMenuOpen(false)}
+                  />
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                    <div className="px-4 py-3 border-b border-gray-200">
+                      <p className="text-sm font-semibold text-bureau-ink">
+                        {user.displayName || 'User'}
+                      </p>
+                      <p className="text-xs text-bureau-slate/60 truncate">
+                        {user.email}
+                      </p>
+                    </div>
                     <button
-                      key={option}
                       onClick={() => {
-                        setAudience(option);
-                        setIsDropdownOpen(false);
+                        // TODO: Open history sidebar in Phase 3
+                        alert('History sidebar coming in Phase 3!');
+                        setIsUserMenuOpen(false);
                       }}
-                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${
-                        audience === option ? 'bg-bureau-signal/5 text-bureau-signal font-semibold' : 'text-gray-700'
-                      }`}
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
                     >
-                      {audienceLabels[option]}
+                      <History className="w-4 h-4" />
+                      History
                     </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-
-          <button className="bg-bureau-ink text-white px-6 py-3 text-sm font-semibold hover:bg-bureau-signal transition-all rounded-lg">
-            Start Executive Preview
-          </button>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Log Out
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={onSignupClick}
+              disabled={loading}
+              className="bg-planner-orange text-white px-6 py-3 text-sm font-semibold hover:bg-planner-orange/90 transition-all rounded-lg disabled:opacity-50"
+            >
+              Create Free Account
+            </button>
+          )}
         </div>
       </div>
     </nav>

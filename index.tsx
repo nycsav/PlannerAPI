@@ -2,7 +2,9 @@ import './index.css';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { AudienceProvider } from './contexts/AudienceContext';
+import { AuthProvider } from './contexts/AuthContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -12,8 +14,12 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <AudienceProvider>
-      <App />
-    </AudienceProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AudienceProvider>
+          <App />
+        </AudienceProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );

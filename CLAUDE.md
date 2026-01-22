@@ -1,315 +1,295 @@
-# PlannerAPI Design Context
+# CLAUDE.md – Project Instructions for PlannerAPI
 
-**Last Updated:** January 15, 2026
-**Product:** AI-powered strategic intelligence platform for C-suite marketing executives
+## 0. Purpose
 
----
+This document tells Claude Code how to work on the PlannerAPI project.
 
-## Design Context
+PlannerAPI is a browser-based intelligence tool for CMOs, agency owners, senior marketers, and CX leaders. It surfaces Daily Intelligence, structured briefings, and playbooks about AI, marketing, and media using Perplexity + Claude + Firestore.
 
-### Users
+**Core systems:**
+- **Daily Intelligence:** Cloud Function (`functions/src/generateDiscoverCards.ts`) + Frontend (`components/DailyIntelligence.tsx`)
+- **Strategy Chat:** Real-time Perplexity-powered Q&A (`HeroSearch.tsx`, `ExecutiveStrategyChat.tsx`)
+- **LinkedIn Publishing Engine:** n8n workflow → Claude → LinkedIn + in-app briefs
 
-**Who They Are:**
-- **Primary:** CMOs, VP Marketing, Brand Directors, Growth Leaders at enterprise companies
-- **Context:** Time-constrained executives (8-10 second attention span), decision-makers under pressure
-- **Use Case:** Strategic planning, board reporting, competitive intelligence, budget allocation decisions
-
-**Job to Be Done:**
-Get real-time, actionable strategic intelligence without spending hours on research. Transform market signals into board-ready insights with structured analysis (What This Means → Suggested Actions → Signals).
-
-**User Journey Insight (from UX Audit):**
-Executives scan rapidly (0-15 seconds), evaluate credibility (15-60 seconds), then commit or bounce (60-120 seconds). They need instant clarity, trust signals, and a clear next action.
+Always prioritize correctness, editorial quality, and cost efficiency over cleverness.
 
 ---
 
-### Brand Personality
+## 1. Tech Stack & Key Files
 
-**Three Words:**
-**Precise. Commanding. Trustworthy.**
+### Frontend
+- React, TypeScript, Tailwind, Firebase Hosting
+- `App.tsx`
+- `components/DailyIntelligence.tsx`
+- `components/IntelligenceModal.tsx`
+- `components/HeroSearch.tsx`
+- `components/ExecutiveStrategyChat.tsx`
 
-**Voice & Tone:**
-- Direct and outcome-focused (not conversational or playful)
-- Data-driven and credible (cite sources, show metrics, build trust)
-- Executive-appropriate (professional, confident, authoritative)
-- Signal vs noise mentality (clarity over volume)
+### Backend
+- Cloud Functions (Node.js 20): `functions/src/*.ts`
+- Daily Intelligence generator: `functions/src/generateDiscoverCards.ts`
+- Types: `functions/src/types.ts`
 
-**Emotional Arc:**
-1. **On Arrival:** Focused — "I instantly understand what this does amid the noise"
-2. **On Engagement:** Empowered — "I have strategic intel advantage my competitors don't"
-3. **On Return:** Relieved — "This tool handles research I don't have time for"
+### Firestore Collections
+- `discover_cards` – Daily Intelligence cards (legacy name, do not rename)
+- `briefs` – Future: saved Strategy Chat briefs
+- `linked_briefs` – Future: briefs published to LinkedIn with backlinks
 
-**Anti-Reference (What We're NOT):**
-Consumer AI chatbot (ChatGPT, Gemini) — We are NOT playful, conversational, or minimalist chat-only. We're an **executive intelligence console**, not a general-purpose assistant.
+### Documentation You MUST Respect
+- `API-USAGE-OPTIMIZATION.md` – API cost constraints and schedules
+- `DAILY-INTELLIGENCE-FINAL-SUMMARY.md` – Current implementation shape
+- `DISCOVER-FEED-IMPLEMENTATION.md` – Schema, scheduling, Firestore details
+- `DAILY-INTELLIGENCE-TESTING.md` – Testing checklist and verification
+- `POLISH-IMPROVEMENTS.md` – UI polish and accessibility requirements
+- `ONBOARDING-IMPROVEMENTS.md` – UX flows and user state management
+- `docs/DAILY_INTEL_FRAMEWORK.md` – Content architecture and source tiers
+- `docs/EDITORIAL_VOICE.md` – Voice, tone, and framing rules
+- `docs/FEED_LAYOUT_INSPIRATION.md` – UI/UX patterns for future feeds
+- `docs/FUTURE_IDEAS.md` – Parking lot for experiments
+- `DESIGN-SYSTEM.md` – Visual design, typography, colors, accessibility, UX principles
 
----
-
-### Aesthetic Direction
-
-**Visual Tone:**
-- **Professional SaaS console** (not chatbot, not dashboard, not news site)
-- **Minimal but confident** (restraint over decoration, purposeful whitespace)
-- **Data-forward** (structured results, clear hierarchy, scannable)
-- **Accessible at speed** (executives need to scan and act fast)
-
-**Color Palette:**
-- **Primary Dark:** `planner-navy` (#1B365D) — replaces bureau-ink for distinctive brand identity
-- **Accent/CTAs:** `planner-orange` (#FF6B35) — high-contrast for action buttons and highlights
-- **Links/Secondary:** `bureau-signal` (#2563EB) — keep blue for clickable elements
-- **Text:** `bureau-slate` (#475569) — body text, secondary content
-- **Surface:** `bureau-surface` (#FFFFFF) — clean white backgrounds
-- **Borders:** `bureau-border` (#E2E8F0) — subtle dividers
-
-**Typography:**
-- **Display Headings:** Outfit (black weight, uppercase, **NO italic**) — commanding but clean
-- **Body Text:** Inter/Roboto — professional, readable, accessible
-- **Monospace:** Roboto Mono — technical elements, IDs, timestamps
-
-**Typography Principle:**
-All-caps for section headers and key headlines (authority), but **remove italic** for modern, cleaner look. Use sentence case for body copy and CTAs.
-
-**Spacing Scale (8px base):**
-- xs: 8px
-- sm: 16px
-- md: 24px
-- lg: 32px
-- xl: 48px
-- 2xl: 64px
-- 3xl: 96px
-
-**Max Widths:**
-- Hero: 1000px (focused attention)
-- Content: 1400px (readable briefing cards)
-- Wide: 1400px (full-width sections)
-
-**Accessibility:**
-- All transitions/animations disabled globally (per requirement in index.css)
-- Minimum contrast ratio: WCAG AA (4.5:1 for text, 3:1 for UI elements)
-- Touch targets: 44x44px minimum
-- Semantic HTML: proper heading hierarchy, ARIA labels, keyboard navigation
+Never propose hourly or high-frequency polling that contradicts `API-USAGE-OPTIMIZATION.md`.
 
 ---
 
-### Design Principles
+## 2. Target Audiences
 
-#### 1. **Signal Over Noise**
-Every element must serve a purpose. Remove decoration, reduce cognitive load, prioritize scannable information. Executives have 8-10 seconds to decide—make every pixel count.
+All content, briefs, and features must be designed for:
 
-**In Practice:**
-- Minimal nav (logo, audience selector, CTA only)
-- No hero carousels, no decorative animations, no generic stock imagery
-- Structured results (What This Means → Actions → Signals) over paragraph dumps
-- Trust signals where needed (social proof, security badges), not plastered everywhere
+| Audience | What They Need | Example Question |
+|----------|----------------|------------------|
+| CMO / VP Marketing | Budget, roadmap, org decisions | "Should I invest in AI attribution this quarter?" |
+| Agency Owner | Client delivery, competitive positioning, tool fluency | "How do I position AI services to my clients?" |
+| Brand / Performance Lead | Campaign ROI, media optimization | "Is my SEO strategy at risk from AI Overviews?" |
+| CX Leader | Customer journey, AI experience design | "Where should AI touch the customer journey?" |
 
----
-
-#### 2. **Clarity Before Cleverness**
-Be direct over clever. "Start Executive Preview" not "Request Access". "Get Intelligence" not "Ask AI Anything". Executive users need instant understanding, not puzzles to solve.
-
-**In Practice:**
-- Clear CTAs with explicit benefit ("Get structured analysis in 30 seconds")
-- No jargon without context (explain "Signals", "Sonar API", etc.)
-- Upfront value prop: what it is, what it does, how it works (3 sentences max)
-- Error messages are helpful, not witty
+Assume:
+- High context on marketing and AI
+- Low patience for fluff
+- Need to translate noise into budget, roadmap, and team decisions
 
 ---
 
-#### 3. **Trust Through Precision**
-Credibility comes from specificity, recency, and transparency. Generic claims ("Trusted by Fortune 500") destroy trust. Specific data ("Join 50+ CMOs in early access", "Updated 2 hours ago") builds it.
+## 3. Content Refresh Cadence
 
-**In Practice:**
-- Show freshness indicators (timestamps, "Updated X hours ago")
-- Cite sources with links (not just "Industry Analysis")
-- Use specific metrics ("$4.2B market shift", "92% automation achieved")
-- Security badges where relevant (SOC 2, GDPR) but not overwhelming
+| Content Type | Refresh | Models | Trigger |
+|--------------|---------|--------|---------|
+| Daily Intelligence cards | Daily at 6:00 AM ET | Perplexity `sonar-pro` + Claude Haiku | Cloud Scheduler |
+| Strategy Chat / Hero Search | Real-time (every query) | Perplexity `sonar-pro` | User action |
+| Ask Follow-Up | Real-time (on click) | Perplexity `sonar-pro` + card context | User action |
+| Data Pulse (top lists) | Weekly or monthly | Perplexity `sonar-pro` + manual curation | Manual or n8n |
+| LinkedIn briefs | Editorial schedule (daily/weekly) | Perplexity + Claude Sonnet/Haiku | n8n workflow |
 
----
-
-#### 4. **Progressive Disclosure**
-Show the most important information first, details on demand. Don't overwhelm executives with everything at once. Guide them from clarity (hero) → empowerment (results) → relief (repeat use).
-
-**In Practice:**
-- Hero: Clear value prop + one action (search or chat)
-- Results: Structured summary (What This Means) before deep context (Signals)
-- Briefings: Title + 2-sentence summary, "Read Analysis" for full report
-- No feature dumping—introduce capabilities as users need them
+**Cost target:** ~$2–5/month total (well within Perplexity Standard Plan).
 
 ---
 
-#### 5. **Consistent, Purposeful Motion**
-All animations/transitions disabled globally per requirement. Interactions are instant. When motion is re-enabled (future), use sparingly: smooth scrolls, subtle focus states, intentional loading indicators only.
+## 4. Daily Intelligence – Editorial Architecture
 
-**In Practice:**
-- Button states: instant feedback (hover, active, disabled)
-- Form validation: immediate, clear error indicators
-- Loading: purposeful spinners with context ("Analyzing market intelligence...")
-- No bounces, no elastic effects, no decorative animations
+When working on these files:
+- `functions/src/generateDiscoverCards.ts`
+- `functions/src/types.ts`
+- `components/DailyIntelligence.tsx`
+- `components/IntelligenceModal.tsx`
 
----
+You MUST follow the framework defined in:
+- `docs/DAILY_INTEL_FRAMEWORK.md`
+- `docs/EDITORIAL_VOICE.md`
 
-## Component Patterns
+### Core Principles
 
-### Established Patterns (In Codebase)
+**Macro + Micro Architecture:**
+- Macro context: Tier 1 consulting/platform research (McKinsey, Gartner, Google, Anthropic)
+- Micro signal: Real-time development from the last 24 hours (Digiday, Ad Age, platform changelogs)
+- Every card should combine both when possible.
 
-**Hero Search:**
-- Large, outcome-focused placeholders that rotate every 3 seconds
-- Category chips with trending indicators
-- Minimal trust strip below (social proof, security, real-time data)
+**Four Pillars (fixed):**
+1. `ai_strategy` – CMO adoption, AI operating models, enterprise tools, governance (Purple)
+2. `brand_performance` – Brand equity, attribution, measurement, creative effectiveness (Blue)
+3. `competitive_intel` – Market share shifts, agency moves, holding company strategy (Orange)
+4. `media_trends` – Platform changes, channel mixes, retail media, programmatic, CTV (Emerald)
 
-**Executive Strategy Chat:**
-- Structured output: What This Means → Suggested Actions → Signals
-- Signals include: title, summary, source + link, ID badge
-- Empty states with helpful fallback messages
-- Focus management (auto-scroll, input focus on errors)
-
-**Intelligence Briefing Cards:**
-- ID + date header (shows recency)
-- Category tag (colored, uppercase)
-- Title + 2-3 sentence description with specific metrics
-- Action buttons (Analyze, Research, Read Analysis)
-- Hover states for interactivity
-
-**Navbar:**
-- Minimal: Logo + Audience Selector + Single CTA
-- Sticky top, subtle backdrop blur
-- UTC timestamp (reinforces real-time intelligence)
-
-**Footer:**
-- Functional CTAs (not just social links)
-- Segmented by audience (For CMOs, For Growth Teams)
-- Single-column mobile, multi-column desktop
+**Card Types:**
+- `brief` – Standard intelligence card (~80% of content)
+- `hot_take` – Sharper, more opinionated take (~20% of content)
+- `datapulse` – Weekly/monthly ranked lists (top podcasts, top ads, etc.)
 
 ---
 
-## Color Usage Guidelines
+## 5. Editorial Voice & Tone
 
-### Primary Actions
-- **CTA Buttons:** `planner-orange` (#FF6B35) background, white text
-- **Hover:** Darken orange 10% or use `planner-navy` for high-contrast
+Use the **PlannerAPI editorial voice** defined in `docs/EDITORIAL_VOICE.md`.
 
-### Links & Interactive
-- **Hyperlinks:** `bureau-signal` (#2563EB)
-- **Hover:** Darken blue 10%, no underline by default (underline on hover)
+In short:
+- **Analytical:** Lead with data, not opinion
+- **Pragmatic:** Every insight should lead to "what to do Monday"
+- **Concise:** 2–3 sentences per section max
+- **Direct:** Name winners/losers and tradeoffs
+- **Credible:** Cite recognizable sources (McKinsey, Gartner, Google) when used
 
-### Text Hierarchy
-- **Headings:** `planner-navy` (#1B365D) or `bureau-ink` (#0F172A) for depth
-- **Body:** `bureau-slate` (#475569) — 70-80% opacity for secondary text
-- **Muted:** `bureau-slate/60` — timestamps, helper text, subtle info
+**Signature Framing Patterns:**
+- Tension: "The 94% Problem:", "Two Camps Are Emerging:", "The Window Is Closing On…"
+- Implication: "What this means for CMOs is…", "For media planners, the risk is…"
+- Action: "Your Monday move:", "Start here:", "The 3-step audit:"
 
-### Borders & Dividers
-- **Default:** `bureau-border` (#E2E8F0)
-- **Emphasis:** `bureau-ink/10` or `bureau-ink/20` for stronger separation
+**Absolute Prohibitions:**
+- No emojis
+- No hype phrases ("revolutionary", "game-changing", "paradigm shift")
+- No vague recommendations ("consider evaluating")
 
-### Backgrounds
-- **Primary:** `bureau-surface` (#FFFFFF)
-- **Alternate:** `bureau-surface` with subtle shadow or `bg-gray-50` for zebra striping
-- **Highlight:** `bureau-signal/5` for loading states or info callouts
-
----
-
-## Typography Scale
-
-### Display (Outfit, Black, Uppercase)
-- **Hero:** text-4xl md:text-6xl lg:text-7xl (56-72px) — commanding presence
-- **Section Headers:** text-3xl md:text-4xl (36-48px) — clear hierarchy
-- **Component Headers:** text-xl (20px) — subsection titles
-
-### Body (Inter/Roboto, Regular/Medium)
-- **Primary:** text-base (16px) — standard body copy, line-height: 1.6
-- **Secondary:** text-sm (14px) — helper text, captions, card descriptions
-- **Micro:** text-xs (12px) — timestamps, IDs, metadata
-
-### Monospace (Roboto Mono, Medium/Bold)
-- **IDs/Codes:** text-xs font-mono (12px) — briefing IDs, technical labels
-- **Buttons:** text-xs uppercase tracking-wide (10-12px) — technical CTAs
+If instructions in the chat conflict with `docs/EDITORIAL_VOICE.md`, follow the doc and warn the user.
 
 ---
 
-## Spacing Patterns
+## 6. LinkedIn Publishing Engine
 
-### Section Padding
-- **Vertical:** py-2xl (64px) — consistent section breathing room
-- **Horizontal:** app-padding-x (24px mobile, 48px desktop)
+PlannerAPI uses an n8n workflow to publish intelligence to LinkedIn and drive traffic back to the app.
 
-### Component Spacing
-- **Card Grid:** gap-md (24px) — briefing cards, feature grids
-- **Inline Elements:** gap-sm (16px) — buttons, chips, inline icons
-- **Stacked Content:** space-y-lg (32px) — result sections, form fields
+**Flow:**
+1. Perplexity (research) → Claude (draft/refine) → n8n
+2. n8n writes brief to Firestore (`linked_briefs` collection)
+3. n8n publishes to LinkedIn with CTA: "📊 Full brief: [appUrl]"
+4. App displays the brief at `/briefs/:slug`
 
-### Container Max Widths
-- **Hero:** max-w-hero (1000px) — focused attention
-- **Content:** max-w-content (1400px) — briefings, results
-- **Wide:** max-w-wide (1400px) — full-width sections
+**LinkedIn Post Structure:**
+- Hook: Strong data point (e.g., "67% of CMOs say AI attribution is their #1 blind spot")
+- Body: Layer 2–3 data sources + synthesis + implication (200–400 words)
+- CTA: Tactical Monday move + link to full brief
 
----
-
-## Accessibility Standards
-
-**Compliance Level:** WCAG 2.1 Level AA minimum
-
-**Focus States:**
-- All interactive elements have visible focus indicators
-- Use `focus:ring-2 focus:ring-bureau-signal focus:ring-offset-2`
-- Never remove focus outlines without replacement
-
-**Semantic HTML:**
-- Proper heading hierarchy (h1 → h2 → h3, no skipping)
-- Form labels for all inputs (visible or sr-only)
-- ARIA attributes where needed (aria-label, aria-describedby, role)
-
-**Keyboard Navigation:**
-- Tab order is logical and predictable
-- Enter/Space activate buttons
-- Escape closes modals/dropdowns
-- All features accessible without mouse
-
-**Screen Readers:**
-- Descriptive alt text for images
-- aria-hidden="true" for decorative icons
-- aria-live regions for dynamic content (loading, errors)
-
-**Color Contrast:**
-- Text on white: minimum 4.5:1 (use bureau-ink or planner-navy)
-- UI elements: minimum 3:1 (borders, icons, disabled states)
-- Never rely on color alone (use icons, labels, patterns)
-
-**Touch Targets:**
-- Minimum 44x44px for all interactive elements
-- Adequate spacing between touch targets (8-16px gap)
+**Deduplication:** See Section 11.
 
 ---
 
-## Future Considerations
+## 7. Playbook Library Themes
 
-### When Animations Are Re-Enabled
-Currently all transitions are disabled (`transition: none !important` in index.css). If/when re-enabled:
+Future playbooks to reference and build toward:
 
-- **Timing:** 150-300ms max (fast, purposeful)
-- **Easing:** ease-out-quart or ease-out-expo (natural deceleration)
-- **Properties:** Transform and opacity only (no layout thrashing)
-- **Respect:** `prefers-reduced-motion` media query
+1. **AEO/GEO Readiness Check** – How search is shifting from SEO to Answer Engine Optimization and Generative Engine Optimization
+2. **Workflows vs Agents: Where to Start** – Clarifying when to automate vs when to deploy agentic AI
+3. **Enterprise AI, De-Jargonized** – What "enterprise AI" actually means (governance, security, measurable outcomes)
+4. **Leadership Brief: What Should Organizational Leaders Think About?** – Anchored to Anthropic Economic Index (Jan 2026)
+5. **AI Upskilling Tracks for Brand + Agency Teams** – Role-specific training for CMO, creative, media, agency teams
 
-### When Adding Illustrations/Icons
-- Use lucide-react (already in dependencies) for consistent icon family
-- No decorative illustrations unless they clarify complex concepts
-- Icons should be functional (button labels, status indicators), not decorative
-
-### When Expanding Color Palette
-- Ensure all new colors pass WCAG contrast ratios
-- Test in light/dark mode if dark mode is added
-- Maintain signal vs noise principle (color = meaning, not decoration)
+Each playbook maps to Daily Intelligence pillars and can be introduced via cards and LinkedIn posts.
 
 ---
 
-## Reference Files
+## 8. Claude Skills
 
-**UX Audit:** `/ux/executive-journey-audit.md` — Complete user journey analysis, pain points, recommendations
-**Tailwind Config:** `/tailwind.config.js` — Design tokens (spacing, colors, typography)
-**Global Styles:** `/index.css` — Base styles, utilities, animation override
-**Logo Component:** `/components/Logo.tsx` — Terminal, compass, pivot variants
-**Trust Strip:** `/components/TrustStrip.tsx` — Social proof component pattern
+This project uses Claude Skills to enforce editorial consistency.
+
+- **Skill name:** `daily-intel-editor`
+- **Location:** `skills/daily-intel-editor.md`
+
+When the user mentions:
+- "Daily Intelligence"
+- "AI Intelligencer"
+- "Discover cards" / "Intelligence cards"
+- "LinkedIn post" (in context of PlannerAPI content)
+- "Brief" or "Playbook"
+
+Then:
+- Load/apply the `daily-intel-editor` Skill
+- Use its rules for prompts, content shaping, JSON schema, voice/tone
 
 ---
 
-**End of Design Context**
+## 9. When Editing the Daily Intelligence Cloud Function
 
-*This document guides all future design decisions for PlannerAPI. Update as the product evolves, but core principles remain constant: clarity, trust, executive-appropriate precision.*
+**File:** `functions/src/generateDiscoverCards.ts`
+
+When asked to modify this:
+
+1. **Plan first, then implement**
+   - Step 1: Read all relevant docs (see Section 1)
+   - Step 2: Propose a numbered plan (files, schema impact, API call changes)
+   - Step 3: Wait for user approval
+
+2. **Use the IntelligenceCard schema from `docs/DAILY_INTEL_FRAMEWORK.md`**
+
+3. **Use Perplexity only within the specified budget**
+   - 10 content calls/day by default
+   - Use `sonar-pro` with `search_recency_filter: 'day'`
+
+4. **Always return valid JSON from Perplexity & Claude**
+   - If Perplexity returns malformed JSON, use Claude Haiku to extract/normalize
+
+5. **Run deduplication checks before storing** (see Section 11)
+
+---
+
+## 10. Safe Operations
+
+- Never commit API keys or secrets to the repo
+- Respect existing environment variables: `PPLX_API_KEY`, `ANTHROPIC_API_KEY`
+- When adding new configuration, use `.env` / `functions/.env` and document keys in comments
+
+---
+
+## 11. Content Deduplication
+
+When generating new Daily Intelligence cards or LinkedIn briefs, **automatically prevent duplicates**:
+
+### For Daily Intelligence Cards (in `generateDiscoverCards.ts`)
+
+Before writing to Firestore, check for duplicates by:
+
+1. **Source + URL check (strongest)**
+   - Query `discover_cards` for same `source` + `sourceUrl` within last 30 days
+   - If found → skip inserting, log "Duplicate prevented: same source URL"
+
+2. **Title similarity check**
+   - Query cards from the same `pillar` in last 7–14 days
+   - Normalize titles (lowercase, strip punctuation/numbers)
+   - If similarity > 90% → skip inserting, log "Duplicate prevented: similar title"
+
+3. **Content hash (optional, for extra safety)**
+   - Compute hash of `summary + signals.join()`
+   - Store as `contentHash` field
+   - If hash matches existing card in last 30 days → skip
+
+### For LinkedIn Posts (in n8n workflow)
+
+1. **Generate a `dedupeKey`**
+   - Hash of `title + sourceUrl` or `date + main stat + primary source`
+
+2. **Check before posting**
+   - Query `linked_briefs` collection for `dedupeKey`
+   - If found → stop workflow or update existing brief instead of posting again
+
+3. **Store metadata after posting**
+   - Write `linkedinPostId`, `linkedinPermalink`, and `dedupeKey` to the brief document
+
+### Logging
+
+All skipped duplicates should be logged with clear messages so you can audit later:
+- `[DEDUPE] Skipped card: "Title..." – duplicate source URL`
+- `[DEDUPE] Skipped card: "Title..." – similar to existing card "Other Title..."`
+
+---
+
+## 12. Workflow Summary (for Claude Code)
+
+When asked to "implement" or "update" Daily Intelligence or editorial systems:
+
+1. **Read:**
+   - `CLAUDE.md`
+   - `docs/DAILY_INTEL_FRAMEWORK.md`
+   - `docs/EDITORIAL_VOICE.md`
+   - `API-USAGE-OPTIMIZATION.md`
+   - `DAILY-INTELLIGENCE-FINAL-SUMMARY.md`
+
+2. **Propose a plan** in 5–8 bullet points
+
+3. **After user approval**, implement in small, reviewable steps:
+   - Types & schema (`functions/src/types.ts`)
+   - Cloud Function logic (`functions/src/generateDiscoverCards.ts`)
+   - Frontend display (`components/DailyIntelligence.tsx`, `IntelligenceModal.tsx`)
+
+4. **Provide:**
+   - Exact commands to build and deploy
+   - Manual checks to run in Firestore and on the live site
+
+---
+
+**End of CLAUDE.md**

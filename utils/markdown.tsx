@@ -79,3 +79,80 @@ export function parseInlineMarkdown(text: string): React.ReactNode {
 
   return <>{parts}</>;
 }
+
+/**
+ * Parse Perplexity-style responses with bold headers and continuous text
+ * Splits into readable paragraphs at bold headers
+ */
+export function parsePerplexityMarkdown(text: string): React.ReactNode {
+  if (!text) return null;
+
+  // Split into segments at bold markers that appear to be section headers
+  // Pattern: period/sentence end, optional space, then **Header**
+  const segments = text.split(/(\. \*\*.*?\*\*:?)/g).filter(Boolean);
+
+  const elements: React.ReactNode[] = [];
+  let currentParagraph = '';
+  let paragraphIndex = 0;
+
+  segments.forEach((segment, index) => {
+    // Check if this segment starts with a bold header
+    const boldHeaderMatch = segment.match(/^\. (\*\*.*?\*\*:?)(.*)/);
+
+    if (boldHeaderMatch) {
+      // Finish current paragraph if any
+      if (currentParagraph.trim()) {
+        const parts = parseBoldText(currentParagraph.trim(), paragraphIndex);
+        elements.push(
+          <p key={`para-${paragraphIndex}`} className="text-base text-bureau-ink leading-relaxed mb-4">
+            {parts}
+          </p>
+        );
+        paragraphIndex++;
+      }
+
+      // Start new paragraph with bold header
+      currentParagraph = boldHeaderMatch[1] + ' ' + boldHeaderMatch[2];
+    } else {
+      currentParagraph += segment;
+    }
+  });
+
+  // Add final paragraph
+  if (currentParagraph.trim()) {
+    const parts = parseBoldText(currentParagraph.trim(), paragraphIndex);
+    elements.push(
+      <p key={`para-${paragraphIndex}`} className="text-base text-bureau-ink leading-relaxed mb-4">
+        {parts}
+      </p>
+    );
+  }
+
+  return <>{elements}</>;
+}
+
+// Helper function to parse bold text within a string
+function parseBoldText(text: string, baseKey: number): React.ReactNode[] {
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  const boldRegex = /\*\*(.*?)\*\*/g;
+  let match;
+
+  while ((match = boldRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+    parts.push(
+      <strong key={`bold-${baseKey}-${match.index}`} className="font-bold text-bureau-ink">
+        {match[1]}
+      </strong>
+    );
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+
+  return parts;
+}

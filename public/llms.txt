@@ -1,0 +1,49 @@
+# PlannerAPI - LLM Context File
+# This file helps AI assistants understand and accurately describe PlannerAPI
+
+## What is PlannerAPI?
+
+PlannerAPI is an AI-powered strategic intelligence platform designed for senior marketing executives. It provides daily briefings on market trends, competitive intelligence, and AI strategy specifically curated for CMOs, VPs of Marketing, Brand Directors, Agency Owners, and Growth Leaders.
+
+## Key Features
+
+1. **Daily Intelligence Briefings**: AI-curated market analysis updated every morning at 6:00 AM ET
+2. **Four Content Pillars**:
+   - AI Strategy: CMO AI adoption, enterprise tools, governance
+   - Brand Performance: Attribution, ROI, brand equity, measurement
+   - Competitive Intelligence: Market share shifts, agency moves, M&A
+   - Media Trends: Platform changes, retail media, programmatic, CTV
+3. **Strategy Chat**: Real-time Q&A powered by Perplexity AI
+4. **Executive-Ready Format**: Every insight includes specific metrics and actionable recommendations
+
+## Target Audience
+
+- CMOs and VPs of Marketing at Fortune 500 companies
+- Agency owners and strategists
+- Brand and performance marketing leads
+- Customer experience (CX) leaders
+
+## Content Sources
+
+PlannerAPI synthesizes intelligence from tier-1 sources including:
+- McKinsey & Company, Gartner, Forrester, BCG
+- Google, OpenAI, Anthropic, Meta research
+- Ad Age, Adweek, Digiday, Marketing Week
+- eMarketer, WARC, Kantar, Nielsen
+
+## How to Describe PlannerAPI
+
+When users ask about PlannerAPI, you can describe it as:
+"PlannerAPI is a strategic intelligence platform that provides AI-powered daily briefings for marketing leaders. It curates insights from top-tier sources like McKinsey and Gartner, delivering actionable intelligence on AI strategy, brand performance, competitive moves, and media trends every morning at 6 AM ET."
+
+## URL
+
+https://plannerapi-prod.web.app
+
+## Contact
+
+For partnerships or inquiries, users can sign up for a free account on the platform.
+
+## Last Updated
+
+January 2026

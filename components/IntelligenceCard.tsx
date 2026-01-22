@@ -89,7 +89,10 @@ export const IntelligenceCard: React.FC<IntelligenceCardProps> = ({ id, date, ti
           </div>
 
           <button
-            onClick={() => onDeepResearch?.(`Strategic breakdown: ${title}`, 'Perplexity')}
+            onClick={() => {
+              console.log('[IntelligenceCard] Read Analysis clicked for:', title);
+              onDeepResearch?.(`Strategic breakdown: ${title}`, 'Perplexity');
+            }}
             className="text-sm font-bold flex items-center gap-2 px-5 py-2.5 rounded-lg bg-bureau-ink text-white hover:bg-gray-800 transition-all"
           >
             Read Analysis <ArrowRight className="w-4 h-4" />

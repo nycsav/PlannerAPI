@@ -22,8 +22,8 @@ export const Logo: React.FC<LogoProps> = ({ className = "h-8", variant = 'termin
         <line x1="22" y1="28" x2="30" y2="28" stroke="white" strokeWidth="4" />
       </svg>
       {showText && (
-        <span className="font-display font-black tracking-tightest uppercase italic text-bureau-ink">
-          PLANNER<span className="text-bureau-signal not-italic ml-1">API</span>
+        <span className="font-display text-xl md:text-2xl font-extrabold tracking-tightest uppercase italic text-bureau-ink" style={{ fontStyle: 'italic' }}>
+          PLANNER<span className="text-bureau-signal not-italic font-extrabold ml-0.5" style={{ fontStyle: 'normal' }}>API</span>
         </span>
       )}
     </div>

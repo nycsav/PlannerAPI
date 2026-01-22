@@ -1,0 +1,436 @@
+/**
+ * CopilotKit Custom Styles - PlannerAPI Design System
+ * Uses data attributes for precise targeting
+ * Colors: Navy (#1B365D), Orange (#FF6B35), Blue (#2563EB)
+ * Fonts: Outfit (display), Inter/Roboto (body), Roboto Mono (code)
+ */
+
+/* ===================================
+   HEADER
+   =================================== */
+[data-copilot-chat-header] {
+  background-color: #1B365D; /* planner-navy */
+  color: white;
+  border-bottom: 2px solid #FF6B35; /* planner-orange */
+  padding: 1.5rem;
+  font-family: "Outfit", sans-serif;
+  font-weight: 900;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ===================================
+   MESSAGES
+   =================================== */
+[data-copilot-message-role="user"] {
+  background-color: #1B365D; /* planner-navy */
+  color: white;
+  border-radius: 4px;
+  padding: 1rem;
+  font-family: "Inter", "Roboto", sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+[data-copilot-message-role="assistant"] {
+  background-color: #FFFFFF;
+  border: 2px solid #E2E8F0; /* bureau-border */
+  color: #0F172A; /* bureau-ink */
+  border-radius: 4px;
+  padding: 1rem;
+  font-family: "Inter", "Roboto", sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+/* Assistant message links */
+[data-copilot-message-role="assistant"] a {
+  color: #2563EB; /* bureau-signal */
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+[data-copilot-message-role="assistant"] a:hover {
+  color: #FF6B35; /* planner-orange */
+}
+
+/* ===================================
+   INPUT AREA
+   =================================== */
+[data-copilot-input] {
+  border: 2px solid #E2E8F0; /* bureau-border */
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  font-family: "Inter", "Roboto", sans-serif;
+  font-size: 1rem;
+  color: #0F172A; /* bureau-ink */
+  background-color: #FFFFFF;
+  width: 100%;
+}
+
+[data-copilot-input]:focus {
+  border-color: #2563EB; /* bureau-signal */
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+[data-copilot-input]::placeholder {
+  color: #64748B; /* bureau-slate */
+  opacity: 0.6;
+}
+
+/* ===================================
+   SEND BUTTON
+   =================================== */
+[data-copilot-send-button] {
+  background-color: #FF6B35; /* planner-orange */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.75rem 1.5rem;
+  font-family: "Outfit", sans-serif;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+[data-copilot-send-button]:hover {
+  background-color: #E55A2B; /* Darker orange */
+}
+
+[data-copilot-send-button]:active {
+  transform: scale(0.98);
+}
+
+[data-copilot-send-button]:disabled {
+  background-color: #E2E8F0; /* bureau-border */
+  color: #94A3B8; /* muted */
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ===================================
+   SIDEBAR CONTAINER
+   =================================== */
+[data-copilot-sidebar] {
+  font-family: "Inter", "Roboto", sans-serif;
+  border-left: 2px solid #E2E8F0; /* bureau-border */
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.08);
+  background-color: #FFFFFF;
+}
+
+@media (min-width: 768px) {
+  [data-copilot-sidebar] {
+    width: 420px;
+  }
+}
+
+/* ===================================
+   LOADING STATES
+   =================================== */
+[data-copilot-loading] {
+  color: #2563EB; /* bureau-signal */
+}
+
+[data-copilot-spinner] {
+  border-color: #E2E8F0;
+  border-top-color: #2563EB; /* bureau-signal */
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===================================
+   SUGGESTIONS / QUICK ACTIONS
+   =================================== */
+[data-copilot-suggestion] {
+  background-color: #FFFFFF;
+  border: 2px solid #E2E8F0; /* bureau-border */
+  color: #64748B; /* bureau-slate */
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  font-family: "Inter", "Roboto", sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 0.25rem;
+}
+
+[data-copilot-suggestion]:hover {
+  border-color: #2563EB; /* bureau-signal */
+  color: #2563EB;
+  background-color: #F8FAFC;
+  transform: translateY(-1px);
+}
+
+/* ===================================
+   TOGGLE BUTTON (FAB)
+   =================================== */
+[data-copilot-toggle-button] {
+  background-color: #1B365D; /* planner-navy */
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 3.5rem;
+  height: 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(27, 54, 93, 0.4);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+[data-copilot-toggle-button]:hover {
+  background-color: #FF6B35; /* planner-orange */
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(255, 107, 53, 0.4);
+}
+
+[data-copilot-toggle-button]:active {
+  transform: scale(1.05);
+}
+
+/* ===================================
+   INTELLIGENCE BRIEF CARD
+   =================================== */
+.intelligence-brief-card {
+  border: 2px solid #E2E8F0;
+  border-radius: 4px;
+  background-color: #FFFFFF;
+  padding: 1.5rem;
+  margin: 1rem 0;
+}
+
+.intelligence-brief-card h3 {
+  font-family: "Outfit", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 900;
+  font-size: 0.875rem;
+  color: #1B365D; /* planner-navy */
+  margin-bottom: 1rem;
+}
+
+.intelligence-brief-card section {
+  margin-bottom: 1.5rem;
+}
+
+.intelligence-brief-card section:last-child {
+  margin-bottom: 0;
+}
+
+.intelligence-brief-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.intelligence-brief-card li {
+  padding-left: 0;
+  margin-bottom: 0.75rem;
+}
+
+.intelligence-brief-card a {
+  color: #2563EB; /* bureau-signal */
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.intelligence-brief-card a:hover {
+  color: #FF6B35; /* planner-orange */
+}
+
+/* ===================================
+   CODE BLOCKS
+   =================================== */
+[data-copilot-message-role="assistant"] code {
+  font-family: "Roboto Mono", monospace;
+  background-color: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 3px;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.875rem;
+  color: #0F172A;
+}
+
+[data-copilot-message-role="assistant"] pre {
+  font-family: "Roboto Mono", monospace;
+  background-color: #F8FAFC;
+  border: 2px solid #E2E8F0;
+  border-radius: 4px;
+  padding: 1rem;
+  overflow-x: auto;
+  font-size: 0.875rem;
+  margin: 1rem 0;
+}
+
+[data-copilot-message-role="assistant"] pre code {
+  background-color: transparent;
+  border: none;
+  padding: 0;
+}
+
+/* ===================================
+   SCROLLBAR STYLING
+   =================================== */
+[data-copilot-messages]::-webkit-scrollbar {
+  width: 0.5rem;
+}
+
+[data-copilot-messages]::-webkit-scrollbar-track {
+  background-color: #F8FAFC;
+}
+
+[data-copilot-messages]::-webkit-scrollbar-thumb {
+  background-color: #CBD5E1;
+  border-radius: 0.25rem;
+}
+
+[data-copilot-messages]::-webkit-scrollbar-thumb:hover {
+  background-color: #94A3B8;
+}
+
+/* ===================================
+   EMPTY STATE
+   =================================== */
+[data-copilot-empty-state] {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #64748B; /* bureau-slate */
+  font-family: "Inter", "Roboto", sans-serif;
+}
+
+[data-copilot-empty-state] h3 {
+  font-family: "Outfit", sans-serif;
+  font-weight: 900;
+  font-size: 1.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #1B365D; /* planner-navy */
+  margin-bottom: 0.5rem;
+}
+
+[data-copilot-empty-state] p {
+  font-size: 0.875rem;
+  color: #64748B;
+}
+
+/* ===================================
+   TYPING INDICATOR
+   =================================== */
+[data-copilot-typing-indicator] {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background-color: #F8FAFC;
+  border: 2px solid #E2E8F0;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+[data-copilot-typing-indicator] span {
+  width: 8px;
+  height: 8px;
+  background-color: #2563EB; /* bureau-signal */
+  border-radius: 50%;
+  animation: typing-dot 1.4s infinite ease-in-out;
+}
+
+[data-copilot-typing-indicator] span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+[data-copilot-typing-indicator] span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing-dot {
+  0%, 60%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ===================================
+   RESPONSIVE ADJUSTMENTS
+   =================================== */
+@media (max-width: 768px) {
+  [data-copilot-sidebar] {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100vh;
+  }
+
+  [data-copilot-chat-header] {
+    padding: 1rem;
+  }
+
+  [data-copilot-message-role="user"],
+  [data-copilot-message-role="assistant"] {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .intelligence-brief-card {
+    padding: 1rem;
+  }
+
+  [data-copilot-toggle-button] {
+    width: 3rem;
+    height: 3rem;
+  }
+}
+
+/* ===================================
+   ACCESSIBILITY
+   =================================== */
+[data-copilot-send-button]:focus-visible,
+[data-copilot-input]:focus-visible,
+[data-copilot-suggestion]:focus-visible,
+[data-copilot-toggle-button]:focus-visible {
+  outline: 3px solid #2563EB; /* bureau-signal */
+  outline-offset: 2px;
+}
+
+/* Ensure sufficient contrast for accessibility */
+@media (prefers-contrast: high) {
+  [data-copilot-message-role="assistant"] {
+    border-width: 3px;
+  }
+
+  [data-copilot-input] {
+    border-width: 3px;
+  }
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===================================
+   DARK MODE SUPPORT (Future)
+   =================================== */
+@media (prefers-color-scheme: dark) {
+  /* Currently maintaining light theme for consistency */
+  /* Add dark mode overrides here when design system expands */
+}

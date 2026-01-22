@@ -1,0 +1,91 @@
+name: plannerapi_frontend_impeccable
+description: >
+  Use plannerAPI's existing visual identity as a starting point, then apply
+  light, high-leverage refinements to the UX and visual system. Design for
+  three primary user types: agency/brand strategists, brand marketers, and
+  data analysts. Preserve existing functionality and keep changes small,
+  focused, and launch-ready.
+
+guidelines:
+  # How to treat existing guidelines
+  - Treat plannerAPI-visual-identity-brand-guidelines.md as Version 1.0:
+      a strong reference, not immutable law.
+  - Only evolve the system where a small change yields a clear usability win.
+  - Avoid large redesigns or net-new design concepts for this launch.
+
+  # Audience and usage
+  - Design for cross-functional teams working together on campaigns and briefs:
+      - Strategists: need fast scanning, clear story, and obvious next actions.
+      - Brand marketers: need to see campaigns, channels, and creative levers.
+      - Data analysts: need precise metrics, filters, and dense views without clutter.
+  - Make navigation labels, headings, and empty states understandable to all three
+    roles, without jargon tied to a single discipline.
+
+  # Typography
+  - Use Roboto as the primary typeface for all text (headlines, body, captions).
+  - Use Roboto Mono only for code, endpoints, or technical callouts.
+  - Keep the type scale simple (a small set of heading sizes) and readable on
+    laptop and common external monitor resolutions.
+
+  # Color system
+  - Use the core palette as the base:
+      - Deep Navy #1A2332 for primary text and key headings.
+      - Burnt Sienna #E67E22 for primary CTAs and key highlights.
+      - Warm Off-White #F8F6F3 for main page and card backgrounds.
+  - Keep secondary neutrals subtle; avoid introducing bright, unrelated colors.
+  - Do not use gradients, heavy shadows, or glossy effects.
+
+  # Layout, spacing, and density
+  - Keep layouts clean, grid-aligned, with enough whitespace to scan quickly.
+  - Allow denser views (tables, lists) for analysts, but avoid wall-of-text layouts.
+  - Prefer simple, single-column flows on mobile and narrow widths.
+  - Do not introduce complex, multi-step wizards for this launch.
+
+  # Interaction and states
+  - Ensure primary actions are visually distinct from secondary actions.
+  - Provide clear hover, focus, loading, and error states using subtle changes
+    in color, weight, and borders rather than heavy animation.
+  - Empty states should briefly explain:
+      - what the user is looking at,
+      - what’s missing,
+      - and a single next step (e.g., add data, change filters).
+
+  # Evolution rules
+  - When deviating from the v1.0 document, keep the overall feel:
+      technical, minimal, and practitioner-focused.
+  - Prefer token-level changes (colors, spacing, typography) and small component
+    tweaks over structural rewrites.
+  - Add short comments in code only where a decision may be non-obvious.
+
+operations:
+  - name: refactor_frontend_for_visual_consistency_and_upgrade
+    description: >
+      Apply modest, high-impact refinements to existing screens: tighten
+      typography, spacing, colors, and states using the plannerAPI system,
+      and make them work smoothly for strategists, brand marketers, and
+      data analysts. Keep behavior unchanged.
+    instructions:
+      - Inspect shared layout components, key pages, and common UI patterns.
+      - Centralize typography and color tokens where practical; avoid creating
+        a large new design system for this launch.
+      - Propose changes as diffs, with one or two sentences of rationale when
+        the UX benefit is not obvious.
+      - Keep each refactor small and self-contained so it could ship as a
+        single PR.
+      - Do not introduce new frontend dependencies unless explicitly requested.
+
+  - name: design_new_screen_with_evolved_brand_system
+    description: >
+      When a net-new screen is required, design it as a straightforward
+      extension of the current system, using existing components and tokens
+      wherever possible.
+    instructions:
+      - Start from existing layouts (e.g., section headers, cards, tables)
+        instead of inventing new patterns.
+      - Apply the same typography, palette, and spacing rules defined above.
+      - Make sure each new screen answers, for all three roles:
+          "What is this?", "Why should I care?", and "What can I do next?"
+      - Document any genuinely new pattern with a brief comment, but avoid
+        expanding the surface area of the design system unless necessary.
+
+

@@ -16,6 +16,12 @@ const PPLX_API_KEY = process.env.PPLX_API_KEY;
 const PPLX_MODEL_FAST = process.env.PPLX_MODEL_FAST || 'sonar';
 const PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions';
 
+type IntelligenceFramework = {
+  id: string;
+  label: string;
+  actions: string[];
+};
+
 type PlannerChatResponse = {
   signals: Array<{
     id: string;
@@ -26,6 +32,7 @@ type PlannerChatResponse = {
   }>;
   implications: string[];
   actions: string[];
+  frameworks?: IntelligenceFramework[];
 };
 
 interface PerplexityResponse {
@@ -50,10 +57,20 @@ interface PerplexityResponse {
  * POST /chat-intel
  * Generate strategic intelligence brief
  */
+/**
+ * Audience-specific context for personalized responses
+ */
+const AUDIENCE_CONTEXT = {
+  CMO: 'Focus on board-level implications, budget ROI, and strategic positioning.',
+  'VP Marketing': 'Focus on operational execution, team resources, and vendor evaluation.',
+  'Brand Director': 'Focus on brand equity, creative differentiation, and positioning.',
+  'Growth Leader': 'Focus on acquisition channels, conversion metrics, and retention tactics.'
+};
+
 router.post('/chat-intel', async (req: Request, res: Response) => {
   try {
     // Validate request body
-    const { query } = req.body;
+    const { query, audience } = req.body;
 
     if (!query || typeof query !== 'string') {
       res.status(400).json({
@@ -78,8 +95,8 @@ router.post('/chat-intel', async (req: Request, res: Response) => {
       return;
     }
 
-    // Call Perplexity API
-    const response = await fetchFastIntel({ query });
+    // Call Perplexity API with audience context
+    const response = await fetchFastIntel({ query, audience: audience || 'CMO' });
 
     // Return successful response
     res.status(200).json(response);
@@ -98,15 +115,31 @@ router.post('/chat-intel', async (req: Request, res: Response) => {
 /**
  * Fetch fast intelligence using Perplexity Sonar
  */
-async function fetchFastIntel(args: { query: string }): Promise<PlannerChatResponse> {
-  const { query } = args;
+async function fetchFastIntel(args: { query: string; audience: string }): Promise<PlannerChatResponse> {
+  const { query, audience } = args;
+  const audienceContext = AUDIENCE_CONTEXT[audience as keyof typeof AUDIENCE_CONTEXT] || AUDIENCE_CONTEXT.CMO;
 
-  const systemPrompt = `You are a strategic intelligence analyst for C-suite marketing executives (CMOs, VPs of Marketing, Brand Directors, Growth Leaders).
+  const systemPrompt = `You are a strategic intelligence analyst for a ${audience} and other C-suite marketing executives.
+
+${audienceContext}
 
 Analyze the query and provide:
 1. SIGNALS (2-5 key insights) - Each with a title, 1-2 sentence summary, and source
 2. IMPLICATIONS (2-4 points) - "What this means" for marketing strategy
 3. ACTIONS (2-4 points) - Specific, actionable next steps
+4. FRAMEWORKS (2-3 relevant strategic frameworks) - Based on the query topic, suggest context-specific frameworks with actionable steps
+
+Based on the query topic, suggest 2-3 relevant strategic frameworks from categories like:
+- Digital Strategy
+- Media Strategy
+- CX Strategy
+- Data Strategy
+- Content Strategy
+- Brand Strategy
+- Growth Strategy
+- Product Marketing
+
+For each framework, provide 3 specific, actionable steps tailored to this query.
 
 Format your response EXACTLY as follows:
 
@@ -126,6 +159,17 @@ Source: [Source Name] | [URL]
 ## ACTIONS
 - [Action 1]
 - [Action 2]
+
+## FRAMEWORKS
+### [Framework 1 Name] (e.g., Digital Strategy)
+- [Actionable step 1 specific to this query]
+- [Actionable step 2 specific to this query]
+- [Actionable step 3 specific to this query]
+
+### [Framework 2 Name] (e.g., Media Strategy)
+- [Actionable step 1 specific to this query]
+- [Actionable step 2 specific to this query]
+- [Actionable step 3 specific to this query]
 
 Keep it concise, data-driven, and business-focused.`;
 
@@ -165,10 +209,12 @@ function parsePerplexityResponse(content: string, citations: string[]): PlannerC
   const signals: PlannerChatResponse['signals'] = [];
   const implications: string[] = [];
   const actions: string[] = [];
+  const frameworks: IntelligenceFramework[] = [];
 
   const signalsSection = extractSection(content, 'SIGNALS');
   const implicationsSection = extractSection(content, 'IMPLICATIONS');
   const actionsSection = extractSection(content, 'ACTIONS');
+  const frameworksSection = extractSection(content, 'FRAMEWORKS');
 
   // Parse signals
   if (signalsSection) {
@@ -214,6 +260,34 @@ function parsePerplexityResponse(content: string, citations: string[]): PlannerC
     actions.push(...actionLines);
   }
 
+  // Parse frameworks
+  if (frameworksSection) {
+    const frameworkBlocks = frameworksSection.split(/^###\s+/m).filter(f => f.trim());
+
+    frameworkBlocks.forEach((block) => {
+      const lines = block.trim().split('\n').filter(l => l.trim());
+      if (lines.length === 0) return;
+
+      // First line is the framework name
+      const label = lines[0].trim().replace(/\(.*\)/, '').trim();
+      const id = label.toLowerCase().replace(/\s+/g, '-');
+
+      // Rest are action items (lines starting with -)
+      const frameworkActions = lines
+        .slice(1)
+        .filter(l => l.trim().startsWith('-'))
+        .map(l => l.trim().replace(/^-\s*/, ''));
+
+      if (frameworkActions.length > 0) {
+        frameworks.push({
+          id,
+          label,
+          actions: frameworkActions
+        });
+      }
+    });
+  }
+
   // Fallback: If parsing fails, create from raw content
   if (signals.length === 0) {
     const bullets = content.match(/^[-•]\s+.+$/gm) || [];
@@ -238,7 +312,13 @@ function parsePerplexityResponse(content: string, citations: string[]): PlannerC
     actions.push('Analyze internal data to validate findings');
   }
 
-  return { signals, implications, actions };
+  // Return with frameworks (optional field - frontend will fall back to defaults if empty)
+  return {
+    signals,
+    implications,
+    actions,
+    frameworks: frameworks.length > 0 ? frameworks : undefined
+  };
 }
 
 function extractSection(content: string, sectionName: string): string | null {

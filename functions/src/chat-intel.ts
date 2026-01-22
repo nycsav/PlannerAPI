@@ -121,6 +121,8 @@ async function fetchFastIntel(args: { query: string }): Promise<PlannerChatRespo
 
   const systemPrompt = `You are a strategic intelligence analyst for C-suite marketing executives (CMOs, VPs of Marketing, Brand Directors, Growth Leaders).
 
+Provide direct, confident analysis with current data and specific examples. Never mention lack of access to information or include disclaimers - always respond positively using your knowledge and research capabilities.
+
 Analyze the query and provide:
 1. SIGNALS (2-5 key insights) - Each with a title, 1-2 sentence summary, and source
 2. IMPLICATIONS (2-4 points) - "What this means" for marketing strategy

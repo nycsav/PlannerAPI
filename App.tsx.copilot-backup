@@ -1,0 +1,623 @@
+
+import React, { useState, useEffect } from 'react';
+import { CopilotKit } from "@copilotkit/react-core";
+import { CopilotSidebar } from "@copilotkit/react-ui";
+import "@copilotkit/react-ui/styles.css";
+import "./src/styles/copilot-overrides.css";
+import { IntelligenceBriefRenderer } from './components/IntelligenceBriefRenderer';
+import { Layout } from './components/Layout';
+import { IntelligenceCard } from './components/IntelligenceCard';
+import { ConversationalBrief } from './components/ConversationalBrief';
+import { IntelligenceModal, IntelligencePayload } from './components/IntelligenceModal';
+import { EngineInstructions } from './components/EngineInstructions';
+import { HeroSearch } from './components/HeroSearch';
+import { ExecutiveStrategyChat } from './components/ExecutiveStrategyChat';
+import { SignupModal } from './components/SignupModal';
+import { DailyIntelligence } from './components/DailyIntelligence';
+import { PostSignupWelcome } from './components/PostSignupWelcome';
+import { FeatureTour } from './components/FeatureTour';
+import { WelcomeTooltip } from './components/WelcomeTooltip';
+import { NewContentBadge } from './components/NewContentBadge';
+import { useAudience } from './contexts/AudienceContext';
+import { useAuth } from './contexts/AuthContext';
+import {
+  isFirstVisit,
+  markAsVisited,
+  hasCompletedOnboarding,
+  markOnboardingCompleted,
+  hasCompletedTour,
+  markTourCompleted,
+  hasWelcomeTooltipBeenDismissed,
+  markWelcomeTooltipDismissed,
+  updateLastVisit,
+  shouldShowNewContentBadge,
+  getNewContentCount,
+  updateLastDailyIntelCheck,
+} from './utils/userState';
+
+type IntelligenceBriefing = {
+  id: string;
+  date: string;
+  title: string;
+  description: string;
+  theme: string;
+  query?: string;
+};
+
+const SectionHeader: React.FC<{ id: string; title: string; subtitle?: string; badge?: React.ReactNode }> = ({ id, title, subtitle, badge }) => (
+  <div className="mb-xl border-b border-bureau-ink/10 pb-md">
+    <div className="flex items-center gap-md">
+      <h2 className="font-display text-3xl md:text-4xl font-black text-bureau-ink uppercase tracking-tight">{title}</h2>
+      {badge}
+    </div>
+    {subtitle && (
+      <p className="text-base text-bureau-slate/70 mt-2">{subtitle}</p>
+    )}
+  </div>
+);
+
+const App: React.FC = () => {
+  const { audience } = useAudience();
+
+  const [searchState, setSearchState] = useState<{
+    isOpen: boolean;
+    query: string;
+    source: 'Claude' | 'Perplexity' | 'Gemini';
+    data?: any;
+  }>({
+    isOpen: false,
+    query: '',
+    source: 'Perplexity',
+    data: null
+  });
+
+  const [chatQuery, setChatQuery] = useState<string>('');
+  const [isChatActive, setIsChatActive] = useState<boolean>(false);
+
+  // Intelligence Modal state
+  const [intelligenceOpen, setIntelligenceOpen] = useState(false);
+  const [intelligencePayload, setIntelligencePayload] = useState<IntelligencePayload | null>(null);
+  const [isLoadingIntelligence, setIsLoadingIntelligence] = useState(false);
+
+  // Signup Modal state
+  const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
+
+  // Onboarding state
+  const [showWelcomeTooltip, setShowWelcomeTooltip] = useState(false);
+  const [showPostSignupWelcome, setShowPostSignupWelcome] = useState(false);
+  const [showFeatureTour, setShowFeatureTour] = useState(false);
+  const { user } = useAuth();
+
+  // New content tracking
+  const [showNewBadge, setShowNewBadge] = useState(false);
+  const [newContentCount, setNewContentCount] = useState(0);
+
+  // Dynamic briefings state
+  const [briefings, setBriefings] = useState<IntelligenceBriefing[]>([]);
+  const [loadingBriefings, setLoadingBriefings] = useState<boolean>(true);
+
+  // Fallback briefings - business impact focus for C-suite marketing leaders
+  const FALLBACK_BRIEFINGS: IntelligenceBriefing[] = [
+    {
+      id: "LOG-201",
+      date: "19.01.2026",
+      title: "TikTok Shop Surges: $12B US Revenue Projection for 2026",
+      description: "Social commerce disrupts traditional e-commerce playbook. TikTok Shop projected to reach $12B US revenue in 2026, up 340% YoY. Brands allocating 15-25% of social budgets to shoppable video. Average conversion rates 2.8x higher than Instagram Shopping, driven by live commerce and creator partnerships. CMOs rethinking social-to-commerce attribution models.",
+      theme: "Market Trends"
+    },
+    {
+      id: "LOG-202",
+      date: "19.01.2026",
+      title: "AI Content Moderation Reduces Brand Safety Costs 67%",
+      description: "Automated brand safety achieves enterprise-scale efficiency. Leading brands using AI moderation (Google Jigsaw, OpenAI) reduce safety incidents by 78% while cutting review costs 67%. Real-time flagging prevents $2-4M annual reputation damage. Average deployment: 45 days with 3 FTEs. CMOs prioritizing AI safety over manual review for programmatic campaigns.",
+      theme: "AI Strategy"
+    },
+    {
+      id: "LOG-203",
+      date: "19.01.2026",
+      title: "B2B Marketing Attribution Gap Costs $8.9B Annually",
+      description: "Multi-touch attribution failures drive massive waste in B2B spend. 73% of B2B marketers cannot accurately attribute revenue to channels, resulting in $8.9B misallocated budget annually. Companies implementing AI attribution see 42% improvement in CAC and 3.1x ROI on marketing technology investments. Median payback period: 8 months.",
+      theme: "Revenue Growth"
+    },
+    {
+      id: "LOG-204",
+      date: "19.01.2026",
+      title: "Retail Media Consolidation: Top 3 Networks Hold 64% Share",
+      description: "Winner-take-most dynamics reshape retail media landscape. Amazon Ads (38%), Walmart Connect (16%), and Target Roundel (10%) command 64% of $65B retail media market. Smaller networks struggle for scale as brands consolidate to 2-3 primary partners. First-party data moats deepen competitive advantages. CMOs negotiating guaranteed ROAS deals at 4-6x benchmarks.",
+      theme: "Competitive Analysis"
+    },
+    {
+      id: "LOG-205",
+      date: "19.01.2026",
+      title: "Sustainability Claims Under Fire: 56% Face Greenwashing Scrutiny",
+      description: "Regulatory crackdown threatens brand positioning strategies. FTC investigates 56% of Fortune 500 sustainability marketing claims. Unsubstantiated green claims risk $10-50M fines plus reputation damage. Brands with third-party verified ESG credentials maintain 89% consumer trust vs. 34% for unverified claims. CMOs investing $2-5M in verification infrastructure to protect brand equity.",
+      theme: "Brand Intelligence"
+    },
+    {
+      id: "LOG-206",
+      date: "19.01.2026",
+      title: "Zero-Party Data Collection Drives 51% Higher Engagement",
+      description: "Explicit consumer preferences outperform behavioral inference. Brands collecting zero-party data (explicit preferences, intent) achieve 51% higher engagement rates and 34% improved conversion versus third-party cookies. Interactive quizzes, preference centers, and loyalty programs generate 2.3x more actionable insights. Average implementation cost: $400-600K for enterprise CDP with zero-party modules.",
+      theme: "Customer Retention"
+    }
+  ];
+
+  // Fetch intelligence and open modal
+  const fetchIntelligence = async (query: string, displayQuery?: string) => {
+    console.log('[App] fetchIntelligence called with query:', query, 'displayQuery:', displayQuery);
+    console.log('[App] Current intelligenceOpen state:', intelligenceOpen);
+    setIsLoadingIntelligence(true);
+    console.log('[App] Set isLoadingIntelligence to true');
+    setIntelligenceOpen(true); // Open modal immediately to show loading state
+    console.log('[App] Set intelligenceOpen to true');
+
+    try {
+      // Convert audience format from VP_Marketing to "VP Marketing"
+      const audienceFormatted = audience.replace(/_/g, ' ');
+
+      const res = await fetch('https://planners-backend-865025512785.us-central1.run.app/chat-intel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, audience: audienceFormatted })
+      });
+
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+
+      const data = await res.json();
+
+      // Use display query for modal, or extract clean query from detailed prompt
+      const cleanQuery = displayQuery || query.split('. Include:')[0].replace(/^Provide a detailed financial impact analysis for "|^Analyze the competitive landscape for "|^Create a detailed implementation roadmap for "/g, '').replace(/"/g, '');
+
+      // Generate topic-specific follow-up questions based on content
+      const generateFollowUps = (query: string, summary: string, moves: string[]) => {
+        const lowerQuery = query.toLowerCase();
+        const lowerSummary = summary.toLowerCase();
+
+        // Extract key metrics/facts from summary (concise version)
+        const extractKeyFacts = (text: string): string => {
+          // Extract just numbers and key phrases (under 100 chars)
+          const metrics = text.match(/(\$?\d+(?:\.\d+)?[KMB%]?|\d+x)/gi) || [];
+          const uniqueMetrics = [...new Set(metrics)].slice(0, 3).join(', ');
+          return uniqueMetrics || '';
+        };
+
+        const keyFacts = extractKeyFacts(summary);
+        const firstMoveShort = moves.length > 0 ? moves[0].substring(0, 100) + '...' : '';
+
+        // Detect topic categories from query and summary
+        const isAI = /\b(ai|artificial intelligence|machine learning|automation|gpt|llm)\b/i.test(query + summary);
+        const isFinance = /\b(revenue|cost|roi|budget|profit|pricing|financial|investment|funding)\b/i.test(query + summary);
+        const isMarket = /\b(market|trend|growth|share|expansion|opportunity|landscape)\b/i.test(query + summary);
+        const isBrand = /\b(brand|reputation|trust|positioning|identity|awareness|perception)\b/i.test(query + summary);
+        const isData = /\b(data|analytics|attribution|measurement|tracking|metrics)\b/i.test(query + summary);
+        const isRetention = /\b(retention|loyalty|churn|engagement|customer|lifetime value|ltv)\b/i.test(query + summary);
+        const isRegulatory = /\b(regulation|compliance|legal|policy|ftc|gdpr|law)\b/i.test(query + summary);
+        const isTechnology = /\b(platform|technology|software|tool|vendor|system|infrastructure)\b/i.test(query + summary);
+        const isCompetitive = /\b(competitor|competitive|market share|consolidation|positioning)\b/i.test(query + summary);
+
+        const followUps: { label: string; question: string; displayQuery: string }[] = [];
+
+        // Generate 3 most relevant follow-ups based on detected topics
+        // Include concise context for relevance without excessive prompt length
+        if (isAI) {
+          followUps.push({
+            label: 'Implementation Guide',
+            question: `Create an AI implementation guide for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include vendor selection, pilot design, risk mitigation, team needs, timeline, and metrics. ${firstMoveShort ? `Reference: ${firstMoveShort}` : ''}`,
+            displayQuery: `AI implementation: ${cleanQuery}`
+          });
+        }
+
+        if (isFinance) {
+          followUps.push({
+            label: 'ROI Analysis',
+            question: `Provide detailed ROI analysis for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include cost breakdown, revenue impact, payback period, budget recommendations, and financial modeling. ${firstMoveShort ? `Context: ${firstMoveShort}` : ''}`,
+            displayQuery: `ROI analysis: ${cleanQuery}`
+          });
+        }
+
+        if (isCompetitive) {
+          followUps.push({
+            label: 'Competitive Strategy',
+            question: `Develop competitive strategy for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include competitor analysis, differentiation, positioning, and tactical moves. ${firstMoveShort ? `Reference: ${firstMoveShort}` : ''}`,
+            displayQuery: `Competitive response: ${cleanQuery}`
+          });
+        }
+
+        if (isBrand) {
+          followUps.push({
+            label: 'Brand Impact',
+            question: `Analyze brand implications of "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include reputation risks, positioning opportunities, messaging strategy, and brand protection. ${firstMoveShort ? `Context: ${firstMoveShort}` : ''}`,
+            displayQuery: `Brand implications: ${cleanQuery}`
+          });
+        }
+
+        if (isData) {
+          followUps.push({
+            label: 'Measurement Strategy',
+            question: `Create measurement strategy for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include KPIs, attribution models, data infrastructure, reporting frameworks, and dashboards. ${firstMoveShort ? `Reference: ${firstMoveShort}` : ''}`,
+            displayQuery: `Measurement approach: ${cleanQuery}`
+          });
+        }
+
+        if (isRetention) {
+          followUps.push({
+            label: 'Retention Tactics',
+            question: `Develop retention strategy for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include loyalty design, engagement tactics, churn reduction, LTV optimization, and benchmarks. ${firstMoveShort ? `Context: ${firstMoveShort}` : ''}`,
+            displayQuery: `Retention strategy: ${cleanQuery}`
+          });
+        }
+
+        if (isRegulatory) {
+          followUps.push({
+            label: 'Compliance Plan',
+            question: `Create compliance plan for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include regulatory requirements, risk assessment, legal review, policy updates, and timeline. ${firstMoveShort ? `Reference: ${firstMoveShort}` : ''}`,
+            displayQuery: `Compliance strategy: ${cleanQuery}`
+          });
+        }
+
+        if (isTechnology) {
+          followUps.push({
+            label: 'Vendor Evaluation',
+            question: `Evaluate vendors for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include comparison, pricing, integration requirements, and selection criteria. ${firstMoveShort ? `Context: ${firstMoveShort}` : ''}`,
+            displayQuery: `Vendor landscape: ${cleanQuery}`
+          });
+        }
+
+        if (isMarket) {
+          followUps.push({
+            label: 'Market Entry',
+            question: `Identify market opportunities for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include sizing, entry strategy, growth projections, and resources. ${firstMoveShort ? `Reference: ${firstMoveShort}` : ''}`,
+            displayQuery: `Market opportunity: ${cleanQuery}`
+          });
+        }
+
+        // If less than 3 follow-ups, add contextual ones to reach 3
+        if (followUps.length < 3) {
+          if (!followUps.some(f => f.label.includes('Implementation'))) {
+            followUps.push({
+              label: 'Implementation Roadmap',
+              question: `Create 90-day implementation plan for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include milestones, resources, metrics, and roadblocks. ${firstMoveShort ? `Start with: ${firstMoveShort}` : ''}`,
+              displayQuery: `Implementation plan: ${cleanQuery}`
+            });
+          }
+        }
+
+        if (followUps.length < 3) {
+          if (!followUps.some(f => f.label.includes('Financial') || f.label.includes('ROI'))) {
+            followUps.push({
+              label: 'Budget Impact',
+              question: `Analyze budget implications of "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include investment needs, savings potential, reallocation strategy, and justification. ${firstMoveShort ? `Context: ${firstMoveShort}` : ''}`,
+              displayQuery: `Budget analysis: ${cleanQuery}`
+            });
+          }
+        }
+
+        if (followUps.length < 3) {
+          followUps.push({
+            label: 'Risk Assessment',
+            question: `Assess risks for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include risk identification, impact assessment, mitigation plans, and contingencies. ${firstMoveShort ? `Reference: ${firstMoveShort}` : ''}`,
+            displayQuery: `Risk analysis: ${cleanQuery}`
+          });
+        }
+
+        // Return top 3 most relevant
+        return followUps.slice(0, 3);
+      };
+
+      // Build payload for modal
+      const summaryText = data.implications?.join(' ') || 'No summary available.';
+      const movesArray = data.actions || [];
+
+      const payload: IntelligencePayload = {
+        query: cleanQuery, // Show clean user-friendly query in modal
+        summary: summaryText,
+        keySignals: data.signals?.map((s: any) => s.title || s.summary || s) || [],
+        signals: data.signals || [], // Pass full signal objects with sources
+        movesForLeaders: movesArray,
+        frameworks: data.frameworks, // Use dynamic frameworks from API (modal will fallback to defaults if undefined)
+        followUps: generateFollowUps(cleanQuery, summaryText, movesArray)
+      };
+
+      setIntelligencePayload(payload);
+    } catch (error) {
+      console.error('Intelligence fetch failed:', error);
+      // Show error modal
+      setIntelligencePayload({
+        query,
+        summary: 'Unable to retrieve intelligence. Please try again.',
+        keySignals: [],
+        movesForLeaders: []
+      });
+      setIntelligenceOpen(true);
+    } finally {
+      setIsLoadingIntelligence(false);
+    }
+  };
+
+  const openSearch = (query: string, source: 'Claude' | 'Perplexity' | 'Gemini' = 'Perplexity', data?: any) => {
+    console.log('[App] openSearch called with query:', query, 'source:', source, 'data:', data);
+    console.log('[App] About to call fetchIntelligence');
+    // Use the new intelligence modal for briefing cards
+    fetchIntelligence(query);
+    console.log('[App] fetchIntelligence called');
+  };
+
+  const scrollToChat = (query?: string) => {
+    console.log('[App] scrollToChat called with query:', query);
+    try {
+      setIsChatActive(true);
+      if (query) {
+        setChatQuery(query);
+        console.log('[App] Chat query set:', query);
+      }
+      // Wait for component to render before scrolling
+      setTimeout(() => {
+        console.log('[App] Attempting to find chat section');
+        const chatSection = document.querySelector('[class*="Executive Strategy"]')?.closest('div');
+        if (chatSection) {
+          console.log('[App] Chat section found, scrolling');
+          chatSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // Focus the input after scrolling
+          setTimeout(() => {
+            const input = chatSection.querySelector('input');
+            if (input) {
+              input.focus();
+              console.log('[App] Input focused');
+            }
+          }, 800);
+        } else {
+          console.warn('[App] Chat section not found');
+        }
+      }, 100); // Increased timeout to ensure component mounts
+    } catch (error) {
+      console.error('[App] Error in scrollToChat:', error);
+    }
+  };
+
+  const handleChatQueryProcessed = () => {
+    setChatQuery(''); // Reset after processing
+  };
+
+  // Fetch dynamic briefings
+  const fetchBriefings = async () => {
+    setLoadingBriefings(true);
+    try {
+      // Convert audience format from VP_Marketing to "VP Marketing"
+      const audienceFormatted = audience.replace(/_/g, ' ');
+
+      const res = await fetch(
+        `https://planners-backend-865025512785.us-central1.run.app/briefings/latest?audience=${encodeURIComponent(audienceFormatted)}&limit=6`
+      );
+
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+
+      const data = await res.json();
+
+      if (data.briefings && data.briefings.length > 0) {
+        setBriefings(data.briefings);
+      } else {
+        // Use fallback if no briefings returned
+        setBriefings(FALLBACK_BRIEFINGS);
+      }
+    } catch (error) {
+      console.error('Failed to fetch briefings, using fallback:', error);
+      setBriefings(FALLBACK_BRIEFINGS);
+    } finally {
+      setLoadingBriefings(false);
+    }
+  };
+
+  // Fetch briefings on mount and when audience changes
+  useEffect(() => {
+    fetchBriefings();
+  }, [audience]);
+
+  // Onboarding logic
+  useEffect(() => {
+    // Track visit
+    updateLastVisit();
+
+    // Show welcome tooltip on first visit (if not dismissed)
+    if (isFirstVisit() && !hasWelcomeTooltipBeenDismissed()) {
+      setTimeout(() => setShowWelcomeTooltip(true), 1000); // Delay 1s for page load
+      markAsVisited();
+    }
+
+    // Check for new Daily Intelligence content
+    if (shouldShowNewContentBadge()) {
+      setShowNewBadge(true);
+      setNewContentCount(getNewContentCount());
+    }
+  }, []);
+
+  // Handle successful signup
+  const handleSignupSuccess = () => {
+    console.log('[App] Signup successful, showing welcome');
+    setShowPostSignupWelcome(true);
+    markOnboardingCompleted();
+  };
+
+  // Handle tour start
+  const handleStartTour = () => {
+    console.log('[App] Starting feature tour');
+    setShowFeatureTour(true);
+  };
+
+  // Handle new content badge click
+  const handleNewContentClick = () => {
+    console.log('[App] New content badge clicked');
+    // Scroll to Daily Intelligence section
+    const dailyIntelSection = document.querySelector('[class*="DAILY INTELLIGENCE"]')?.closest('div');
+    if (dailyIntelSection) {
+      dailyIntelSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    // Mark as checked
+    updateLastDailyIntelCheck();
+    setShowNewBadge(false);
+    setNewContentCount(0);
+  };
+
+  // Determine which briefings to display
+  const displayBriefings = briefings.length > 0 ? briefings : FALLBACK_BRIEFINGS;
+
+  // CopilotKit runtime URL (dev vs production)
+  const runtimeUrl = import.meta.env.MODE === 'production'
+    ? 'https://planners-backend-865025512785.us-central1.run.app/api/copilot-runtime'
+    : 'http://localhost:8080/api/copilot-runtime';
+
+  // Format audience for display
+  const audienceDisplay = audience.replace(/_/g, ' ');
+
+  return (
+    <CopilotKit runtimeUrl={runtimeUrl}>
+      {/* Custom renderer for intelligence briefs */}
+      <IntelligenceBriefRenderer />
+
+      <CopilotSidebar
+        instructions={`You are a strategic marketing intelligence assistant for ${audienceDisplay}-level executives at Fortune 500 companies.
+
+Your role:
+- Provide data-driven insights with specific metrics and sources
+- Focus on actionable intelligence for strategic planning and decision-making
+- Use the get_market_intelligence action to fetch comprehensive briefings
+- Frame all responses for C-suite decision-makers with P&L impact focus
+
+Key capabilities:
+- Market trend analysis with quantitative data
+- Competitive intelligence and positioning
+- Strategic frameworks and implementation roadmaps
+- ROI analysis and performance metrics
+- Brand performance insights and measurement
+- AI strategy and technology adoption guidance
+
+Response format:
+- Lead with executive summary (2-3 sentences)
+- Include specific metrics and data points
+- Provide actionable recommendations
+- Cite credible sources with links
+- Frame insights for ${audienceDisplay} priorities`}
+        labels={{
+          title: "Strategic Intelligence",
+          initial: "Ask about market trends, competitive strategy, AI adoption, brand performance, or CMO priorities...",
+          placeholder: "e.g., TikTok Shop commerce trends for CPG brands"
+        }}
+        defaultOpen={false}
+      >
+        <Layout onSignupClick={() => setIsSignupModalOpen(true)}>
+          <main className="w-full">
+
+            {/* HERO SECTION */}
+            <div className="section-zebra py-2xl border-b border-bureau-border bg-bureau-surface">
+              <section className="max-w-hero mx-auto w-full app-padding-x">
+                <HeroSearch
+                  onSearch={(q, data) => openSearch(q, 'Perplexity', data)}
+                  onOpenChat={scrollToChat}
+                />
+              </section>
+            </div>
+
+            {/* EXECUTIVE STRATEGY CHAT - Primary Interactive Feature (only shown after activation) */}
+            {isChatActive && (
+              <div className="section-zebra py-2xl border-b border-bureau-border bg-white">
+                <ExecutiveStrategyChat
+                  externalQuery={chatQuery}
+                  onExternalQueryProcessed={handleChatQueryProcessed}
+                />
+              </div>
+            )}
+
+            {/* DAILY INTELLIGENCE - AI-Generated Market Analysis */}
+            <div className="section-zebra py-2xl bg-bureau-surface">
+              <section className="max-w-content mx-auto w-full app-padding-x">
+                <SectionHeader
+                  id="01"
+                  title="Daily Intelligence"
+                  subtitle="AI-powered market analysis updated every morning at 6am ET"
+                  badge={
+                    showNewBadge ? (
+                      <NewContentBadge
+                        count={newContentCount}
+                        onClick={handleNewContentClick}
+                      />
+                    ) : undefined
+                  }
+                />
+                <DailyIntelligence />
+              </section>
+            </div>
+
+            {/* STRATEGIC FRAMEWORKS - Decision Support Tools */}
+            <div className="section-zebra py-2xl border-t border-bureau-border bg-white">
+              <section className="max-w-wide mx-auto w-full app-padding-x">
+                <SectionHeader
+                  id="02"
+                  title="Strategic Decision Frameworks"
+                  subtitle="Tools and methodologies for marketing leadership teams"
+                />
+                <EngineInstructions />
+              </section>
+            </div>
+          </main>
+
+          <ConversationalBrief
+            isOpen={searchState.isOpen}
+            onClose={() => setSearchState({ ...searchState, isOpen: false })}
+            initialQuery={searchState.query}
+          />
+
+          <IntelligenceModal
+            open={intelligenceOpen}
+            payload={intelligencePayload}
+            onClose={() => setIntelligenceOpen(false)}
+            isLoading={isLoadingIntelligence}
+            onFollowUp={(question, displayQuery) => {
+              console.log('[App] Follow-up clicked:', question);
+              // Keep modal open and fetch new intelligence for conversational experience
+              fetchIntelligence(question, displayQuery);
+            }}
+          />
+
+          <SignupModal
+            isOpen={isSignupModalOpen}
+            onClose={() => setIsSignupModalOpen(false)}
+            onSuccess={handleSignupSuccess}
+          />
+
+          {/* Post-signup welcome modal */}
+          {showPostSignupWelcome && (
+            <PostSignupWelcome
+              userName={user?.displayName}
+              onClose={() => setShowPostSignupWelcome(false)}
+              onStartTour={handleStartTour}
+            />
+          )}
+
+          {/* Feature tour */}
+          <FeatureTour
+            isOpen={showFeatureTour}
+            onComplete={() => {
+              setShowFeatureTour(false);
+              markTourCompleted();
+            }}
+            onSkip={() => {
+              setShowFeatureTour(false);
+              markTourCompleted();
+            }}
+          />
+
+          {/* Welcome tooltip (first-time visitors) */}
+          {showWelcomeTooltip && (
+            <WelcomeTooltip
+              onDismiss={() => {
+                setShowWelcomeTooltip(false);
+                markWelcomeTooltipDismissed();
+              }}
+            />
+          )}
+        </Layout>
+      </CopilotSidebar>
+    </CopilotKit>
+  );
+};
+
+export default App;

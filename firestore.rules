@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Discover Cards Collection
+    // Auto-generated daily intelligence cards for the Discover feed
+    match /discover_cards/{cardId} {
+      // Public read access - anyone can view discover cards
+      allow read: if true;
+
+      // Only backend Cloud Functions can write
+      // This ensures data integrity and prevents user manipulation
+      allow write: if false;
+    }
+
+    // User Preferences Collection (future enhancement - Phase 2)
+    // Store user-specific pillar preferences and settings
+    match /users/{userId}/preferences/{document=**} {
+      // Users can only read/write their own preferences
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Analytics Events Collection
+    // Track user interactions with Daily Intelligence cards and search
+    match /analytics_events/{eventId} {
+      // Allow anyone (logged in or anonymous) to write analytics events
+      allow create: if true;
+      // Read access only for the document creator (if they're authenticated)
+      allow read: if request.auth != null;
+    }
+
+    // Card Metrics Collection (aggregated daily)
+    // Read-only for analytics dashboard
+    match /card_metrics/{metricId} {
+      allow read: if true; // Public read access
+      allow write: if false; // Only backend Cloud Functions can write
+    }
+
+    // Content Performance Collection (weekly rollup)
+    match /content_performance/{reportId} {
+      allow read: if true; // Public read access
+      allow write: if false; // Only backend Cloud Functions can write
+    }
+
+    // Default deny all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

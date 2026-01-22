@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from './components/Layout';
 import { IntelligenceCard } from './components/IntelligenceCard';
 import { ConversationalBrief } from './components/ConversationalBrief';
@@ -7,11 +7,45 @@ import { IntelligenceModal, IntelligencePayload } from './components/Intelligenc
 import { EngineInstructions } from './components/EngineInstructions';
 import { HeroSearch } from './components/HeroSearch';
 import { ExecutiveStrategyChat } from './components/ExecutiveStrategyChat';
+import { SignupModal } from './components/SignupModal';
+import { DailyIntelligence } from './components/DailyIntelligence';
+import { DashboardSection } from './components/DashboardSection';
+import { PostSignupWelcome } from './components/PostSignupWelcome';
+import { FeatureTour } from './components/FeatureTour';
+import { WelcomeTooltip } from './components/WelcomeTooltip';
+import { NewContentBadge } from './components/NewContentBadge';
+import { useAudience } from './contexts/AudienceContext';
+import { useAuth } from './contexts/AuthContext';
+import { ENDPOINTS, fetchWithTimeout } from './config/api';
+import {
+  isFirstVisit,
+  markAsVisited,
+  hasCompletedOnboarding,
+  markOnboardingCompleted,
+  hasCompletedTour,
+  markTourCompleted,
+  hasWelcomeTooltipBeenDismissed,
+  markWelcomeTooltipDismissed,
+  updateLastVisit,
+  shouldShowNewContentBadge,
+  getNewContentCount,
+  updateLastDailyIntelCheck,
+} from './utils/userState';
 
-const SectionHeader: React.FC<{ id: string; title: string; subtitle?: string }> = ({ id, title, subtitle }) => (
+type IntelligenceBriefing = {
+  id: string;
+  date: string;
+  title: string;
+  description: string;
+  theme: string;
+  query?: string;
+};
+
+const SectionHeader: React.FC<{ id: string; title: string; subtitle?: string; badge?: React.ReactNode }> = ({ id, title, subtitle, badge }) => (
   <div className="mb-xl border-b border-bureau-ink/10 pb-md">
     <div className="flex items-center gap-md">
-      <h2 className="font-display text-3xl md:text-4xl font-black text-bureau-ink italic uppercase tracking-tight">{title}</h2>
+      <h2 className="font-display text-3xl md:text-4xl font-black text-bureau-ink uppercase tracking-tight" style={{ fontStyle: 'italic', fontWeight: 900 }}>{title}</h2>
+      {badge}
     </div>
     {subtitle && (
       <p className="text-base text-bureau-slate/70 mt-2">{subtitle}</p>
@@ -20,6 +54,8 @@ const SectionHeader: React.FC<{ id: string; title: string; subtitle?: string }> 
 );
 
 const App: React.FC = () => {
+  const { audience } = useAudience();
+
   const [searchState, setSearchState] = useState<{
     isOpen: boolean;
     query: string;
@@ -40,89 +76,276 @@ const App: React.FC = () => {
   const [intelligencePayload, setIntelligencePayload] = useState<IntelligencePayload | null>(null);
   const [isLoadingIntelligence, setIsLoadingIntelligence] = useState(false);
 
-  // Example briefings - business impact focus for C-suite marketing leaders
-  const exampleBriefings = [
+  // Signup Modal state
+  const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
+
+  // Onboarding state
+  const [showWelcomeTooltip, setShowWelcomeTooltip] = useState(false);
+  const [showPostSignupWelcome, setShowPostSignupWelcome] = useState(false);
+  const [showFeatureTour, setShowFeatureTour] = useState(false);
+  const { user } = useAuth();
+
+  // New content tracking
+  const [showNewBadge, setShowNewBadge] = useState(false);
+  const [newContentCount, setNewContentCount] = useState(0);
+
+  // Dynamic briefings state
+  const [briefings, setBriefings] = useState<IntelligenceBriefing[]>([]);
+  const [loadingBriefings, setLoadingBriefings] = useState<boolean>(true);
+
+  // Fallback briefings - business impact focus for C-suite marketing leaders
+  const FALLBACK_BRIEFINGS: IntelligenceBriefing[] = [
     {
-      id: "LOG-104",
-      date: "14.01.2026",
-      title: "Post-Cookie Attribution: $4.2B Market Shift",
-      description: "Privacy-first tracking drives major budget reallocation. CMOs reallocating $4.2B toward contextual and first-party data strategies as third-party cookies decline. Early movers gaining 23% competitive advantage in attribution accuracy.",
-      theme: "AI Strategy"
-    },
-    {
-      id: "LOG-105",
-      date: "13.01.2026",
-      title: "AI-Powered Supply Path: 92% Automation Achieved",
-      description: "Marketing operations efficiency breakthrough. Leading brands achieve 92% automation in media buying workflows, reducing costs 34% while improving campaign performance. Average time-to-market decreased from 5 days to 8 hours.",
-      theme: "Revenue Growth"
-    },
-    {
-      id: "LOG-106",
-      date: "10.01.2026",
-      title: "Retail Media Networks Capture 18% of Digital Spend",
-      description: "New competitive landscape for brand visibility. Amazon, Walmart, and Target retail media networks now command $42B annually, forcing strategic shifts in brand allocation. First-party shopper data creates measurable ROAS advantages.",
+      id: "LOG-201",
+      date: "19.01.2026",
+      title: "TikTok Shop Surges: $12B US Revenue Projection for 2026",
+      description: "Social commerce disrupts traditional e-commerce playbook. TikTok Shop projected to reach $12B US revenue in 2026, up 340% YoY. Brands allocating 15-25% of social budgets to shoppable video. Average conversion rates 2.8x higher than Instagram Shopping, driven by live commerce and creator partnerships. CMOs rethinking social-to-commerce attribution models.",
       theme: "Market Trends"
     },
     {
-      id: "LOG-107",
-      date: "08.01.2026",
-      title: "CMO Tenure Drives AI ROI: 2.7x Higher Returns",
-      description: "Leadership stability correlates with technology adoption success. Organizations with CMO tenure exceeding 3 years demonstrate 2.7x higher AI tool integration rates and 41% better marketing ROI. Board-level implications for succession planning.",
+      id: "LOG-202",
+      date: "19.01.2026",
+      title: "AI Content Moderation Reduces Brand Safety Costs 67%",
+      description: "Automated brand safety achieves enterprise-scale efficiency. Leading brands using AI moderation (Google Jigsaw, OpenAI) reduce safety incidents by 78% while cutting review costs 67%. Real-time flagging prevents $2-4M annual reputation damage. Average deployment: 45 days with 3 FTEs. CMOs prioritizing AI safety over manual review for programmatic campaigns.",
+      theme: "AI Strategy"
+    },
+    {
+      id: "LOG-203",
+      date: "19.01.2026",
+      title: "B2B Marketing Attribution Gap Costs $8.9B Annually",
+      description: "Multi-touch attribution failures drive massive waste in B2B spend. 73% of B2B marketers cannot accurately attribute revenue to channels, resulting in $8.9B misallocated budget annually. Companies implementing AI attribution see 42% improvement in CAC and 3.1x ROI on marketing technology investments. Median payback period: 8 months.",
+      theme: "Revenue Growth"
+    },
+    {
+      id: "LOG-204",
+      date: "19.01.2026",
+      title: "Retail Media Consolidation: Top 3 Networks Hold 64% Share",
+      description: "Winner-take-most dynamics reshape retail media landscape. Amazon Ads (38%), Walmart Connect (16%), and Target Roundel (10%) command 64% of $65B retail media market. Smaller networks struggle for scale as brands consolidate to 2-3 primary partners. First-party data moats deepen competitive advantages. CMOs negotiating guaranteed ROAS deals at 4-6x benchmarks.",
       theme: "Competitive Analysis"
     },
     {
-      id: "LOG-108",
-      date: "06.01.2026",
-      title: "Gen Z Brand Loyalty Down 14% YoY: AI Personalization Impact",
-      description: "Competitive threats from AI-driven targeting. 62% of Gen Z consumers switching brands based on personalized AI offers. Traditional loyalty programs losing effectiveness. Market share vulnerability for established brands without AI capabilities.",
+      id: "LOG-205",
+      date: "19.01.2026",
+      title: "Sustainability Claims Under Fire: 56% Face Greenwashing Scrutiny",
+      description: "Regulatory crackdown threatens brand positioning strategies. FTC investigates 56% of Fortune 500 sustainability marketing claims. Unsubstantiated green claims risk $10-50M fines plus reputation damage. Brands with third-party verified ESG credentials maintain 89% consumer trust vs. 34% for unverified claims. CMOs investing $2-5M in verification infrastructure to protect brand equity.",
       theme: "Brand Intelligence"
     },
     {
-      id: "LOG-109",
-      date: "03.01.2026",
-      title: "First-Party Data Strategy: 34% LTV Increase",
-      description: "Direct-to-consumer brands prove proprietary data advantage. Companies building first-party data platforms achieve 34% higher customer lifetime value versus third-party reliance. Strategic imperative for sustainable competitive positioning.",
+      id: "LOG-206",
+      date: "19.01.2026",
+      title: "Zero-Party Data Collection Drives 51% Higher Engagement",
+      description: "Explicit consumer preferences outperform behavioral inference. Brands collecting zero-party data (explicit preferences, intent) achieve 51% higher engagement rates and 34% improved conversion versus third-party cookies. Interactive quizzes, preference centers, and loyalty programs generate 2.3x more actionable insights. Average implementation cost: $400-600K for enterprise CDP with zero-party modules.",
       theme: "Customer Retention"
     }
   ];
 
   // Fetch intelligence and open modal
-  const fetchIntelligence = async (query: string) => {
+  const fetchIntelligence = async (query: string, displayQuery?: string) => {
+    console.log('[App] fetchIntelligence called with query:', query, 'displayQuery:', displayQuery);
+    console.log('[App] Current intelligenceOpen state:', intelligenceOpen);
     setIsLoadingIntelligence(true);
+    console.log('[App] Set isLoadingIntelligence to true');
+    setIntelligenceOpen(true); // Open modal immediately to show loading state
+    console.log('[App] Set intelligenceOpen to true');
 
     try {
-      const res = await fetch('https://planners-backend-865025512785.us-central1.run.app/chat-intel', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query })
-      });
+      // Convert audience format from VP_Marketing to "VP Marketing"
+      const audienceFormatted = audience.replace(/_/g, ' ');
 
-      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+      console.log('[App] Fetching intelligence from backend...');
+
+      const res = await fetchWithTimeout(ENDPOINTS.chatIntel, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ query, audience: audienceFormatted }),
+        timeout: 30000,
+      });
+      console.log('[App] Backend response status:', res.status);
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('[App] Backend error response:', errorText);
+        throw new Error(`Request failed: ${res.status} - ${errorText}`);
+      }
 
       const data = await res.json();
+      console.log('[App] Backend data received:', data);
+
+      // Use display query for modal, or extract clean query from detailed prompt
+      const cleanQuery = displayQuery || query.split('. Include:')[0].replace(/^Provide a detailed financial impact analysis for "|^Analyze the competitive landscape for "|^Create a detailed implementation roadmap for "/g, '').replace(/"/g, '');
+
+      // Generate topic-specific follow-up questions based on content
+      const generateFollowUps = (query: string, summary: string, moves: string[]) => {
+        const lowerQuery = query.toLowerCase();
+        const lowerSummary = summary.toLowerCase();
+
+        // Extract key metrics/facts from summary (concise version)
+        const extractKeyFacts = (text: string): string => {
+          // Extract just numbers and key phrases (under 100 chars)
+          const metrics = text.match(/(\$?\d+(?:\.\d+)?[KMB%]?|\d+x)/gi) || [];
+          const uniqueMetrics = [...new Set(metrics)].slice(0, 3).join(', ');
+          return uniqueMetrics || '';
+        };
+
+        const keyFacts = extractKeyFacts(summary);
+        const firstMoveShort = moves.length > 0 ? moves[0].substring(0, 100) + '...' : '';
+
+        // Detect topic categories from query and summary
+        const isAI = /\b(ai|artificial intelligence|machine learning|automation|gpt|llm)\b/i.test(query + summary);
+        const isFinance = /\b(revenue|cost|roi|budget|profit|pricing|financial|investment|funding)\b/i.test(query + summary);
+        const isMarket = /\b(market|trend|growth|share|expansion|opportunity|landscape)\b/i.test(query + summary);
+        const isBrand = /\b(brand|reputation|trust|positioning|identity|awareness|perception)\b/i.test(query + summary);
+        const isData = /\b(data|analytics|attribution|measurement|tracking|metrics)\b/i.test(query + summary);
+        const isRetention = /\b(retention|loyalty|churn|engagement|customer|lifetime value|ltv)\b/i.test(query + summary);
+        const isRegulatory = /\b(regulation|compliance|legal|policy|ftc|gdpr|law)\b/i.test(query + summary);
+        const isTechnology = /\b(platform|technology|software|tool|vendor|system|infrastructure)\b/i.test(query + summary);
+        const isCompetitive = /\b(competitor|competitive|market share|consolidation|positioning)\b/i.test(query + summary);
+
+        const followUps: { label: string; question: string; displayQuery: string }[] = [];
+
+        // Generate 3 most relevant follow-ups based on detected topics
+        // Include concise context for relevance without excessive prompt length
+        if (isAI) {
+          followUps.push({
+            label: 'Implementation Guide',
+            question: `Create an AI implementation guide for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include vendor selection, pilot design, risk mitigation, team needs, timeline, and metrics. ${firstMoveShort ? `Reference: ${firstMoveShort}` : ''}`,
+            displayQuery: `AI implementation: ${cleanQuery}`
+          });
+        }
+
+        if (isFinance) {
+          followUps.push({
+            label: 'ROI Analysis',
+            question: `Provide detailed ROI analysis for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include cost breakdown, revenue impact, payback period, budget recommendations, and financial modeling. ${firstMoveShort ? `Context: ${firstMoveShort}` : ''}`,
+            displayQuery: `ROI analysis: ${cleanQuery}`
+          });
+        }
+
+        if (isCompetitive) {
+          followUps.push({
+            label: 'Competitive Strategy',
+            question: `Develop competitive strategy for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include competitor analysis, differentiation, positioning, and tactical moves. ${firstMoveShort ? `Reference: ${firstMoveShort}` : ''}`,
+            displayQuery: `Competitive response: ${cleanQuery}`
+          });
+        }
+
+        if (isBrand) {
+          followUps.push({
+            label: 'Brand Impact',
+            question: `Analyze brand implications of "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include reputation risks, positioning opportunities, messaging strategy, and brand protection. ${firstMoveShort ? `Context: ${firstMoveShort}` : ''}`,
+            displayQuery: `Brand implications: ${cleanQuery}`
+          });
+        }
+
+        if (isData) {
+          followUps.push({
+            label: 'Measurement Strategy',
+            question: `Create measurement strategy for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include KPIs, attribution models, data infrastructure, reporting frameworks, and dashboards. ${firstMoveShort ? `Reference: ${firstMoveShort}` : ''}`,
+            displayQuery: `Measurement approach: ${cleanQuery}`
+          });
+        }
+
+        if (isRetention) {
+          followUps.push({
+            label: 'Retention Tactics',
+            question: `Develop retention strategy for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include loyalty design, engagement tactics, churn reduction, LTV optimization, and benchmarks. ${firstMoveShort ? `Context: ${firstMoveShort}` : ''}`,
+            displayQuery: `Retention strategy: ${cleanQuery}`
+          });
+        }
+
+        if (isRegulatory) {
+          followUps.push({
+            label: 'Compliance Plan',
+            question: `Create compliance plan for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include regulatory requirements, risk assessment, legal review, policy updates, and timeline. ${firstMoveShort ? `Reference: ${firstMoveShort}` : ''}`,
+            displayQuery: `Compliance strategy: ${cleanQuery}`
+          });
+        }
+
+        if (isTechnology) {
+          followUps.push({
+            label: 'Vendor Evaluation',
+            question: `Evaluate vendors for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include comparison, pricing, integration requirements, and selection criteria. ${firstMoveShort ? `Context: ${firstMoveShort}` : ''}`,
+            displayQuery: `Vendor landscape: ${cleanQuery}`
+          });
+        }
+
+        if (isMarket) {
+          followUps.push({
+            label: 'Market Entry',
+            question: `Identify market opportunities for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include sizing, entry strategy, growth projections, and resources. ${firstMoveShort ? `Reference: ${firstMoveShort}` : ''}`,
+            displayQuery: `Market opportunity: ${cleanQuery}`
+          });
+        }
+
+        // If less than 3 follow-ups, add contextual ones to reach 3
+        if (followUps.length < 3) {
+          if (!followUps.some(f => f.label.includes('Implementation'))) {
+            followUps.push({
+              label: 'Implementation Roadmap',
+              question: `Create 90-day implementation plan for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include milestones, resources, metrics, and roadblocks. ${firstMoveShort ? `Start with: ${firstMoveShort}` : ''}`,
+              displayQuery: `Implementation plan: ${cleanQuery}`
+            });
+          }
+        }
+
+        if (followUps.length < 3) {
+          if (!followUps.some(f => f.label.includes('Financial') || f.label.includes('ROI'))) {
+            followUps.push({
+              label: 'Budget Impact',
+              question: `Analyze budget implications of "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include investment needs, savings potential, reallocation strategy, and justification. ${firstMoveShort ? `Context: ${firstMoveShort}` : ''}`,
+              displayQuery: `Budget analysis: ${cleanQuery}`
+            });
+          }
+        }
+
+        if (followUps.length < 3) {
+          followUps.push({
+            label: 'Risk Assessment',
+            question: `Assess risks for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include risk identification, impact assessment, mitigation plans, and contingencies. ${firstMoveShort ? `Reference: ${firstMoveShort}` : ''}`,
+            displayQuery: `Risk analysis: ${cleanQuery}`
+          });
+        }
+
+        // Return top 3 most relevant
+        return followUps.slice(0, 3);
+      };
 
       // Build payload for modal
+      const summaryText = data.implications?.join(' ') || 'No summary available.';
+      const movesArray = data.actions || [];
+
       const payload: IntelligencePayload = {
-        query,
-        summary: data.implications?.join(' ') || 'No summary available.',
+        query: cleanQuery, // Show clean user-friendly query in modal
+        summary: summaryText,
         keySignals: data.signals?.map((s: any) => s.title || s.summary || s) || [],
-        movesForLeaders: data.actions || [],
-        // frameworks will use defaults in modal if not provided
-        followUps: [
-          { label: 'Break down financial impact', question: `What is the financial impact of: ${query}` },
-          { label: 'Show competitive analysis', question: `Who are the top competitors for: ${query}` },
-          { label: 'Implementation timeline', question: `What is the implementation timeline for: ${query}` }
-        ]
+        signals: data.signals || [], // Pass full signal objects with sources
+        movesForLeaders: movesArray,
+        frameworks: data.frameworks, // Use dynamic frameworks from API (modal will fallback to defaults if undefined)
+        followUps: generateFollowUps(cleanQuery, summaryText, movesArray)
       };
 
       setIntelligencePayload(payload);
-      setIntelligenceOpen(true);
     } catch (error) {
-      console.error('Intelligence fetch failed:', error);
-      // Show error modal
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('[App] Intelligence fetch failed:', errorMessage);
+
+      // Determine error type for better messaging
+      let userMessage = 'Unable to retrieve intelligence. Please try again.';
+      if (errorMessage.includes('AbortError') || errorMessage.includes('timeout')) {
+        userMessage = 'Request timed out. The backend may be overloaded. Please try again.';
+      } else if (errorMessage.includes('Failed to fetch')) {
+        userMessage = 'Network error. Please check your connection and try again.';
+      } else if (errorMessage.includes('CORS')) {
+        userMessage = 'Network configuration error. Please contact support.';
+      }
+
+      // Show error modal with helpful message
       setIntelligencePayload({
         query,
-        summary: 'Unable to retrieve intelligence. Please try again.',
+        summary: userMessage + '\n\nError details: ' + errorMessage,
         keySignals: [],
         movesForLeaders: []
       });
@@ -133,158 +356,243 @@ const App: React.FC = () => {
   };
 
   const openSearch = (query: string, source: 'Claude' | 'Perplexity' | 'Gemini' = 'Perplexity', data?: any) => {
+    console.log('[App] openSearch called with query:', query, 'source:', source, 'data:', data);
+    console.log('[App] About to call fetchIntelligence');
     // Use the new intelligence modal for briefing cards
     fetchIntelligence(query);
+    console.log('[App] fetchIntelligence called');
   };
 
   const scrollToChat = (query?: string) => {
-    setIsChatActive(true);
-    if (query) {
-      setChatQuery(query);
-    }
-    // Wait for component to render before scrolling
-    setTimeout(() => {
-      const chatSection = document.querySelector('[class*="Executive Strategy"]')?.closest('div');
-      if (chatSection) {
-        chatSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        // Focus the input after scrolling
-        setTimeout(() => {
-          const input = chatSection.querySelector('input');
-          input?.focus();
-        }, 800);
+    console.log('[App] scrollToChat called with query:', query);
+    try {
+      setIsChatActive(true);
+      if (query) {
+        setChatQuery(query);
+        console.log('[App] Chat query set:', query);
       }
-    }, 50);
+      // Wait for component to render before scrolling
+      setTimeout(() => {
+        console.log('[App] Attempting to find chat section');
+        const chatSection = document.querySelector('[class*="Executive Strategy"]')?.closest('div');
+        if (chatSection) {
+          console.log('[App] Chat section found, scrolling');
+          chatSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // Focus the input after scrolling
+          setTimeout(() => {
+            const input = chatSection.querySelector('input');
+            if (input) {
+              input.focus();
+              console.log('[App] Input focused');
+            }
+          }, 800);
+        } else {
+          console.warn('[App] Chat section not found');
+        }
+      }, 100); // Increased timeout to ensure component mounts
+    } catch (error) {
+      console.error('[App] Error in scrollToChat:', error);
+    }
   };
 
   const handleChatQueryProcessed = () => {
     setChatQuery(''); // Reset after processing
   };
 
+  // Fetch dynamic briefings
+  const fetchBriefings = async () => {
+    setLoadingBriefings(true);
+    try {
+      // Convert audience format from VP_Marketing to "VP Marketing"
+      const audienceFormatted = audience.replace(/_/g, ' ');
+
+      const res = await fetch(
+        `${ENDPOINTS.briefingsLatest}?audience=${encodeURIComponent(audienceFormatted)}&limit=6`
+      );
+
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+
+      const data = await res.json();
+
+      if (data.briefings && data.briefings.length > 0) {
+        setBriefings(data.briefings);
+      } else {
+        // Use fallback if no briefings returned
+        setBriefings(FALLBACK_BRIEFINGS);
+      }
+    } catch (error) {
+      console.error('Failed to fetch briefings, using fallback:', error);
+      setBriefings(FALLBACK_BRIEFINGS);
+    } finally {
+      setLoadingBriefings(false);
+    }
+  };
+
+  // Fetch briefings on mount and when audience changes
+  useEffect(() => {
+    fetchBriefings();
+  }, [audience]);
+
+  // Onboarding logic
+  useEffect(() => {
+    // Track visit
+    updateLastVisit();
+
+    // Show welcome tooltip on first visit (if not dismissed)
+    if (isFirstVisit() && !hasWelcomeTooltipBeenDismissed()) {
+      setTimeout(() => setShowWelcomeTooltip(true), 1000); // Delay 1s for page load
+      markAsVisited();
+    }
+
+    // Check for new Daily Intelligence content
+    if (shouldShowNewContentBadge()) {
+      setShowNewBadge(true);
+      setNewContentCount(getNewContentCount());
+    }
+  }, []);
+
+  // Handle successful signup
+  const handleSignupSuccess = () => {
+    console.log('[App] Signup successful, showing welcome');
+    setShowPostSignupWelcome(true);
+    markOnboardingCompleted();
+  };
+
+  // Handle tour start
+  const handleStartTour = () => {
+    console.log('[App] Starting feature tour');
+    setShowFeatureTour(true);
+  };
+
+  // Handle new content badge click
+  const handleNewContentClick = () => {
+    console.log('[App] New content badge clicked');
+    // Scroll to Daily Intelligence section
+    const dailyIntelSection = document.querySelector('[class*="DAILY INTELLIGENCE"]')?.closest('div');
+    if (dailyIntelSection) {
+      dailyIntelSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    // Mark as checked
+    updateLastDailyIntelCheck();
+    setShowNewBadge(false);
+    setNewContentCount(0);
+  };
+
+  // Determine which briefings to display
+  const displayBriefings = briefings.length > 0 ? briefings : FALLBACK_BRIEFINGS;
+
   return (
-    <Layout>
-      <main className="w-full">
+    <Layout onSignupClick={() => setIsSignupModalOpen(true)}>
+          <main className="w-full">
 
-        {/* HERO SECTION */}
-        <div className="section-zebra py-2xl border-b border-bureau-border bg-bureau-surface">
-          <section className="max-w-hero mx-auto w-full app-padding-x">
-            <HeroSearch
-              onSearch={(q, data) => openSearch(q, 'Perplexity', data)}
-              onOpenChat={scrollToChat}
-            />
-          </section>
-        </div>
+            {/* HERO SECTION */}
+            <div className="section-zebra py-2xl border-b border-bureau-border bg-bureau-surface">
+              <section className="max-w-hero mx-auto w-full app-padding-x">
+                <HeroSearch
+                  onSearch={(q, data) => openSearch(q, 'Perplexity', data)}
+                  onOpenChat={scrollToChat}
+                />
+              </section>
+            </div>
 
-        {/* EXECUTIVE STRATEGY CHAT - Primary Interactive Feature (only shown after activation) */}
-        {isChatActive && (
-          <div className="section-zebra py-2xl border-b border-bureau-border bg-white">
-            <ExecutiveStrategyChat
-              externalQuery={chatQuery}
-              onExternalQueryProcessed={handleChatQueryProcessed}
-            />
-          </div>
-        )}
-
-        {/* INTELLIGENCE BRIEFINGS - Executive Content */}
-        <div className="section-zebra py-2xl bg-bureau-surface">
-          <section className="max-w-content mx-auto w-full app-padding-x">
-            <SectionHeader
-              id="01"
-              title="Executive Intelligence Briefings"
-              subtitle="Data-driven market analysis for strategic decision-making"
-            />
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-md auto-rows-auto">
-              {/* Featured card - spans 2 columns, 2 rows */}
-              <div className="md:col-span-2 md:row-span-2">
-                <IntelligenceCard
-                  key={exampleBriefings[0].id}
-                  id={exampleBriefings[0].id}
-                  date={exampleBriefings[0].date}
-                  title={exampleBriefings[0].title}
-                  description={exampleBriefings[0].description}
-                  tag={exampleBriefings[0].theme}
-                  onDeepResearch={(q, source) => openSearch(q, source)}
+            {/* EXECUTIVE STRATEGY CHAT - Primary Interactive Feature (only shown after activation) */}
+            {isChatActive && (
+              <div className="section-zebra py-2xl border-b border-bureau-border bg-white">
+                <ExecutiveStrategyChat
+                  externalQuery={chatQuery}
+                  onExternalQueryProcessed={handleChatQueryProcessed}
                 />
               </div>
+            )}
 
-              {/* Right column cards (cards 2 & 3) - each spans 2 columns */}
-              {exampleBriefings.slice(1, 3).map((item) => (
-                <div key={item.id} className="md:col-span-2">
-                  <IntelligenceCard
-                    id={item.id}
-                    date={item.date}
-                    title={item.title}
-                    description={item.description}
-                    tag={item.theme}
-                    onDeepResearch={(q, source) => openSearch(q, source)}
-                  />
-                </div>
-              ))}
-
-              {/* Row 3: Cards 4 & 5 - each spans 2 columns */}
-              {exampleBriefings.slice(3, 5).map((item) => (
-                <div key={item.id} className="md:col-span-2">
-                  <IntelligenceCard
-                    id={item.id}
-                    date={item.date}
-                    title={item.title}
-                    description={item.description}
-                    tag={item.theme}
-                    onDeepResearch={(q, source) => openSearch(q, source)}
-                  />
-                </div>
-              ))}
-
-              {/* Row 4: Card 6 - full width */}
-              {exampleBriefings.slice(5).map((item) => (
-                <div key={item.id} className="md:col-span-4">
-                  <IntelligenceCard
-                    id={item.id}
-                    date={item.date}
-                    title={item.title}
-                    description={item.description}
-                    tag={item.theme}
-                    onDeepResearch={(q, source) => openSearch(q, source)}
-                  />
-                </div>
-              ))}
+            {/* DAILY INTELLIGENCE - AI-Generated Market Analysis with Visual Slider */}
+            <div className="section-zebra py-2xl bg-bureau-surface">
+              <section className="max-w-content mx-auto w-full app-padding-x">
+                <SectionHeader
+                  id="01"
+                  title="Daily Intelligence"
+                  subtitle="AI-powered market analysis updated every morning at 6am ET"
+                  badge={
+                    showNewBadge ? (
+                      <NewContentBadge
+                        count={newContentCount}
+                        onClick={handleNewContentClick}
+                      />
+                    ) : undefined
+                  }
+                />
+                <DashboardSection />
+              </section>
             </div>
-            <div className="mt-lg text-center">
-              <p className="text-sm text-bureau-slate/60">
-                Intelligence updated daily • Powered by advanced AI analysis
-              </p>
-            </div>
-          </section>
-        </div>
 
-        {/* STRATEGIC FRAMEWORKS - Decision Support Tools */}
-        <div className="section-zebra py-2xl border-t border-bureau-border bg-white">
-          <section className="max-w-wide mx-auto w-full app-padding-x">
-            <SectionHeader
-              id="02"
-              title="Strategic Decision Frameworks"
-              subtitle="Tools and methodologies for marketing leadership teams"
+            {/* STRATEGIC FRAMEWORKS - Decision Support Tools */}
+            <div className="section-zebra py-2xl border-t border-bureau-border bg-white">
+              <section className="max-w-wide mx-auto w-full app-padding-x">
+                <SectionHeader
+                  id="02"
+                  title="Strategic Decision Frameworks"
+                  subtitle="Tools and methodologies for marketing leadership teams"
+                />
+                <EngineInstructions />
+              </section>
+            </div>
+          </main>
+
+          <ConversationalBrief
+            isOpen={searchState.isOpen}
+            onClose={() => setSearchState({ ...searchState, isOpen: false })}
+            initialQuery={searchState.query}
+          />
+
+          <IntelligenceModal
+            open={intelligenceOpen}
+            payload={intelligencePayload}
+            onClose={() => setIntelligenceOpen(false)}
+            isLoading={isLoadingIntelligence}
+            onFollowUp={(question, displayQuery) => {
+              console.log('[App] Follow-up clicked:', question);
+              // Keep modal open and fetch new intelligence for conversational experience
+              fetchIntelligence(question, displayQuery);
+            }}
+          />
+
+          <SignupModal
+            isOpen={isSignupModalOpen}
+            onClose={() => setIsSignupModalOpen(false)}
+            onSuccess={handleSignupSuccess}
+          />
+
+          {/* Post-signup welcome modal */}
+          {showPostSignupWelcome && (
+            <PostSignupWelcome
+              userName={user?.displayName}
+              onClose={() => setShowPostSignupWelcome(false)}
+              onStartTour={handleStartTour}
             />
-            <EngineInstructions />
-          </section>
-        </div>
-      </main>
+          )}
 
-      <ConversationalBrief
-        isOpen={searchState.isOpen}
-        onClose={() => setSearchState({ ...searchState, isOpen: false })}
-        initialQuery={searchState.query}
-      />
+          {/* Feature tour */}
+          <FeatureTour
+            isOpen={showFeatureTour}
+            onComplete={() => {
+              setShowFeatureTour(false);
+              markTourCompleted();
+            }}
+            onSkip={() => {
+              setShowFeatureTour(false);
+              markTourCompleted();
+            }}
+          />
 
-      <IntelligenceModal
-        open={intelligenceOpen}
-        payload={intelligencePayload}
-        onClose={() => setIntelligenceOpen(false)}
-        onFollowUp={(question) => {
-          // Close current modal and fetch new intelligence for follow-up
-          setIntelligenceOpen(false);
-          fetchIntelligence(question);
-        }}
-      />
+          {/* Welcome tooltip (first-time visitors) */}
+          {showWelcomeTooltip && (
+            <WelcomeTooltip
+              onDismiss={() => {
+                setShowWelcomeTooltip(false);
+                markWelcomeTooltipDismissed();
+              }}
+            />
+          )}
     </Layout>
   );
 };

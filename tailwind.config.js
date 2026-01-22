@@ -34,9 +34,9 @@ export default {
         'bureau-border': '#E2E8F0',
       },
       fontFamily: {
-        sans: ['Inter', 'Roboto', 'sans-serif'],
-        display: ['Outfit', 'Roboto', 'sans-serif'],
-        mono: ['"Roboto Mono"', 'monospace'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'monospace'],
       },
       fontSize: {
         'display-xl': ['4rem', { lineHeight: '1', letterSpacing: '-0.04em' }],

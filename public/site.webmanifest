@@ -1,0 +1,16 @@
+{
+  "name": "PlannerAPI",
+  "short_name": "PlannerAPI",
+  "description": "Strategic Intelligence for Marketing Leaders",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1B365D",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

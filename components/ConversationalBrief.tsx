@@ -9,8 +9,7 @@ import {
 } from 'lucide-react';
 import { parseInlineMarkdown } from '../utils/markdown';
 import { useAudience } from '../contexts/AudienceContext';
-
-const API_ENDPOINT = 'https://planners-backend-865025512785.us-central1.run.app/chat-intel';
+import { ENDPOINTS, fetchWithTimeout } from '../config/api';
 
 type Message = {
   id: string;
@@ -129,10 +128,11 @@ export const ConversationalBrief: React.FC<ConversationalBriefProps> = ({
         ? `Previous context:\n${conversationContext}\n\nNew query: ${query}`
         : query;
 
-      const res = await fetch(API_ENDPOINT, {
+      const res = await fetchWithTimeout(ENDPOINTS.chatIntel, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: contextQuery, audience })
+        body: JSON.stringify({ query: contextQuery, audience }),
+        timeout: 30000,
       });
 
       if (!res.ok) throw new Error(`Request failed: ${res.status}`);

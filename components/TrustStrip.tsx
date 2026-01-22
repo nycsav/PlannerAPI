@@ -8,7 +8,7 @@ export const TrustStrip: React.FC = () => {
         <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8">
           <div className="flex items-center gap-2 text-bureau-slate/80">
             <Users className="w-4 h-4 text-bureau-signal" />
-            <span className="text-sm font-medium">Join 50+ CMOs exploring PlannerAPI in early access</span>
+            <span className="text-sm font-medium">Join 500+ CMOs in early access</span>
           </div>
 
           <span className="hidden md:inline text-bureau-border">|</span>

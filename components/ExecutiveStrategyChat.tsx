@@ -6,8 +6,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { parseMarkdown, parseInlineMarkdown } from '../utils/markdown';
-
-const API_ENDPOINT = 'https://planners-backend-865025512785.us-central1.run.app/chat-intel';
+import { useAudience } from '../contexts/AudienceContext';
+import { ENDPOINTS, fetchWithTimeout } from '../config/api';
 
 type PlannerChatResponse = {
   signals: Array<{
@@ -23,6 +23,12 @@ type PlannerChatResponse = {
 
 type ChatState = 'idle' | 'loading' | 'success' | 'error';
 
+type ConversationTurn = {
+  query: string;
+  response: PlannerChatResponse;
+  timestamp: Date;
+};
+
 interface ExecutiveStrategyChatProps {
   externalQuery?: string;
   onExternalQueryProcessed?: () => void;
@@ -32,50 +38,73 @@ export const ExecutiveStrategyChat: React.FC<ExecutiveStrategyChatProps> = ({
   externalQuery,
   onExternalQueryProcessed
 }) => {
+  const { audience } = useAudience();
+
   const [query, setQuery] = useState('');
   const [state, setState] = useState<ChatState>('idle');
-  const [response, setResponse] = useState<PlannerChatResponse | null>(null);
+  const [conversation, setConversation] = useState<ConversationTurn[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [hasBeenUsed, setHasBeenUsed] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const resultsRef = useRef<HTMLDivElement>(null);
+  const conversationEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (state === 'success' && resultsRef.current) {
-      resultsRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (state === 'success' && conversationEndRef.current) {
+      conversationEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
-  }, [state]);
+  }, [conversation]);
 
   // Handle external query from hero search
   useEffect(() => {
     if (externalQuery && externalQuery.trim()) {
+      console.log('[ExecutiveStrategyChat] Received external query:', externalQuery);
       setQuery(externalQuery);
-      // Auto-submit after setting query
+      // Auto-submit the external query directly (don't wait for state update)
       setTimeout(() => {
-        handleSubmit({ preventDefault: () => {} } as React.FormEvent);
-        onExternalQueryProcessed?.();
+        try {
+          console.log('[ExecutiveStrategyChat] Auto-submitting external query');
+          submitQuery(externalQuery);
+          onExternalQueryProcessed?.();
+        } catch (error) {
+          console.error('[ExecutiveStrategyChat] Error auto-submitting:', error);
+        }
       }, 100);
     }
   }, [externalQuery]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Core submission logic extracted to handle both form submit and external queries
+  const submitQuery = async (queryText: string) => {
+    console.log('[ExecutiveStrategyChat] submitQuery called with:', queryText);
 
-    if (!query.trim()) return;
+    if (!queryText.trim()) {
+      console.log('[ExecutiveStrategyChat] Query is empty, returning');
+      return;
+    }
 
     setHasBeenUsed(true);
     setState('loading');
     setErrorMessage('');
-    setResponse(null);
+    setQuery(''); // Clear input immediately
 
     try {
-      const res = await fetch(API_ENDPOINT, {
+      // Convert audience format from VP_Marketing to "VP Marketing"
+      const audienceFormatted = audience.replace(/_/g, ' ');
+
+      console.log('[ExecutiveStrategyChat] Fetching from API:', ENDPOINTS.chatIntel);
+
+      const res = await fetchWithTimeout(ENDPOINTS.chatIntel, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query: query.trim() }),
+        body: JSON.stringify({
+          query: queryText.trim(),
+          audience: audienceFormatted
+        }),
+        timeout: 30000,
       });
+
+      console.log('[ExecutiveStrategyChat] API response status:', res.status);
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -83,9 +112,18 @@ export const ExecutiveStrategyChat: React.FC<ExecutiveStrategyChatProps> = ({
       }
 
       const data: PlannerChatResponse = await res.json();
-      setResponse(data);
+      console.log('[ExecutiveStrategyChat] Successfully received data');
+
+      // Append to conversation history instead of replacing
+      setConversation(prev => [...prev, {
+        query: queryText.trim(),
+        response: data,
+        timestamp: new Date()
+      }]);
+
       setState('success');
     } catch (error) {
+      console.error('[ExecutiveStrategyChat] Error in submitQuery:', error);
       setErrorMessage(
         error instanceof Error
           ? error.message
@@ -93,6 +131,12 @@ export const ExecutiveStrategyChat: React.FC<ExecutiveStrategyChatProps> = ({
       );
       setState('error');
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('[ExecutiveStrategyChat] handleSubmit called with query:', query);
+    await submitQuery(query);
   };
 
   const handleRetry = () => {
@@ -105,37 +149,116 @@ export const ExecutiveStrategyChat: React.FC<ExecutiveStrategyChatProps> = ({
 
   return (
     <div className="w-full max-w-wide mx-auto app-padding-x py-2xl">
-      {/* Show input form when retrying after error or when idle after being used */}
-      {hasBeenUsed && (state === 'idle' || state === 'error') && (
-        <div className="mb-xl">
-          <h3 className="font-display text-lg font-bold text-bureau-ink mb-sm uppercase tracking-tight">
-            {state === 'error' ? 'Try Another Query' : 'New Question'}
-          </h3>
-          <form onSubmit={handleSubmit}>
-            <div className="flex flex-col sm:flex-row gap-sm">
-              <label htmlFor="retry-query" className="sr-only">
-                Strategic intelligence query
-              </label>
-              <input
-                ref={inputRef}
-                id="retry-query"
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="What would you like to know?"
-                className="flex-1 px-md py-3 border-2 border-bureau-ink/20 text-base focus:outline-none focus:border-bureau-signal focus:ring-2 focus:ring-bureau-signal/20"
-                aria-label="Enter your strategic intelligence query"
-              />
-              <button
-                type="submit"
-                disabled={!query.trim()}
-                className="bg-bureau-ink text-white px-6 py-3 font-semibold hover:bg-bureau-ink/90 active:bg-bureau-ink focus:outline-none focus:ring-2 focus:ring-bureau-signal focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap min-w-[140px] sm:min-w-0"
-              >
-                Ask
-                <ArrowRight className="w-5 h-5" aria-hidden="true" />
-              </button>
+      {/* Conversation History - Shows all previous queries and responses */}
+      {conversation.length > 0 && (
+        <div className="space-y-lg mb-xl" role="region" aria-label="Conversation history">
+          {conversation.map((turn, index) => (
+            <div key={index} className="space-y-md">
+              {/* Query */}
+              <div className="border-l-4 border-bureau-signal pl-md py-sm">
+                <p className="text-xs font-mono text-bureau-slate/60 uppercase tracking-wide mb-1">Your Query</p>
+                <p className="text-base font-medium text-bureau-ink">{turn.query}</p>
+              </div>
+
+              {/* Response */}
+              <div className="space-y-lg">
+                {/* SUMMARY */}
+                {turn.response.implications.length > 0 && (
+                  <div className="border-2 border-bureau-border bg-white p-lg rounded-sm shadow-sm">
+                    <h3 className="font-display text-xl font-bold text-bureau-ink mb-md uppercase tracking-tight">
+                      Summary
+                    </h3>
+                    <div className="prose prose-sm max-w-none">
+                      {turn.response.implications.map((implication, idx) => (
+                        <p key={idx} className="text-base text-bureau-ink leading-relaxed mb-3 last:mb-0">
+                          {parseInlineMarkdown(implication)}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* KEY SIGNALS */}
+                {turn.response.signals.length > 0 && (
+                  <div className="border-2 border-bureau-border bg-white p-lg rounded-sm shadow-sm">
+                    <h3 className="font-display text-xl font-bold text-bureau-ink mb-md uppercase tracking-tight">
+                      Key Signals
+                    </h3>
+                    <ul className="space-y-0" role="list">
+                      {turn.response.signals.map((signal, idx) => (
+                        <li key={signal.id} className="flex items-start gap-3 mb-4 last:mb-0">
+                          <span className="text-bureau-signal font-bold mt-0.5 text-lg leading-none flex-shrink-0">•</span>
+                          <div className="flex-1">
+                            <span className="text-base text-bureau-ink leading-relaxed">
+                              <strong className="font-bold">{parseInlineMarkdown(signal.title)}.</strong> {parseInlineMarkdown(signal.summary)}
+                              {signal.sourceUrl && signal.sourceUrl !== '#' && (
+                                <a
+                                  href={signal.sourceUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="ml-1 text-xs font-medium text-bureau-signal hover:text-bureau-signal/80 inline-flex items-center gap-1"
+                                >
+                                  [{idx + 1}]
+                                </a>
+                              )}
+                            </span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* MOVES FOR LEADERS */}
+                {turn.response.actions.length > 0 && (
+                  <div className="border-2 border-bureau-border bg-white p-lg rounded-sm shadow-sm">
+                    <h3 className="font-display text-xl font-bold text-bureau-ink mb-md uppercase tracking-tight">
+                      Moves for Leaders
+                    </h3>
+                    <ul className="space-y-0" role="list">
+                      {turn.response.actions.map((action, idx) => (
+                        <li key={idx} className="flex items-start gap-3 mb-4 last:mb-0">
+                          <span className="text-bureau-signal font-bold mt-0.5 text-lg leading-none flex-shrink-0">•</span>
+                          <span className="text-base text-bureau-ink leading-relaxed flex-1">
+                            {parseInlineMarkdown(action)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* SOURCES */}
+                {turn.response.signals.length > 0 && (
+                  <div className="border-t border-bureau-border pt-md">
+                    <p className="text-xs font-mono text-bureau-slate/60 mb-sm uppercase tracking-wide">Sources</p>
+                    <div className="flex flex-wrap gap-2">
+                      {turn.response.signals.map((signal, idx) => (
+                        signal.sourceUrl && signal.sourceUrl !== '#' ? (
+                          <a
+                            key={signal.id}
+                            href={signal.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-bureau-border hover:bg-bureau-signal/10 rounded-full text-xs font-medium text-bureau-slate hover:text-bureau-signal transition-colors"
+                          >
+                            <span>[{idx + 1}]</span>
+                            <span>{signal.sourceName}</span>
+                            <span aria-hidden="true">↗</span>
+                          </a>
+                        ) : null
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Divider between conversation turns (except last) */}
+              {index < conversation.length - 1 && (
+                <div className="border-t-2 border-bureau-border pt-lg mt-lg" />
+              )}
             </div>
-          </form>
+          ))}
         </div>
       )}
 
@@ -171,141 +294,50 @@ export const ExecutiveStrategyChat: React.FC<ExecutiveStrategyChatProps> = ({
         </div>
       )}
 
-      {/* Success State - Display Response */}
-      {state === 'success' && response && (
-        <div ref={resultsRef} className="space-y-lg" role="region" aria-label="Intelligence results">
-
-          {/* SUMMARY: Executive Takeaway (2-3 sentences, no bullets) */}
-          {response.implications.length > 0 && (
-            <div className="border-2 border-bureau-border bg-white p-lg rounded-sm shadow-sm">
-              <h3 className="font-display text-xl font-bold text-bureau-ink mb-md uppercase tracking-tight">
-                Summary
-              </h3>
-              <div className="prose prose-sm max-w-none">
-                {response.implications.map((implication, index) => (
-                  <p key={index} className="text-base text-bureau-ink leading-relaxed mb-3 last:mb-0">
-                    {parseInlineMarkdown(implication)}
-                  </p>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* KEY SIGNALS: Bulleted list with bold headlines */}
-          {response.signals.length > 0 && (
-            <div className="border-2 border-bureau-border bg-white p-lg rounded-sm shadow-sm">
-              <h3 className="font-display text-xl font-bold text-bureau-ink mb-md uppercase tracking-tight">
-                Key Signals
-              </h3>
-              <ul className="space-y-0" role="list">
-                {response.signals.map((signal, index) => (
-                  <li key={signal.id} className="flex items-start gap-3 mb-4 last:mb-0">
-                    <span className="text-bureau-signal font-bold mt-0.5 text-lg leading-none flex-shrink-0">•</span>
-                    <div className="flex-1">
-                      <span className="text-base text-bureau-ink leading-relaxed">
-                        <strong className="font-bold">{signal.title}.</strong> {parseInlineMarkdown(signal.summary)}
-                        {signal.sourceUrl && signal.sourceUrl !== '#' && (
-                          <a
-                            href={signal.sourceUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="ml-1 text-xs font-medium text-bureau-signal hover:text-bureau-signal/80 inline-flex items-center gap-1"
-                          >
-                            [{index + 1}]
-                          </a>
-                        )}
-                      </span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* MOVES FOR LEADERS: Actionable directives */}
-          {response.actions.length > 0 && (
-            <div className="border-2 border-bureau-border bg-white p-lg rounded-sm shadow-sm">
-              <h3 className="font-display text-xl font-bold text-bureau-ink mb-md uppercase tracking-tight">
-                Moves for Leaders
-              </h3>
-              <ul className="space-y-0" role="list">
-                {response.actions.map((action, index) => (
-                  <li key={index} className="flex items-start gap-3 mb-4 last:mb-0">
-                    <span className="text-bureau-signal font-bold mt-0.5 text-lg leading-none flex-shrink-0">•</span>
-                    <span className="text-base text-bureau-ink leading-relaxed flex-1">
-                      {parseInlineMarkdown(action)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* SOURCES: Chip badges for citations */}
-          {response.signals.length > 0 && (
-            <div className="border-t border-bureau-border pt-md">
-              <p className="text-xs font-mono text-bureau-slate/60 mb-sm uppercase tracking-wide">Sources</p>
-              <div className="flex flex-wrap gap-2">
-                {response.signals.map((signal, index) => (
-                  signal.sourceUrl && signal.sourceUrl !== '#' ? (
-                    <a
-                      key={signal.id}
-                      href={signal.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-bureau-border hover:bg-bureau-signal/10 rounded-full text-xs font-medium text-bureau-slate hover:text-bureau-signal transition-colors"
-                    >
-                      <span>[{index + 1}]</span>
-                      <span>{signal.sourceName}</span>
-                      <span aria-hidden="true">↗</span>
-                    </a>
-                  ) : (
-                    <span
-                      key={signal.id}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-bureau-border rounded-full text-xs font-medium text-bureau-slate"
-                    >
-                      <span>[{index + 1}]</span>
-                      <span>{signal.sourceName}</span>
-                    </span>
-                  )
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* CONTINUE EXPLORING: Follow-up Question Input */}
-          <div className="border-t-2 border-bureau-border pt-lg mt-xl">
-            <h3 className="font-display text-lg font-bold text-bureau-ink mb-sm uppercase tracking-tight">
-              Continue Exploring
-            </h3>
-            <form onSubmit={handleSubmit}>
-              <div className="flex flex-col sm:flex-row gap-sm">
-                <label htmlFor="followup-query" className="sr-only">
-                  Follow-up question
-                </label>
-                <input
-                  ref={inputRef}
-                  id="followup-query"
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Dig deeper into this analysis..."
-                  className="flex-1 px-md py-3 border-2 border-bureau-ink/20 text-base focus:outline-none focus:border-bureau-signal focus:ring-2 focus:ring-bureau-signal/20"
-                  aria-label="Enter your follow-up question"
-                />
-                <button
-                  type="submit"
-                  disabled={!query.trim()}
-                  className="bg-bureau-ink text-white px-6 py-3 font-semibold hover:bg-bureau-ink/90 active:bg-bureau-ink focus:outline-none focus:ring-2 focus:ring-bureau-signal focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap min-w-[140px] sm:min-w-0"
-                >
+      {/* Input Form - Always visible after conversation starts or for first query */}
+      <div className={conversation.length > 0 ? "border-t-2 border-bureau-border pt-lg" : ""}>
+        <h3 className="font-display text-lg font-bold text-bureau-ink mb-sm uppercase tracking-tight">
+          {conversation.length > 0 ? 'Continue Exploring' : 'Ask a Question'}
+        </h3>
+        <form onSubmit={handleSubmit}>
+          <div className="flex flex-col sm:flex-row gap-sm">
+            <label htmlFor="chat-query" className="sr-only">
+              Strategic intelligence query
+            </label>
+            <input
+              ref={inputRef}
+              id="chat-query"
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={conversation.length > 0 ? "Dig deeper into this analysis..." : "What would you like to know?"}
+              className="flex-1 px-md py-3 border-2 border-bureau-ink/20 text-base focus:outline-none focus:border-bureau-signal focus:ring-2 focus:ring-bureau-signal/20"
+              aria-label="Enter your strategic intelligence query"
+              disabled={state === 'loading'}
+            />
+            <button
+              type="submit"
+              disabled={!query.trim() || state === 'loading'}
+              className="bg-bureau-ink text-white px-6 py-3 font-semibold hover:bg-bureau-ink/90 active:bg-bureau-ink focus:outline-none focus:ring-2 focus:ring-bureau-signal focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap min-w-[140px] sm:min-w-0"
+            >
+              {state === 'loading' ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Loading
+                </>
+              ) : (
+                <>
                   Ask
                   <ArrowRight className="w-5 h-5" aria-hidden="true" />
-                </button>
-              </div>
-            </form>
+                </>
+              )}
+            </button>
           </div>
-        </div>
-      )}
+        </form>
+      </div>
+
+      {/* Scroll anchor for conversation */}
+      <div ref={conversationEndRef} />
     </div>
   );
 };

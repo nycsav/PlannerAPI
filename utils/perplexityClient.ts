@@ -3,9 +3,10 @@
  * MVP: Uses only sonar-fast model for quick intelligence responses
  */
 
+import { ENDPOINTS } from '../config/api';
+
 const PPLX_API_KEY = import.meta.env.VITE_PPLX_API_KEY;
 const PPLX_MODEL_FAST = import.meta.env.VITE_PPLX_MODEL_FAST || 'sonar';
-const PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions';
 
 export type PlannerChatResponse = {
   signals: Array<{
@@ -78,7 +79,7 @@ Source: [Source Name] | [URL]
 Keep it concise, data-driven, and business-focused.`;
 
   try {
-    const response = await fetch(PERPLEXITY_API_URL, {
+    const response = await fetch(ENDPOINTS.perplexityAPI, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${PPLX_API_KEY}`,

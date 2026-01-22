@@ -1,0 +1,33 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "discover_cards",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "pillar",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "publishedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "discover_cards",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "priority",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "publishedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

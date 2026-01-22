@@ -6,6 +6,7 @@ interface TypewriterTextProps {
   deletingSpeed?: number; // ms per character when deleting
   pauseDuration?: number; // ms to pause after typing complete
   className?: string;
+  style?: React.CSSProperties;
 }
 
 export const TypewriterText: React.FC<TypewriterTextProps> = ({
@@ -14,6 +15,7 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
   deletingSpeed = 30,
   pauseDuration = 2000,
   className = '',
+  style = {},
 }) => {
   const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
   const [currentText, setCurrentText] = useState('');
@@ -50,7 +52,7 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
   }, [currentText, isDeleting, currentPhraseIndex, phrases, typingSpeed, deletingSpeed, pauseDuration]);
 
   return (
-    <span className={className}>
+    <span className={className} style={style}>
       {currentText}
       <span className="animate-pulse">|</span>
     </span>

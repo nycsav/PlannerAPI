@@ -3,27 +3,52 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, ArrowRight, CornerDownRight, ShieldCheck, Database, TrendingUp, MessageSquare } from 'lucide-react';
 import { TrustStrip } from './TrustStrip';
 import { TypewriterText } from './TypewriterText';
+import { useAudience } from '../contexts/AudienceContext';
+import { useAnalytics } from '../hooks/useAnalytics';
+import { ENDPOINTS, fetchWithTimeout } from '../config/api';
 
 interface HeroSearchProps {
   onSearch: (q: string, data?: any) => void;
   onOpenChat?: (query?: string) => void;
 }
 
+// Default fallback placeholders
+const DEFAULT_PLACEHOLDERS = [
+  "What's driving the $4.2B shift in attribution spend?",
+  "How are competitors using AI to increase retention 23%?",
+  "Show me retail media ROI benchmarks for 2026",
+  "Which brands are winning with first-party data strategies?",
+  "Break down the business case for cookieless attribution",
+  "What marketing automation ROI can I present to the board?"
+];
+
+// Default fallback categories
+const DEFAULT_CATEGORIES = [
+  { label: 'AI Strategy', trending: true },
+  { label: 'Market Trends', trending: true },
+  { label: 'Brand Intelligence', trending: false },
+  { label: 'Revenue Growth', trending: true },
+  { label: 'Competitive Analysis', trending: false },
+  { label: 'Customer Retention', trending: false }
+];
+
 export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) => {
+  const { audience } = useAudience();
+  const { trackSearch, trackCategoryClick } = useAnalytics();
+
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Rotating outcome-focused placeholders
-  const searchPlaceholders = [
-    "What's driving the $4.2B shift in attribution spend?",
-    "How are competitors using AI to increase retention 23%?",
-    "Show me retail media ROI benchmarks for 2026",
-    "Which brands are winning with first-party data strategies?",
-    "Break down the business case for cookieless attribution",
-    "What marketing automation ROI can I present to the board?"
-  ];
+  // Dynamic state
+  const [searchPlaceholders, setSearchPlaceholders] = useState<string[]>(DEFAULT_PLACEHOLDERS);
+  const [categories, setCategories] = useState<Array<{ label: string; trending: boolean }>>(DEFAULT_CATEGORIES);
+
+  // Fetch trending topics on mount
+  useEffect(() => {
+    fetchTrending();
+  }, [audience]);
 
   // Rotate placeholder every 3 seconds
   useEffect(() => {
@@ -31,18 +56,43 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
       setPlaceholderIndex((prev) => (prev + 1) % searchPlaceholders.length);
     }, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [searchPlaceholders]);
+
+  const fetchTrending = async () => {
+    try {
+      // Convert audience format from VP_Marketing to "VP Marketing"
+      const audienceFormatted = audience.replace(/_/g, ' ');
+
+      const res = await fetchWithTimeout(
+        `${ENDPOINTS.trendingTopics}?audience=${encodeURIComponent(audienceFormatted)}&limit=6`,
+        { timeout: 30000 }
+      );
+
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+
+      const data = await res.json();
+
+      if (data.topics && data.topics.length > 0) {
+        setSearchPlaceholders(data.topics.map((t: any) => t.sampleQuery));
+        setCategories(data.topics.map((t: any) => ({ label: t.label, trending: t.trending })));
+      }
+    } catch (error) {
+      console.error('Failed to fetch trending topics, using defaults:', error);
+      // Keep defaults on error
+    }
+  };
 
   const runPerplexitySearch = async (q: string) => {
     if (!q.trim()) return;
     setLoading(true);
     try {
-      const resp = await fetch(
-        'https://planners-backend-865025512785.us-central1.run.app/perplexity/search',
+      const resp = await fetchWithTimeout(
+        ENDPOINTS.perplexitySearch,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query: q }),
+          timeout: 30000,
         }
       );
 
@@ -94,15 +144,13 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (query.trim()) {
-      if (onOpenChat) {
-        // Use consolidated chat interface
-        onOpenChat(query);
-        inputRef.current?.blur();
-      } else {
-        // Fallback to old search modal
-        runPerplexitySearch(query);
-        inputRef.current?.blur();
-      }
+      // Track search query
+      trackSearch(query.trim(), 'hero');
+      // Trigger intelligence modal with search query
+      console.log('[HeroSearch] Search submitted:', query.trim());
+      onSearch(query.trim());
+      setQuery(''); // Clear input after search
+      inputRef.current?.blur();
     }
   };
 
@@ -110,7 +158,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
     <div className="w-full flex flex-col items-center space-y-lg">
       
       <div className="text-center space-y-sm">
-        <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-black text-bureau-ink leading-tight tracking-tight italic">
+        <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-black text-bureau-ink leading-tight tracking-tight" style={{ fontStyle: 'italic', fontWeight: 900 }}>
           STRATEGIC INTELLIGENCE FOR<br />
           <TypewriterText
             phrases={[
@@ -124,6 +172,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
             deletingSpeed={30}
             pauseDuration={2000}
             className="text-bureau-signal"
+            style={{ fontStyle: 'italic', fontWeight: 900 }}
           />
         </h1>
         <p className="text-bureau-slate text-lg md:text-xl font-normal max-w-3xl mx-auto pt-md leading-relaxed">
@@ -173,25 +222,15 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
         </div>
 
         <div className="flex flex-wrap justify-center gap-3 pt-md">
-          {[
-            { label: 'AI Strategy', trending: true },
-            { label: 'Market Trends', trending: true },
-            { label: 'Brand Intelligence', trending: false },
-            { label: 'Revenue Growth', trending: true },
-            { label: 'Competitive Analysis', trending: false },
-            { label: 'Customer Retention', trending: false }
-          ].map((item) => (
+          {categories.map((item) => (
             <button
               key={item.label}
               onClick={() => {
-                setQuery(item.label);
-                if (onOpenChat) {
-                  // Use chat interface for quick topics
-                  setTimeout(() => onOpenChat(item.label), 100);
-                } else {
-                  // Fallback to old search
-                  runPerplexitySearch(item.label);
-                }
+                // Track category click
+                trackCategoryClick(item.label, 'hero');
+                // Trigger intelligence modal for category search
+                console.log('[HeroSearch] Category clicked:', item.label);
+                onSearch(item.label);
               }}
               className="group px-4 py-2.5 border border-gray-200 bg-white rounded-lg text-sm font-semibold text-gray-700 hover:border-bureau-signal hover:bg-bureau-signal hover:text-white transition-all shadow-sm hover:shadow-md flex items-center gap-2"
             >

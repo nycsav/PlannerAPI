@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { IntelligenceChart } from './IntelligenceChart';
 import { useAudience } from '../contexts/AudienceContext';
+import { ENDPOINTS, fetchWithTimeout } from '../config/api';
 
 interface AISearchInterfaceProps {
   isOpen: boolean;
@@ -268,12 +269,13 @@ export const AISearchInterface: React.FC<AISearchInterfaceProps> = ({
           const audienceContext = getAudienceSystemPrompt(audience);
           const enhancedInitialQuery = `Context: ${audienceContext}\n\nQuery: ${initialQuery}`;
 
-          const resp = await fetch(
-            'https://planners-backend-865025512785.us-central1.run.app/perplexity/search',
+          const resp = await fetchWithTimeout(
+            ENDPOINTS.perplexitySearch,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ query: enhancedInitialQuery }),
+              timeout: 30000,
             }
           );
 
@@ -367,14 +369,15 @@ export const AISearchInterface: React.FC<AISearchInterfaceProps> = ({
       const audienceContext = getAudienceSystemPrompt(audience);
       const enhancedQuery = `Context: ${audienceContext}\n\nOriginal query: ${query}\n\nFollow-up: ${followUpQuery}`;
 
-      const resp = await fetch(
-        'https://planners-backend-865025512785.us-central1.run.app/perplexity/search',
+      const resp = await fetchWithTimeout(
+        ENDPOINTS.perplexitySearch,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             query: enhancedQuery
           }),
+          timeout: 30000,
         }
       );
 
