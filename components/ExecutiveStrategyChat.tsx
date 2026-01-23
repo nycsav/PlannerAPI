@@ -7,7 +7,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { parseMarkdown, parseInlineMarkdown } from '../utils/markdown';
 import { useAudience } from '../contexts/AudienceContext';
-import { ENDPOINTS, fetchWithTimeout } from '../config/api';
+import { ENDPOINTS, fetchWithTimeout } from '../src/config/api';
 
 type PlannerChatResponse = {
   signals: Array<{

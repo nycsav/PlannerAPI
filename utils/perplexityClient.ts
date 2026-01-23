@@ -3,7 +3,7 @@
  * MVP: Uses only sonar-fast model for quick intelligence responses
  */
 
-import { ENDPOINTS } from '../config/api';
+import { ENDPOINTS } from '../src/config/api';
 
 const PPLX_API_KEY = import.meta.env.VITE_PPLX_API_KEY;
 const PPLX_MODEL_FAST = import.meta.env.VITE_PPLX_MODEL_FAST || 'sonar';

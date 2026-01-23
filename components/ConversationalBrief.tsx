@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { parseInlineMarkdown } from '../utils/markdown';
 import { useAudience } from '../contexts/AudienceContext';
-import { ENDPOINTS, fetchWithTimeout } from '../config/api';
+import { ENDPOINTS, fetchWithTimeout } from '../src/config/api';
 
 type Message = {
   id: string;

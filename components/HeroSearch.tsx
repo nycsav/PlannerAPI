@@ -5,7 +5,7 @@ import { TrustStrip } from './TrustStrip';
 import { TypewriterText } from './TypewriterText';
 import { useAudience } from '../contexts/AudienceContext';
 import { useAnalytics } from '../hooks/useAnalytics';
-import { ENDPOINTS, fetchWithTimeout } from '../config/api';
+import { ENDPOINTS, fetchWithTimeout } from '../src/config/api';
 
 interface HeroSearchProps {
   onSearch: (q: string, data?: any) => void;

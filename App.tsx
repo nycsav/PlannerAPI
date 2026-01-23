@@ -16,7 +16,7 @@ import { WelcomeTooltip } from './components/WelcomeTooltip';
 import { NewContentBadge } from './components/NewContentBadge';
 import { useAudience } from './contexts/AudienceContext';
 import { useAuth } from './contexts/AuthContext';
-import { ENDPOINTS, fetchWithTimeout } from './config/api';
+import { ENDPOINTS, fetchWithTimeout } from './src/config/api';
 import {
   isFirstVisit,
   markAsVisited,

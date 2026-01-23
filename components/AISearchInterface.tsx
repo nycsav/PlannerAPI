@@ -4,7 +4,7 @@ import {
 } from 'lucide-react';
 import { IntelligenceChart } from './IntelligenceChart';
 import { useAudience } from '../contexts/AudienceContext';
-import { ENDPOINTS, fetchWithTimeout } from '../config/api';
+import { ENDPOINTS, fetchWithTimeout } from '../src/config/api';
 
 interface AISearchInterfaceProps {
   isOpen: boolean;

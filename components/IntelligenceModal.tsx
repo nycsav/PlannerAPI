@@ -4,7 +4,7 @@ import { parseMarkdown, parseInlineMarkdown, parsePerplexityMarkdown } from '../
 import { exportIntelligenceBriefToPDF } from '../utils/exportPDF';
 import { MetricCard } from './MetricCard';
 import { extractMetrics } from '../utils/extractMetrics';
-import { ENDPOINTS, fetchWithTimeout } from '../config/api';
+import { ENDPOINTS, fetchWithTimeout } from '../src/config/api';
 
 type IntelligenceFramework = {
   id: string;
