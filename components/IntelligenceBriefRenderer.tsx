@@ -72,7 +72,7 @@ export function IntelligenceBriefRenderer() {
                     className="font-sans text-base text-bureau-ink flex items-start gap-3 leading-relaxed"
                   >
                     <span className="text-bureau-signal font-bold mt-0.5 shrink-0">•</span>
-                    <span>{typeof action === 'string' ? action : action.description || action.title || 'Action'}</span>
+                    <span>{typeof action === 'string' ? action.replace(/\[\d+\](\[\d+\])*/g, '').trim() : (action.description || action.title || 'Action').replace(/\[\d+\](\[\d+\])*/g, '').trim()}</span>
                   </li>
                 ))}
               </ul>

@@ -1,7 +1,8 @@
-# PlannerAPI Design Context
+# PlannerAPI Design System
 
-**Last Updated:** January 15, 2026
-**Product:** AI-powered strategic intelligence platform for C-suite marketing executives
+**Last Updated:** January 25, 2026  
+**Product:** AI-powered strategic intelligence platform for C-suite marketing executives  
+**Dark Mode:** ✅ Fully Implemented & Production Ready
 
 ---
 
@@ -52,12 +53,25 @@ Consumer AI chatbot (ChatGPT, Gemini) — We are NOT playful, conversational, or
 - **Accessible at speed** (executives need to scan and act fast)
 
 **Color Palette:**
+
+**Light Mode:**
 - **Primary Dark:** `planner-navy` (#1B365D) — replaces bureau-ink for distinctive brand identity
 - **Accent/CTAs:** `planner-orange` (#FF6B35) — high-contrast for action buttons and highlights
 - **Links/Secondary:** `bureau-signal` (#2563EB) — keep blue for clickable elements
 - **Text:** `bureau-slate` (#475569) — body text, secondary content
 - **Surface:** `bureau-surface` (#FFFFFF) — clean white backgrounds
 - **Borders:** `bureau-border` (#E2E8F0) — subtle dividers
+
+**Dark Mode:**
+- **Background:** `slate-900` (#0F172A) — deep navy for main surfaces
+- **Surface:** `slate-800` (#1E293B) — elevated panels, cards, modals
+- **Text Primary:** `gray-100` (#F1F5F9) — high contrast for headings and primary text
+- **Text Secondary:** `gray-200` (#E2E8F0) — body text, secondary content
+- **Text Tertiary:** `gray-300` (#CBD5E1) — helper text, timestamps
+- **Accent/CTAs:** `planner-orange` (#FF6B35) — maintains brand identity in dark mode
+- **Links:** `blue-400` (#60A5FA) — high contrast for clickable elements
+- **Borders:** `slate-700/50` — subtle dividers with opacity for depth
+- **Logo Colors:** CSS variables (`--logo-bg`, `--logo-signal`, `--logo-white`) — dynamic SVG coloring
 
 **Typography:**
 - **Display Headings:** Outfit (black weight, uppercase, **NO italic**) — commanding but clean
@@ -81,11 +95,21 @@ All-caps for section headers and key headlines (authority), but **remove italic*
 - Content: 1400px (readable briefing cards)
 - Wide: 1400px (full-width sections)
 
+**Dark Mode:**
+- **Implementation:** Class-based dark mode via Tailwind (`darkMode: 'class'`)
+- **Toggle:** Theme toggle in Navbar (top-right) with instant feedback
+- **Persistence:** Theme preference saved to `localStorage` and persists across sessions
+- **System Preference:** Automatically detects and respects system dark mode preference on first visit
+- **CSS Variables:** Logo colors adapt via CSS custom properties for seamless dark mode integration
+- **Contrast Standards:** All dark mode text meets WCAG AA standards (minimum 4.5:1 ratio)
+- **Global Overrides:** High-specificity CSS rules ensure dark mode applies consistently across all components
+
 **Accessibility:**
 - All transitions/animations disabled globally (per requirement in index.css)
 - Minimum contrast ratio: WCAG AA (4.5:1 for text, 3:1 for UI elements)
 - Touch targets: 44x44px minimum
 - Semantic HTML: proper heading hierarchy, ARIA labels, keyboard navigation
+- Dark mode: All text colors tested for WCAG AA compliance in both light and dark modes
 
 ---
 
@@ -293,23 +317,54 @@ Currently all transitions are disabled (`transition: none !important` in index.c
 - No decorative illustrations unless they clarify complex concepts
 - Icons should be functional (button labels, status indicators), not decorative
 
+### Dark Mode Color Usage
+- **Backgrounds:** Use `bg-white dark:bg-slate-900` for main surfaces
+- **Elevated Panels:** Use `bg-white dark:bg-slate-800` for cards, modals, sidebars
+- **Text Hierarchy:** 
+  - Headings: `text-gray-900 dark:text-gray-100`
+  - Body: `text-gray-700 dark:text-gray-200`
+  - Secondary: `text-gray-600 dark:text-gray-300`
+- **Borders:** Use opacity for subtlety: `border-gray-200/60 dark:border-slate-700/50`
+- **Accents:** Maintain brand colors: `text-bureau-signal dark:text-planner-orange`
+- **Logo:** Use CSS variables for dynamic SVG coloring in dark mode
+
 ### When Expanding Color Palette
-- Ensure all new colors pass WCAG contrast ratios
-- Test in light/dark mode if dark mode is added
+- Ensure all new colors pass WCAG contrast ratios in both light and dark modes
+- Test in light/dark mode before deploying
 - Maintain signal vs noise principle (color = meaning, not decoration)
+- Use Tailwind's standard `slate` colors for dark mode consistency
 
 ---
 
 ## Reference Files
 
-**UX Audit:** `/ux/executive-journey-audit.md` — Complete user journey analysis, pain points, recommendations
-**Tailwind Config:** `/tailwind.config.js` — Design tokens (spacing, colors, typography)
-**Global Styles:** `/index.css` — Base styles, utilities, animation override
-**Logo Component:** `/components/Logo.tsx` — Terminal, compass, pivot variants
-**Trust Strip:** `/components/TrustStrip.tsx` — Social proof component pattern
+**UX Audit:** `/ux/executive-journey-audit.md` — Complete user journey analysis, pain points, recommendations  
+**Tailwind Config:** `/tailwind.config.js` — Design tokens (spacing, colors, typography, dark mode)  
+**Global Styles:** `/index.css` — Base styles, utilities, animation override, dark mode CSS variables  
+**Theme Context:** `/contexts/ThemeContext.tsx` — Theme state management and persistence  
+**Design Config:** `/src/config/design.ts` — Centralized design tokens and interpretation  
+**Logo Component:** `/components/Logo.tsx` — Terminal, compass, pivot variants with dark mode adaptation  
+**Trust Strip:** `/components/TrustStrip.tsx` — Social proof component pattern  
+**Dark Mode Guide:** `/DARK-MODE-DESIGN-SYSTEM.md` — Complete dark mode implementation documentation  
+**Design Tokens:** `/DESIGN-TOKENS.md` — All design tokens and usage patterns
 
 ---
 
-**End of Design Context**
+## Design Interpretation Saved
 
-*This document guides all future design decisions for PlannerAPI. Update as the product evolves, but core principles remain constant: clarity, trust, executive-appropriate precision.*
+The complete design interpretation has been saved to:
+- **`/src/config/design.ts`** - TypeScript configuration with all design tokens
+- **`/DESIGN-TOKENS.md`** - Comprehensive markdown documentation
+- **`/DARK-MODE-DESIGN-SYSTEM.md`** - Complete dark mode implementation guide
+
+**Key Design Decisions:**
+- Light Mode: Clean, professional, high contrast for maximum readability
+- Dark Mode: Deep, sophisticated, reduces eye strain while maintaining brand identity
+- Brand Consistency: `planner-orange` maintained in both modes
+- Accessibility: WCAG AA compliance (4.5:1 minimum contrast) in both modes
+
+---
+
+**End of Design System**
+
+*This document guides all future design decisions for PlannerAPI. Update as the product evolves, but core principles remain constant: clarity, trust, executive-appropriate precision. Dark mode is production-ready and fully documented.*

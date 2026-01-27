@@ -42,13 +42,13 @@ type IntelligenceBriefing = {
 };
 
 const SectionHeader: React.FC<{ id: string; title: string; subtitle?: string; badge?: React.ReactNode }> = ({ id, title, subtitle, badge }) => (
-  <div className="mb-xl border-b border-bureau-ink/10 pb-md">
+  <div id={id} className="mb-xl border-b border-gray-200 dark:border-slate-700 pb-md">
     <div className="flex items-center gap-md">
-      <h2 className="font-display text-3xl md:text-4xl font-black text-bureau-ink uppercase tracking-tight" style={{ fontStyle: 'italic', fontWeight: 900 }}>{title}</h2>
+      <h2 className="font-display text-3xl md:text-4xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight" style={{ fontStyle: 'italic', fontWeight: 900 }}>{title}</h2>
       {badge}
     </div>
     {subtitle && (
-      <p className="text-base text-bureau-slate/70 mt-2">{subtitle}</p>
+      <p className="text-base text-gray-600 dark:text-gray-300 mt-2">{subtitle}</p>
     )}
   </div>
 );
@@ -142,11 +142,16 @@ const App: React.FC = () => {
   // Fetch intelligence and open modal
   const fetchIntelligence = async (query: string, displayQuery?: string) => {
     console.log('[App] fetchIntelligence called with query:', query, 'displayQuery:', displayQuery);
-    console.log('[App] Current intelligenceOpen state:', intelligenceOpen);
+    
+    // Open modal immediately to show loading state (optimized: batch state updates)
+    setIntelligenceOpen(true);
     setIsLoadingIntelligence(true);
-    console.log('[App] Set isLoadingIntelligence to true');
-    setIntelligenceOpen(true); // Open modal immediately to show loading state
-    console.log('[App] Set intelligenceOpen to true');
+    setIntelligencePayload(null); // Clear previous payload to show loading state
+    
+    // Use requestAnimationFrame to ensure smooth UI update
+    requestAnimationFrame(() => {
+      console.log('[App] Modal opened, loading state set');
+    });
 
     try {
       // Convert audience format from VP_Marketing to "VP Marketing"
@@ -161,7 +166,7 @@ const App: React.FC = () => {
           'Accept': 'application/json'
         },
         body: JSON.stringify({ query, audience: audienceFormatted }),
-        timeout: 30000,
+        timeout: 50000, // Increased timeout for real-time data fetching
       });
       console.log('[App] Backend response status:', res.status);
 
@@ -173,185 +178,328 @@ const App: React.FC = () => {
 
       const data = await res.json();
       console.log('[App] Backend data received:', data);
+      
+      // Ensure citations are available for source extraction
+      if (!data.citations && data.raw?.citations) {
+        data.citations = data.raw.citations;
+      }
 
       // Use display query for modal, or extract clean query from detailed prompt
       const cleanQuery = displayQuery || query.split('. Include:')[0].replace(/^Provide a detailed financial impact analysis for "|^Analyze the competitive landscape for "|^Create a detailed implementation roadmap for "/g, '').replace(/"/g, '');
 
-      // Generate topic-specific follow-up questions based on content
-      const generateFollowUps = (query: string, summary: string, moves: string[]) => {
-        const lowerQuery = query.toLowerCase();
-        const lowerSummary = summary.toLowerCase();
+      // Generate real-time, context-aware follow-up questions based on content
+      const generateFollowUps = (query: string, summary: string, moves: string[], signals: any[]) => {
+        const allContent = `${query} ${summary} ${moves.join(' ')} ${signals.map(s => s.title + ' ' + s.summary).join(' ')}`;
+        const lowerContent = allContent.toLowerCase();
 
-        // Extract key metrics/facts from summary (concise version)
-        const extractKeyFacts = (text: string): string => {
-          // Extract just numbers and key phrases (under 100 chars)
-          const metrics = text.match(/(\$?\d+(?:\.\d+)?[KMB%]?|\d+x)/gi) || [];
-          const uniqueMetrics = [...new Set(metrics)].slice(0, 3).join(', ');
-          return uniqueMetrics || '';
+        // Extract entities (companies, technologies, products) from content
+        const extractEntities = (text: string) => {
+          // Common tech companies and products
+          const companies = [
+            'Nvidia', 'NVIDIA', 'Groq', 'DeepSeek', 'OpenAI', 'Anthropic', 'Google', 'Meta', 'Microsoft', 'Amazon',
+            'Apple', 'Boston Dynamics', 'Hyundai', 'Shopify', 'Walmart', 'Target', 'TikTok', 'Instagram',
+            'Facebook', 'Twitter', 'X', 'LinkedIn', 'Reddit', 'Smartly', 'GPT', 'Claude', 'Gemini'
+          ];
+          
+          const technologies = [
+            'LPU', 'LPU architecture', 'V4', 'Atlas robot', 'AI agents', 'agentic AI', 'machine learning',
+            'inference', 'context windows', 'coding AI', 'physical AI', 'robot chips', 'open-source AI',
+            'retail media', 'attribution', 'first-party data', 'zero-party data', 'CDP', 'AEO', 'GEO'
+          ];
+          
+          const foundCompanies = companies.filter(company => 
+            text.includes(company) || lowerContent.includes(company.toLowerCase())
+          );
+          
+          const foundTechnologies = technologies.filter(tech => 
+            text.includes(tech) || lowerContent.includes(tech.toLowerCase())
+          );
+          
+          return { companies: foundCompanies, technologies: foundTechnologies };
         };
 
-        const keyFacts = extractKeyFacts(summary);
-        const firstMoveShort = moves.length > 0 ? moves[0].substring(0, 100) + '...' : '';
+        // Extract metrics and transactions
+        const extractMetrics = (text: string) => {
+          const transactions = text.match(/\$(\d+(?:\.\d+)?[KMB]?)\s*(?:acquisition|deal|investment|funding)/gi) || [];
+          const percentages = text.match(/(\d+(?:\.\d+)?)%/g) || [];
+          const multipliers = text.match(/(\d+(?:\.\d+)?)x/gi) || [];
+          
+          return {
+            transactions: transactions.map(t => t.replace(/\$/g, '').trim()),
+            percentages: percentages,
+            multipliers: multipliers
+          };
+        };
 
-        // Detect topic categories from query and summary
-        const isAI = /\b(ai|artificial intelligence|machine learning|automation|gpt|llm)\b/i.test(query + summary);
-        const isFinance = /\b(revenue|cost|roi|budget|profit|pricing|financial|investment|funding)\b/i.test(query + summary);
-        const isMarket = /\b(market|trend|growth|share|expansion|opportunity|landscape)\b/i.test(query + summary);
-        const isBrand = /\b(brand|reputation|trust|positioning|identity|awareness|perception)\b/i.test(query + summary);
-        const isData = /\b(data|analytics|attribution|measurement|tracking|metrics)\b/i.test(query + summary);
-        const isRetention = /\b(retention|loyalty|churn|engagement|customer|lifetime value|ltv)\b/i.test(query + summary);
-        const isRegulatory = /\b(regulation|compliance|legal|policy|ftc|gdpr|law)\b/i.test(query + summary);
-        const isTechnology = /\b(platform|technology|software|tool|vendor|system|infrastructure)\b/i.test(query + summary);
-        const isCompetitive = /\b(competitor|competitive|market share|consolidation|positioning)\b/i.test(query + summary);
+        // Extract temporal signals (events, dates, recent developments)
+        const extractTemporalSignals = (text: string) => {
+          const events = [
+            'CES 2026', 'CES', 'acquisition', 'deployment', 'announcement', 'launch', 'release',
+            'this week', 'latest', 'upcoming', 'recent', 'new', 'now', 'today'
+          ];
+          
+          const foundEvents = events.filter(event => 
+            lowerContent.includes(event.toLowerCase())
+          );
+          
+          // Extract years (2026, 2025, etc.)
+          const years = text.match(/\b(20\d{2})\b/g) || [];
+          
+          return { events: foundEvents, years: [...new Set(years)] };
+        };
+
+        const entities = extractEntities(allContent);
+        const metrics = extractMetrics(allContent);
+        const temporal = extractTemporalSignals(allContent);
 
         const followUps: { label: string; question: string; displayQuery: string }[] = [];
 
-        // Generate 3 most relevant follow-ups based on detected topics
-        // Include concise context for relevance without excessive prompt length
-        if (isAI) {
-          followUps.push({
-            label: 'Implementation Guide',
-            question: `Create an AI implementation guide for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include vendor selection, pilot design, risk mitigation, team needs, timeline, and metrics. ${firstMoveShort ? `Reference: ${firstMoveShort}` : ''}`,
-            displayQuery: `AI implementation: ${cleanQuery}`
+        // Generate questions based on extracted real-time contexts
+        // 1. Architecture/Technology questions
+        if (entities.technologies.length > 0) {
+          entities.technologies.slice(0, 2).forEach(tech => {
+            if (tech === 'LPU' || tech === 'LPU architecture') {
+              const company = entities.companies.find(c => ['Groq', 'Nvidia', 'NVIDIA'].includes(c));
+              if (company && metrics.transactions.length > 0) {
+                followUps.push({
+                  label: 'Technology Deep Dive',
+                  question: `What is Groq's LPU architecture and why did Nvidia acquire it for ${metrics.transactions[0] || '$20B'}`,
+                  displayQuery: `Groq LPU architecture and Nvidia acquisition`
+                });
+              }
+            } else if (tech.includes('V4') || tech === 'DeepSeek') {
+              followUps.push({
+                label: 'Model Comparison',
+                question: `How does DeepSeek V4 improve coding AI compared to GPT and Claude`,
+                displayQuery: `DeepSeek V4 vs GPT and Claude`
+              });
+            } else if (tech.includes('Atlas') || tech.includes('robot')) {
+              const company = entities.companies.find(c => ['Boston Dynamics', 'Hyundai'].includes(c));
+              if (company) {
+                followUps.push({
+                  label: 'Deployment Details',
+                  question: `Details on Boston Dynamics Atlas robot deployment at Hyundai factory`,
+                  displayQuery: `Boston Dynamics Atlas Hyundai deployment`
+                });
+              }
+            }
           });
         }
 
-        if (isFinance) {
-          followUps.push({
-            label: 'ROI Analysis',
-            question: `Provide detailed ROI analysis for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include cost breakdown, revenue impact, payback period, budget recommendations, and financial modeling. ${firstMoveShort ? `Context: ${firstMoveShort}` : ''}`,
-            displayQuery: `ROI analysis: ${cleanQuery}`
-          });
-        }
-
-        if (isCompetitive) {
-          followUps.push({
-            label: 'Competitive Strategy',
-            question: `Develop competitive strategy for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include competitor analysis, differentiation, positioning, and tactical moves. ${firstMoveShort ? `Reference: ${firstMoveShort}` : ''}`,
-            displayQuery: `Competitive response: ${cleanQuery}`
-          });
-        }
-
-        if (isBrand) {
-          followUps.push({
-            label: 'Brand Impact',
-            question: `Analyze brand implications of "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include reputation risks, positioning opportunities, messaging strategy, and brand protection. ${firstMoveShort ? `Context: ${firstMoveShort}` : ''}`,
-            displayQuery: `Brand implications: ${cleanQuery}`
-          });
-        }
-
-        if (isData) {
-          followUps.push({
-            label: 'Measurement Strategy',
-            question: `Create measurement strategy for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include KPIs, attribution models, data infrastructure, reporting frameworks, and dashboards. ${firstMoveShort ? `Reference: ${firstMoveShort}` : ''}`,
-            displayQuery: `Measurement approach: ${cleanQuery}`
-          });
-        }
-
-        if (isRetention) {
-          followUps.push({
-            label: 'Retention Tactics',
-            question: `Develop retention strategy for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include loyalty design, engagement tactics, churn reduction, LTV optimization, and benchmarks. ${firstMoveShort ? `Context: ${firstMoveShort}` : ''}`,
-            displayQuery: `Retention strategy: ${cleanQuery}`
-          });
-        }
-
-        if (isRegulatory) {
-          followUps.push({
-            label: 'Compliance Plan',
-            question: `Create compliance plan for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include regulatory requirements, risk assessment, legal review, policy updates, and timeline. ${firstMoveShort ? `Reference: ${firstMoveShort}` : ''}`,
-            displayQuery: `Compliance strategy: ${cleanQuery}`
-          });
-        }
-
-        if (isTechnology) {
-          followUps.push({
-            label: 'Vendor Evaluation',
-            question: `Evaluate vendors for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include comparison, pricing, integration requirements, and selection criteria. ${firstMoveShort ? `Context: ${firstMoveShort}` : ''}`,
-            displayQuery: `Vendor landscape: ${cleanQuery}`
-          });
-        }
-
-        if (isMarket) {
-          followUps.push({
-            label: 'Market Entry',
-            question: `Identify market opportunities for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include sizing, entry strategy, growth projections, and resources. ${firstMoveShort ? `Reference: ${firstMoveShort}` : ''}`,
-            displayQuery: `Market opportunity: ${cleanQuery}`
-          });
-        }
-
-        // If less than 3 follow-ups, add contextual ones to reach 3
-        if (followUps.length < 3) {
-          if (!followUps.some(f => f.label.includes('Implementation'))) {
+        // 2. Event-based questions
+        if (temporal.events.includes('ces') || temporal.events.includes('ces 2026')) {
+          const company = entities.companies.find(c => ['Nvidia', 'NVIDIA'].includes(c));
+          if (company) {
             followUps.push({
-              label: 'Implementation Roadmap',
-              question: `Create 90-day implementation plan for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include milestones, resources, metrics, and roadblocks. ${firstMoveShort ? `Start with: ${firstMoveShort}` : ''}`,
-              displayQuery: `Implementation plan: ${cleanQuery}`
+              label: 'Event Announcements',
+              question: `NVIDIA'S CES 2026 announcements on physical AI and robot chips`,
+              displayQuery: `NVIDIA CES 2026 physical AI announcements`
             });
           }
         }
 
-        if (followUps.length < 3) {
-          if (!followUps.some(f => f.label.includes('Financial') || f.label.includes('ROI'))) {
+        // 3. Trend/Prediction questions
+        if (entities.technologies.some(t => t.includes('open-source') || t.includes('AI'))) {
+          const year = temporal.years[0] || '2026';
+          followUps.push({
+            label: 'Market Predictions',
+            question: `Predictions for open-source AI models in ${year} breaking Big Tech dominance`,
+            displayQuery: `Open-source AI predictions ${year}`
+          });
+        }
+
+        // 4. Company-specific questions
+        if (entities.companies.length >= 2) {
+          const [company1, company2] = entities.companies.slice(0, 2);
+          if (company1 && company2 && !followUps.some(f => f.displayQuery.includes(company1))) {
             followUps.push({
-              label: 'Budget Impact',
-              question: `Analyze budget implications of "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include investment needs, savings potential, reallocation strategy, and justification. ${firstMoveShort ? `Context: ${firstMoveShort}` : ''}`,
-              displayQuery: `Budget analysis: ${cleanQuery}`
+              label: 'Competitive Analysis',
+              question: `How does ${company1} compare to ${company2} in ${entities.technologies[0] || 'AI strategy'}`,
+              displayQuery: `${company1} vs ${company2} comparison`
             });
           }
         }
 
-        if (followUps.length < 3) {
-          followUps.push({
-            label: 'Risk Assessment',
-            question: `Assess risks for "${cleanQuery}" (${keyFacts}) for ${audienceFormatted}. Include risk identification, impact assessment, mitigation plans, and contingencies. ${firstMoveShort ? `Reference: ${firstMoveShort}` : ''}`,
-            displayQuery: `Risk analysis: ${cleanQuery}`
-          });
+        // 5. Transaction/Acquisition questions
+        if (metrics.transactions.length > 0 && entities.companies.length > 0) {
+          const company = entities.companies[0];
+          const transaction = metrics.transactions[0];
+          if (!followUps.some(f => f.question.includes(transaction))) {
+            followUps.push({
+              label: 'M&A Analysis',
+              question: `What drove the ${transaction} acquisition and strategic implications for the market`,
+              displayQuery: `${company} ${transaction} acquisition analysis`
+            });
+          }
         }
 
-        // Return top 3 most relevant
-        return followUps.slice(0, 3);
+        // Fallback to topic-based questions if not enough context-specific ones
+        if (followUps.length < 5) {
+          const isAI = /\b(ai|artificial intelligence|machine learning|automation|gpt|llm)\b/i.test(allContent);
+          const isFinance = /\b(revenue|cost|roi|budget|profit|pricing|financial|investment|funding)\b/i.test(allContent);
+          const isMarket = /\b(market|trend|growth|share|expansion|opportunity|landscape)\b/i.test(allContent);
+          const isBrand = /\b(brand|reputation|trust|positioning|identity|awareness|perception)\b/i.test(allContent);
+          const isData = /\b(data|analytics|attribution|measurement|tracking|metrics)\b/i.test(allContent);
+          const isCompetitive = /\b(competitor|competitive|market share|consolidation|positioning)\b/i.test(allContent);
+
+          if (isAI && !followUps.some(f => f.label.includes('AI') || f.label.includes('Implementation'))) {
+            followUps.push({
+              label: 'AI Implementation',
+              question: `Create an AI implementation guide for "${cleanQuery}" for ${audienceFormatted}. Include vendor selection, pilot design, risk mitigation, team needs, timeline, and metrics.`,
+              displayQuery: `AI implementation: ${cleanQuery}`
+            });
+          }
+
+          if (isFinance && !followUps.some(f => f.label.includes('ROI') || f.label.includes('Financial'))) {
+            followUps.push({
+              label: 'ROI Analysis',
+              question: `Provide detailed ROI analysis for "${cleanQuery}" for ${audienceFormatted}. Include cost breakdown, revenue impact, payback period, budget recommendations, and financial modeling.`,
+              displayQuery: `ROI analysis: ${cleanQuery}`
+            });
+          }
+
+          if (isCompetitive && !followUps.some(f => f.label.includes('Competitive'))) {
+            followUps.push({
+              label: 'Competitive Strategy',
+              question: `Develop competitive strategy for "${cleanQuery}" for ${audienceFormatted}. Include competitor analysis, differentiation, positioning, and tactical moves.`,
+              displayQuery: `Competitive response: ${cleanQuery}`
+            });
+          }
+
+          if (isData && !followUps.some(f => f.label.includes('Measurement') || f.label.includes('Data'))) {
+            followUps.push({
+              label: 'Measurement Strategy',
+              question: `Create measurement strategy for "${cleanQuery}" for ${audienceFormatted}. Include KPIs, attribution models, data infrastructure, reporting frameworks, and dashboards.`,
+              displayQuery: `Measurement approach: ${cleanQuery}`
+            });
+          }
+
+          if (isBrand && !followUps.some(f => f.label.includes('Brand'))) {
+            followUps.push({
+              label: 'Brand Impact',
+              question: `Analyze brand implications of "${cleanQuery}" for ${audienceFormatted}. Include reputation risks, positioning opportunities, messaging strategy, and brand protection.`,
+              displayQuery: `Brand implications: ${cleanQuery}`
+            });
+          }
+        }
+
+        // Return top 5-7 most relevant (matching Perplexity's "Related" section)
+        return followUps.slice(0, 7);
       };
 
       // Build payload for modal
       const summaryText = data.implications?.join(' ') || 'No summary available.';
       const movesArray = data.actions || [];
 
+      // Ensure signals always have source information - extract from citations if missing
+      let signalsWithSources = data.signals || [];
+      
+      // Generate real-time, context-aware follow-ups using full content
+      const followUps = generateFollowUps(cleanQuery, summaryText, movesArray, signalsWithSources);
+      
+      // If signals don't have sourceUrl, try to extract from citations
+      if (signalsWithSources.length > 0 && data.citations && Array.isArray(data.citations)) {
+        signalsWithSources = signalsWithSources.map((signal: any, index: number) => {
+          // If signal already has sourceUrl, keep it
+          if (signal.sourceUrl && signal.sourceUrl !== '#') {
+            return signal;
+          }
+          
+          // Otherwise, try to get from citations array
+          const citation = data.citations[index];
+          if (citation) {
+            try {
+              const url = new URL(citation);
+              return {
+                ...signal,
+                sourceUrl: citation,
+                sourceName: signal.sourceName || url.hostname.replace('www.', '') || 'Source'
+              };
+            } catch (e) {
+              // Invalid URL, keep original signal
+              return signal;
+            }
+          }
+          
+          return signal;
+        });
+      }
+
+      // Create source entries directly from citations if signals don't have URLs
+      // This ensures we always show Perplexity sources even if signal parsing failed
+      const citationSources: any[] = [];
+      if (data.citations && Array.isArray(data.citations) && data.citations.length > 0) {
+        data.citations.forEach((citation: string, index: number) => {
+          try {
+            const url = new URL(citation);
+            citationSources.push({
+              id: `CIT-${index + 1}`,
+              title: url.hostname.replace('www.', ''),
+              summary: `Source ${index + 1} from Perplexity research`,
+              sourceName: url.hostname.replace('www.', ''),
+              sourceUrl: citation
+            });
+          } catch (e) {
+            // Skip invalid URLs
+            console.warn('Invalid citation URL:', citation, e);
+          }
+        });
+      }
+
+      // Merge signals with citation sources, prioritizing signals with URLs
+      const allSources = [
+        ...signalsWithSources.filter(s => s.sourceUrl && s.sourceUrl !== '#'),
+        ...citationSources.filter(cit => !signalsWithSources.some(s => s.sourceUrl === cit.sourceUrl))
+      ];
+
       const payload: IntelligencePayload = {
         query: cleanQuery, // Show clean user-friendly query in modal
         summary: summaryText,
-        keySignals: data.signals?.map((s: any) => s.title || s.summary || s) || [],
-        signals: data.signals || [], // Pass full signal objects with sources
+        keySignals: signalsWithSources.map((s: any) => s.title || s.summary || s) || [],
+        signals: allSources.length > 0 ? allSources : signalsWithSources, // Use merged sources, fallback to signals
         movesForLeaders: movesArray,
         frameworks: data.frameworks, // Use dynamic frameworks from API (modal will fallback to defaults if undefined)
-        followUps: generateFollowUps(cleanQuery, summaryText, movesArray)
+        followUps: followUps, // Use real-time context-aware follow-ups generated above
+        graphData: data.graphData // Include structured graph data from backend
       };
 
+      console.log('[App] Setting intelligence payload:', payload);
       setIntelligencePayload(payload);
+      console.log('[App] Payload set, modal should display data');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('[App] Intelligence fetch failed:', errorMessage);
+      console.error('[App] Error stack:', error instanceof Error ? error.stack : 'No stack');
 
-      // Determine error type for better messaging
-      let userMessage = 'Unable to retrieve intelligence. Please try again.';
+      // Determine error type for better, user-friendly messaging
+      let userMessage = 'I had trouble getting that intelligence. Could you try again?';
       if (errorMessage.includes('AbortError') || errorMessage.includes('timeout')) {
-        userMessage = 'Request timed out. The backend may be overloaded. Please try again.';
-      } else if (errorMessage.includes('Failed to fetch')) {
-        userMessage = 'Network error. Please check your connection and try again.';
+        userMessage = 'This is taking longer than expected. The system might be busy - try again in a moment?';
+      } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+        userMessage = 'Looks like there\'s a connection issue. Check your internet and try again?';
       } else if (errorMessage.includes('CORS')) {
-        userMessage = 'Network configuration error. Please contact support.';
+        userMessage = 'There\'s a configuration issue on our end. We\'re looking into it.';
+      } else if (errorMessage.includes('404')) {
+        userMessage = 'I couldn\'t find that endpoint. This might be a temporary issue - try again?';
+      } else if (errorMessage.includes('500')) {
+        userMessage = 'Something went wrong on our end. Give it a moment and try again?';
       }
 
       // Show error modal with helpful message
-      setIntelligencePayload({
-        query,
-        summary: userMessage + '\n\nError details: ' + errorMessage,
+      const errorPayload: IntelligencePayload = {
+        query: displayQuery || query,
+        summary: `**Error:** ${userMessage}\n\n**Details:** ${errorMessage}\n\nPlease try your search again or contact support if the issue persists.`,
         keySignals: [],
-        movesForLeaders: []
-      });
-      setIntelligenceOpen(true);
+        movesForLeaders: [],
+        signals: []
+      };
+      
+      console.log('[App] Setting error payload:', errorPayload);
+      setIntelligencePayload(errorPayload);
+      // Keep modal open to show error
     } finally {
       setIsLoadingIntelligence(false);
+      console.log('[App] Loading complete, isLoadingIntelligence set to false');
     }
   };
 
@@ -486,7 +634,7 @@ const App: React.FC = () => {
           <main className="w-full">
 
             {/* HERO SECTION */}
-            <div className="section-zebra py-2xl border-b border-bureau-border bg-bureau-surface">
+            <div className="section-zebra py-2xl border-b border-bureau-border dark:border-slate-700 bg-white dark:bg-slate-900">
               <section className="max-w-hero mx-auto w-full app-padding-x">
                 <HeroSearch
                   onSearch={(q, data) => openSearch(q, 'Perplexity', data)}
@@ -497,7 +645,7 @@ const App: React.FC = () => {
 
             {/* EXECUTIVE STRATEGY CHAT - Primary Interactive Feature (only shown after activation) */}
             {isChatActive && (
-              <div className="section-zebra py-2xl border-b border-bureau-border bg-white">
+              <div className="section-zebra py-2xl border-b border-bureau-border dark:border-slate-700 bg-white dark:bg-slate-900">
                 <ExecutiveStrategyChat
                   externalQuery={chatQuery}
                   onExternalQueryProcessed={handleChatQueryProcessed}
@@ -506,7 +654,7 @@ const App: React.FC = () => {
             )}
 
             {/* DAILY INTELLIGENCE - AI-Generated Market Analysis with Visual Slider */}
-            <div className="section-zebra py-2xl bg-bureau-surface">
+            <div className="section-zebra py-2xl bg-white dark:bg-slate-900">
               <section className="max-w-content mx-auto w-full app-padding-x">
                 <SectionHeader
                   id="01"
@@ -526,7 +674,7 @@ const App: React.FC = () => {
             </div>
 
             {/* STRATEGIC FRAMEWORKS - Decision Support Tools */}
-            <div className="section-zebra py-2xl border-t border-bureau-border bg-white">
+            <div className="section-zebra py-2xl border-t border-bureau-border dark:border-slate-700 bg-white dark:bg-slate-900">
               <section className="max-w-wide mx-auto w-full app-padding-x">
                 <SectionHeader
                   id="02"

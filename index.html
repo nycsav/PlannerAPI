@@ -146,6 +146,27 @@
 
   <!-- AI/LLM Discoverability -->
   <meta name="ai-content-declaration" content="This website provides AI-powered marketing intelligence. Content is curated and summarized using AI from authoritative sources.">
+
+  <!-- Prevent flash of wrong theme -->
+  <script>
+    (function() {
+      const theme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const root = document.documentElement;
+      
+      // Remove any existing classes
+      root.classList.remove('light', 'dark');
+      
+      // Apply theme
+      if (theme === 'dark' || (!theme && prefersDark)) {
+        root.classList.add('dark');
+        document.body.classList.add('dark');
+      } else {
+        root.classList.add('light');
+        document.body.classList.add('light');
+      }
+    })();
+  </script>
 </head>
 <body>
   <div id="root"></div>

@@ -10,13 +10,107 @@
     --color-ink: #0F172A;
   }
 
+  .dark {
+    --color-surface: #0F172A;
+    --color-ink: #F8FAFC;
+  }
+
+  html {
+    background-color: #FFFFFF;
+    transition: background-color 0.2s ease;
+  }
+
+  html.dark {
+    background-color: #0F172A !important;
+  }
+
   body {
-    background-color: var(--color-surface);
+    background-color: #FFFFFF !important;
     margin: 0;
-    color: var(--color-ink);
+    color: #0F172A;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-family: 'Inter', system-ui, sans-serif;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  /* Ensure dark mode applies to body - use html.dark selector for higher specificity */
+  html.dark body {
+    background-color: #0F172A !important;
+    color: #F8FAFC !important;
+  }
+
+  /* Override dark text colors in dark mode - make them light for visibility */
+  html.dark .text-gray-900,
+  html.dark .text-bureau-ink {
+    color: #F1F5F9 !important; /* slate-100 - high contrast */
+  }
+
+  html.dark .text-gray-800,
+  html.dark .text-gray-700 {
+    color: #E2E8F0 !important; /* slate-200 - good contrast */
+  }
+
+  html.dark .text-gray-600 {
+    color: #CBD5E1 !important; /* slate-300 - readable */
+  }
+
+  /* Force high contrast for modal sidebar panels in dark mode */
+  html.dark .dark\:bg-slate-800 h3,
+  html.dark .dark\:bg-slate-800 h4,
+  html.dark .dark\:bg-slate-800 .font-display {
+    color: #F1F5F9 !important; /* slate-100 - high contrast for headings */
+  }
+
+  html.dark .dark\:bg-slate-800 p,
+  html.dark .dark\:bg-slate-800 span:not([class*="text-"]),
+  html.dark .dark\:bg-slate-800 li {
+    color: #E2E8F0 !important; /* slate-200 - good contrast for body text */
+  }
+
+  /* Force dark mode backgrounds - high specificity to override Tailwind */
+  html.dark .bg-white {
+    background-color: #0F172A !important;
+  }
+
+  html.dark .dark\:bg-slate-900 {
+    background-color: #0F172A !important;
+  }
+
+  /* Override section backgrounds */
+  html.dark .section-zebra {
+    background-color: #0F172A !important;
+  }
+
+  /* Ensure navbar is dark in dark mode */
+  html.dark nav {
+    background-color: #0F172A !important;
+  }
+
+  /* Logo SVG color variables for dark mode */
+  :root {
+    --logo-bg: #111827;
+    --logo-primary: #111827;
+    --logo-signal: #EF4444;
+    --logo-blue: #1D4ED8;
+    --logo-white: #FFFFFF;
+  }
+
+  html.dark {
+    --logo-bg: #1E293B;
+    --logo-primary: #F1F5F9;
+    --logo-signal: #FF6B35;
+    --logo-blue: #60A5FA;
+    --logo-white: #F1F5F9;
+  }
+
+  /* Main layout and containers */
+  html.dark main {
+    background-color: #0F172A !important;
+  }
+
+  html.dark [class*="min-h-screen"] {
+    background-color: #0F172A !important;
   }
 
   /* Display font for headlines */
@@ -54,6 +148,12 @@
     text-transform: uppercase;
     font-weight: 700;
     letter-spacing: 0.05em;
+  }
+
+  /* Ensure placeholder text is visible in dark mode */
+  html.dark input::placeholder {
+    color: #CBD5E1 !important; /* gray-300 */
+    opacity: 1;
   }
 
   /* Allow smooth transitions for interactive feedback */
@@ -103,6 +203,67 @@
 
   .animate-pulse {
     animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  /* Shimmer animation for skeleton loading */
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite linear;
+    background: linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      transparent 100%
+    );
+    background-size: 1000px 100%;
+  }
+
+  html.dark .animate-shimmer {
+    background: linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      transparent 100%
+    );
+    background-size: 1000px 100%;
+  }
+
+  /* Smooth loading spinner animation */
+  @keyframes spin-smooth {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .animate-spin-smooth {
+    animation: spin-smooth 1s linear infinite;
+  }
+
+  /* Pulse glow for loading indicators */
+  @keyframes pulse-glow-enhanced {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.7;
+      transform: scale(1.05);
+    }
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow-enhanced 2s ease-in-out infinite;
   }
 
   .no-scrollbar::-webkit-scrollbar {

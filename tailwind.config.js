@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class', // Enable class-based dark mode
   content: [
     "./index.html",
     "./index.tsx",
@@ -32,6 +33,11 @@ export default {
         'bureau-signal': '#2563EB',
         'bureau-slate': '#475569',
         'bureau-border': '#E2E8F0',
+        // Dark mode colors
+        'dark-surface': '#0F172A',
+        'dark-ink': '#F8FAFC',
+        'dark-slate': '#CBD5E1',
+        'dark-border': '#1E293B',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

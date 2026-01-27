@@ -61,16 +61,16 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuc
     <div className="fixed inset-0 z-[200] flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-bureau-ink/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-gray-900/60 dark:bg-slate-900/80 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 p-8">
+      <div className="relative bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-md w-full mx-4 p-8 border border-gray-100 dark:border-slate-800">
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-bureau-slate/40 hover:text-bureau-ink transition-colors"
+          className="absolute top-4 right-4 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
@@ -80,10 +80,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuc
         <div className="space-y-6">
           {/* Headline */}
           <div>
-            <h2 className="text-2xl font-bold text-bureau-ink mb-2">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
               Save This Intelligence Brief
             </h2>
-            <p className="text-sm text-bureau-slate">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               Create a free account to save your research and access it anytime.
             </p>
           </div>
@@ -91,34 +91,34 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuc
           {/* Benefits */}
           <div className="space-y-3">
             <div className="flex items-start gap-3">
-              <div className="w-5 h-5 rounded-full bg-bureau-signal/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-bureau-signal text-xs font-bold">✓</span>
+              <div className="w-5 h-5 rounded-full bg-bureau-signal/10 dark:bg-planner-orange/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-bureau-signal dark:text-planner-orange text-xs font-bold">✓</span>
               </div>
-              <p className="text-sm text-bureau-slate">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
                 Save unlimited intelligence briefs
               </p>
             </div>
             <div className="flex items-start gap-3">
-              <div className="w-5 h-5 rounded-full bg-bureau-signal/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-bureau-signal text-xs font-bold">✓</span>
+              <div className="w-5 h-5 rounded-full bg-bureau-signal/10 dark:bg-planner-orange/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-bureau-signal dark:text-planner-orange text-xs font-bold">✓</span>
               </div>
-              <p className="text-sm text-bureau-slate">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
                 Export to PDF and share with team
               </p>
             </div>
             <div className="flex items-start gap-3">
-              <div className="w-5 h-5 rounded-full bg-bureau-signal/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-bureau-signal text-xs font-bold">✓</span>
+              <div className="w-5 h-5 rounded-full bg-bureau-signal/10 dark:bg-planner-orange/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-bureau-signal dark:text-planner-orange text-xs font-bold">✓</span>
               </div>
-              <p className="text-sm text-bureau-slate">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
                 Access search history across devices
               </p>
             </div>
             <div className="flex items-start gap-3">
-              <div className="w-5 h-5 rounded-full bg-bureau-signal/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-bureau-signal text-xs font-bold">✓</span>
+              <div className="w-5 h-5 rounded-full bg-bureau-signal/10 dark:bg-planner-orange/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-bureau-signal dark:text-planner-orange text-xs font-bold">✓</span>
               </div>
-              <p className="text-sm text-bureau-slate">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
                 Free during beta (launching March 2026)
               </p>
             </div>
@@ -126,7 +126,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuc
 
           {/* Error message */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm">
               {error}
             </div>
           )}
@@ -139,7 +139,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuc
                 placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-bureau-border rounded-lg focus:outline-none focus:ring-2 focus:ring-bureau-signal"
+                className="w-full px-4 py-3 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange"
                 disabled={loading}
               />
               <input
@@ -147,7 +147,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuc
                 placeholder="Password (min 6 characters)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-bureau-border rounded-lg focus:outline-none focus:ring-2 focus:ring-bureau-signal"
+                className="w-full px-4 py-3 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange"
                 disabled={loading}
               />
               <button
@@ -161,7 +161,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuc
               <button
                 type="button"
                 onClick={() => setShowEmailForm(false)}
-                className="w-full text-sm text-bureau-slate/60 hover:text-bureau-slate transition-colors"
+                className="w-full text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
               >
                 ← Back to options
               </button>
@@ -179,7 +179,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuc
               <button
                 onClick={() => setShowEmailForm(true)}
                 disabled={loading}
-                className="w-full bg-white text-bureau-ink py-3 px-6 rounded-lg font-semibold border-2 border-bureau-border hover:border-bureau-ink/20 transition-all disabled:opacity-50"
+                className="w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 py-3 px-6 rounded-lg font-semibold border-2 border-gray-200 dark:border-slate-700 hover:border-gray-900 dark:hover:border-slate-600 hover:shadow-md active:scale-[0.98] transition-all duration-200 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-slate-600 focus:ring-offset-2"
               >
                 Continue with Email
               </button>
@@ -190,15 +190,15 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuc
           <div className="text-center">
             <button
               onClick={onClose}
-              className="text-sm text-bureau-slate/60 hover:text-bureau-slate transition-colors"
+              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
             >
               I'll explore first
             </button>
           </div>
 
           {/* Social proof */}
-          <div className="pt-4 border-t border-bureau-border">
-            <p className="text-xs text-bureau-slate/60 text-center">
+          <div className="pt-4 border-t border-gray-200 dark:border-slate-700">
+            <p className="text-xs text-gray-500 dark:text-gray-300 text-center">
               Join 500+ CMOs in early access
             </p>
           </div>

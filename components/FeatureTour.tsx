@@ -112,7 +112,7 @@ export const FeatureTour: React.FC<FeatureTourProps> = ({ isOpen, onComplete, on
   return (
     <div className="fixed inset-0 z-[300]">
       {/* Backdrop with spotlight */}
-      <div className="absolute inset-0 bg-bureau-ink/80 backdrop-blur-sm">
+      <div className="absolute inset-0 bg-gray-900/80 dark:bg-slate-900/90 backdrop-blur-sm">
         {/* Spotlight cutout (simulated with border) */}
         {highlightRect && (
           <div
@@ -130,13 +130,13 @@ export const FeatureTour: React.FC<FeatureTourProps> = ({ isOpen, onComplete, on
       {/* Tooltip */}
       {highlightRect && (
         <div
-          className="absolute bg-white rounded-xl shadow-2xl p-6 w-80 transition-all duration-300"
+          className="absolute bg-white dark:bg-slate-900 rounded-xl shadow-2xl p-6 w-80 transition-all duration-300"
           style={getTooltipPosition()}
         >
           {/* Close button */}
           <button
             onClick={handleSkip}
-            className="absolute top-3 right-3 text-bureau-slate/40 hover:text-bureau-ink transition-colors"
+            className="absolute top-3 right-3 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
             aria-label="Skip tour"
           >
             <X className="w-4 h-4" />
@@ -150,7 +150,7 @@ export const FeatureTour: React.FC<FeatureTourProps> = ({ isOpen, onComplete, on
                 <div
                   key={idx}
                   className={`h-1.5 flex-1 rounded-full transition-all ${
-                    idx <= currentStep ? 'bg-planner-orange' : 'bg-bureau-border'
+                    idx <= currentStep ? 'bg-planner-orange' : 'bg-gray-200 dark:bg-slate-700'
                   }`}
                 />
               ))}
@@ -158,16 +158,16 @@ export const FeatureTour: React.FC<FeatureTourProps> = ({ isOpen, onComplete, on
 
             {/* Title */}
             <div>
-              <h3 className="text-lg font-bold text-bureau-ink mb-2">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">
                 {currentStepData.title}
               </h3>
-              <p className="text-sm text-bureau-slate">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
                 {currentStepData.description}
               </p>
             </div>
 
             {/* Step counter */}
-            <div className="text-xs text-bureau-slate/60">
+            <div className="text-xs text-gray-500 dark:text-gray-300">
               Step {currentStep + 1} of {steps.length}
             </div>
 
@@ -175,7 +175,7 @@ export const FeatureTour: React.FC<FeatureTourProps> = ({ isOpen, onComplete, on
             <div className="flex items-center gap-3">
               <button
                 onClick={handleNext}
-                className="flex-1 bg-planner-orange text-white py-2.5 px-4 rounded-lg font-semibold hover:bg-planner-orange/90 transition-all flex items-center justify-center gap-2"
+                className="flex-1 bg-planner-orange text-white py-2.5 px-4 rounded-lg font-semibold hover:bg-planner-orange/90 hover:shadow-md active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-planner-orange focus:ring-offset-2"
               >
                 {currentStep < steps.length - 1 ? (
                   <>
@@ -189,7 +189,7 @@ export const FeatureTour: React.FC<FeatureTourProps> = ({ isOpen, onComplete, on
               </button>
               <button
                 onClick={handleSkip}
-                className="text-sm text-bureau-slate/60 hover:text-bureau-slate transition-colors"
+                className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-slate-600 focus:ring-offset-2 rounded px-2 py-1"
               >
                 Skip
               </button>

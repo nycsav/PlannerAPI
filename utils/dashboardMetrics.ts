@@ -19,6 +19,21 @@ export interface IntelligenceCard {
   sourceCount: number;
   publishedAt: Timestamp;
   type: 'brief' | 'hot_take';
+  graphData?: {
+    comparisons?: Array<{
+      label: string;
+      value: number;
+      unit: string;
+      context: string;
+      source?: string;
+    }>;
+    metrics?: Array<{
+      label: string;
+      value: number;
+      unit: string;
+      context: string;
+    }>;
+  };
 }
 
 export interface PillarDistribution {

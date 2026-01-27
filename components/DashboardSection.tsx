@@ -36,17 +36,17 @@ export const DashboardSection: React.FC = () => {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div className="h-6 w-32 bg-gray-100 rounded animate-pulse" />
+          <div className="h-6 w-32 bg-gray-100 dark:bg-slate-800 rounded animate-pulse" />
           <div className="flex gap-2">
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="h-8 w-24 bg-gray-100 rounded-full animate-pulse" />
+              <div key={i} className="h-8 w-24 bg-gray-100 dark:bg-slate-800 rounded-full animate-pulse" />
             ))}
           </div>
         </div>
         <div className="flex gap-5 overflow-hidden">
           {[1, 2, 3, 4].map(i => (
             <div key={i} className="w-[320px] flex-shrink-0">
-              <div className="h-[280px] bg-gray-100 rounded-2xl animate-pulse" />
+              <div className="h-[280px] bg-gray-100 dark:bg-slate-800 rounded-2xl animate-pulse" />
             </div>
           ))}
         </div>
@@ -74,7 +74,7 @@ export const DashboardSection: React.FC = () => {
         <div className="space-y-5">
           {/* Filter bar */}
           <div className="flex items-center justify-between">
-            <h3 className="font-display text-xl md:text-2xl font-black text-bureau-ink uppercase tracking-tight" style={{ fontStyle: 'italic', fontWeight: 900 }}>
+            <h3 className="font-display text-xl md:text-2xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight" style={{ fontStyle: 'italic', fontWeight: 900 }}>
               {selectedPillar ? PILLAR_CONFIG[selectedPillar].label : 'Discover More'}
             </h3>
 
@@ -89,8 +89,8 @@ export const DashboardSection: React.FC = () => {
                   className={`
                     px-3 py-1.5 rounded-full text-xs font-semibold transition-all
                     ${!selectedPillar
-                      ? 'bg-slate-900 text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      ? 'bg-slate-900 dark:bg-planner-orange text-white'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                     }
                   `}
                 >
@@ -108,7 +108,7 @@ export const DashboardSection: React.FC = () => {
                       px-3 py-1.5 rounded-full text-xs font-semibold transition-all
                       ${selectedPillar === pillar
                         ? 'text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                       }
                     `}
                     style={selectedPillar === pillar ? { backgroundColor: PILLAR_CONFIG[pillar].color } : {}}
@@ -119,7 +119,8 @@ export const DashboardSection: React.FC = () => {
               </div>
               <button
                 onClick={refetch}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700 border border-slate-200 rounded-full hover:border-slate-300 transition-all"
+                className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-500 dark:text-gray-300 hover:text-slate-700 dark:hover:text-gray-100 border border-slate-200 dark:border-slate-700 rounded-full hover:border-slate-300 dark:hover:border-planner-orange transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-2"
+                aria-label="Refresh intelligence cards"
               >
                 <RefreshCw className="w-3 h-3" />
                 Refresh
@@ -135,8 +136,8 @@ export const DashboardSection: React.FC = () => {
         </div>
 
         {/* Status footer */}
-        <div className="text-center pt-4 border-t border-slate-100">
-          <p className="text-sm text-slate-400">
+        <div className="text-center pt-4 border-t border-slate-100 dark:border-slate-700">
+          <p className="text-sm text-slate-500 dark:text-gray-300">
             {isLiveData ? 'Live data' : 'Demo mode'} · {cards.length} briefings · Updated 6:00 AM ET
           </p>
         </div>

@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { X, Download, Share2, Mail, Loader2, FileText, Zap, Target, ExternalLink, Send, BookOpen, MessageCircle } from 'lucide-react';
 import { parseMarkdown, parseInlineMarkdown, parsePerplexityMarkdown } from '../utils/markdown';
 import { exportIntelligenceBriefToPDF } from '../utils/exportPDF';
 import { MetricCard } from './MetricCard';
 import { extractMetrics } from '../utils/extractMetrics';
 import { ENDPOINTS, fetchWithTimeout } from '../src/config/api';
+import { LoadingSpinner } from './LoadingSpinner';
 
 type IntelligenceFramework = {
   id: string;
@@ -28,6 +29,21 @@ export type IntelligencePayload = {
   movesForLeaders: string[];
   frameworks?: IntelligenceFramework[];
   followUps?: { label: string; question: string; displayQuery?: string }[];
+  graphData?: {
+    comparisons?: Array<{
+      label: string;
+      value: number;
+      unit: string;
+      context: string;
+      source?: string;
+    }>;
+    metrics?: Array<{
+      label: string;
+      value: number;
+      unit: string;
+      context: string;
+    }>;
+  };
 };
 
 type IntelligenceModalProps = {
@@ -76,7 +92,7 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
   onFollowUp,
   isLoading = false
 }) => {
-  console.log('[IntelligenceModal] Rendered with open:', open, 'isLoading:', isLoading, 'hasPayload:', !!payload);
+  console.log('[IntelligenceModal] Rendered with open:', open, 'isLoading:', isLoading, 'hasPayload:', !!payload, 'payload:', payload);
 
   // Use provided frameworks or fall back to defaults
   const frameworks = payload?.frameworks || DEFAULT_FRAMEWORKS;
@@ -95,6 +111,19 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
     if (!payload?.summary) return [];
     return extractMetrics(payload.summary);
   }, [payload?.summary]);
+
+  // Log when payload changes (must be before early return)
+  useEffect(() => {
+    if (payload) {
+      console.log('[IntelligenceModal] Payload received:', {
+        query: payload.query,
+        hasSummary: !!payload.summary,
+        summaryLength: payload.summary?.length || 0,
+        signalsCount: payload.keySignals?.length || 0,
+        movesCount: payload.movesForLeaders?.length || 0
+      });
+    }
+  }, [payload]);
 
   // Early return AFTER all hooks are called
   if (!open) {
@@ -178,11 +207,12 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
     setFollowUpLoading(true);
 
     try {
-      // Build contextual query with topic context (without mentioning "brief" to avoid disclaimers)
-      const contextualQuery = `Context: ${payload.query}. Question: ${currentInput}`;
+      // Build contextual query in a natural, conversational way
+      const contextualQuery = `Based on this intelligence about "${payload.query}", ${currentInput}`;
 
       // Call Firebase Cloud Function for follow-up questions
       const response = await fetchWithTimeout(ENDPOINTS.chatSimple, {
+        timeout: 40000, // Increased timeout for real-time data
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -229,7 +259,7 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
       console.error('Follow-up error:', error);
       setFollowUpMessages([...newMessages, {
         role: 'assistant' as const,
-        content: 'Sorry, I encountered an error processing your question. Please try again.'
+        content: 'I had trouble processing that question. Could you try rephrasing it?'
       }]);
     } finally {
       setFollowUpLoading(false);
@@ -237,83 +267,113 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300">
       {/* Dark navy overlay with 60% opacity */}
       <div
-        className="absolute inset-0 bg-planner-navy/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-gray-900/60 dark:bg-slate-900/90 backdrop-blur-sm transition-opacity duration-300"
         onClick={onClose}
+        aria-hidden="true"
       />
 
       {/* Content card */}
-      <div className="relative bg-white rounded-lg shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-y-auto border border-gray-100/60 dark:border-slate-700/50 animate-in zoom-in-95 duration-200">
         {/* Loading state - show skeleton if no payload yet */}
         {isLoading && !payload && (
-          <div className="p-8 md:p-12">
+          <div className="p-8 md:p-12 animate-in fade-in duration-200">
             {/* Skeleton for query */}
-            <div className="mb-4 animate-pulse">
-              <div className="h-3 bg-bureau-border rounded w-20 mb-2"></div>
-              <div className="h-4 bg-bureau-border rounded w-3/4"></div>
+            <div className="mb-6">
+              <div className="h-3 bg-gray-200/60 dark:bg-slate-700/60 rounded-lg w-24 mb-3 animate-shimmer"></div>
+              <div className="h-5 bg-gray-200/60 dark:bg-slate-700/60 rounded-lg w-3/4 animate-shimmer"></div>
             </div>
 
             {/* Skeleton for heading */}
-            <div className="h-12 bg-bureau-border rounded w-1/2 mb-8 animate-pulse"></div>
+            <div className="h-14 bg-gray-200/60 dark:bg-slate-700/60 rounded-lg w-1/2 mb-10 animate-shimmer"></div>
 
             <div className="flex flex-col lg:flex-row gap-8">
               {/* Main content skeleton */}
-              <div className="flex-1 space-y-6">
+              <div className="flex-1 space-y-8">
                 {/* Summary skeleton */}
-                <div className="animate-pulse">
-                  <div className="h-6 bg-bureau-border rounded w-32 mb-4"></div>
-                  <div className="space-y-2">
-                    <div className="h-4 bg-bureau-border rounded w-full"></div>
-                    <div className="h-4 bg-bureau-border rounded w-5/6"></div>
-                    <div className="h-4 bg-bureau-border rounded w-4/6"></div>
+                <div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-6 w-6 bg-gray-200/60 dark:bg-slate-700/60 rounded animate-shimmer"></div>
+                    <div className="h-6 bg-gray-200/60 dark:bg-slate-700/60 rounded-lg w-32 animate-shimmer"></div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="h-4 bg-gray-200/60 dark:bg-slate-700/60 rounded-lg w-full animate-shimmer"></div>
+                    <div className="h-4 bg-gray-200/60 dark:bg-slate-700/60 rounded-lg w-5/6 animate-shimmer"></div>
+                    <div className="h-4 bg-gray-200/60 dark:bg-slate-700/60 rounded-lg w-4/6 animate-shimmer"></div>
+                    <div className="h-4 bg-gray-200/60 dark:bg-slate-700/60 rounded-lg w-full animate-shimmer"></div>
                   </div>
                 </div>
 
                 {/* Signals skeleton */}
-                <div className="animate-pulse">
-                  <div className="h-6 bg-bureau-border rounded w-32 mb-4"></div>
-                  <div className="space-y-3">
-                    <div className="h-4 bg-bureau-border rounded w-full"></div>
-                    <div className="h-4 bg-bureau-border rounded w-5/6"></div>
-                    <div className="h-4 bg-bureau-border rounded w-4/6"></div>
+                <div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-6 w-6 bg-gray-200/60 dark:bg-slate-700/60 rounded animate-shimmer"></div>
+                    <div className="h-6 bg-gray-200/60 dark:bg-slate-700/60 rounded-lg w-36 animate-shimmer"></div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex gap-3">
+                      <div className="h-2 w-2 bg-gray-200/60 dark:bg-slate-700/60 rounded-full mt-2 animate-shimmer"></div>
+                      <div className="h-4 bg-gray-200/60 dark:bg-slate-700/60 rounded-lg flex-1 animate-shimmer"></div>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="h-2 w-2 bg-gray-200/60 dark:bg-slate-700/60 rounded-full mt-2 animate-shimmer"></div>
+                      <div className="h-4 bg-gray-200/60 dark:bg-slate-700/60 rounded-lg flex-1 animate-shimmer"></div>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="h-2 w-2 bg-gray-200/60 dark:bg-slate-700/60 rounded-full mt-2 animate-shimmer"></div>
+                      <div className="h-4 bg-gray-200/60 dark:bg-slate-700/60 rounded-lg w-4/5 animate-shimmer"></div>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Sidebar skeleton */}
-              <div className="lg:w-96">
-                <div className="border-2 border-bureau-border rounded-sm p-6 animate-pulse">
-                  <div className="h-6 bg-bureau-border rounded w-48 mb-4"></div>
-                  <div className="flex gap-2 mb-6">
-                    <div className="h-10 bg-bureau-border rounded w-32"></div>
-                    <div className="h-10 bg-bureau-border rounded w-32"></div>
+              <div className="lg:w-96 space-y-6">
+                <div className="border-2 border-gray-200/60 dark:border-slate-700/50 rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-lg">
+                  <div className="h-7 bg-gray-200/60 dark:bg-slate-700/60 rounded-lg w-48 mb-6 animate-shimmer"></div>
+                  <div className="flex flex-wrap gap-2 mb-6 pb-4 border-b border-gray-200/60 dark:border-slate-700/50">
+                    <div className="h-9 bg-gray-200/60 dark:bg-slate-700/60 rounded-lg w-36 animate-shimmer"></div>
+                    <div className="h-9 bg-gray-200/60 dark:bg-slate-700/60 rounded-lg w-36 animate-shimmer"></div>
+                  </div>
+                  <div className="h-5 bg-gray-200/60 dark:bg-slate-700/60 rounded-lg w-24 mb-4 animate-shimmer"></div>
+                  <div className="space-y-3">
+                    <div className="h-4 bg-gray-200/60 dark:bg-slate-700/60 rounded-lg w-full animate-shimmer"></div>
+                    <div className="h-4 bg-gray-200/60 dark:bg-slate-700/60 rounded-lg w-5/6 animate-shimmer"></div>
+                    <div className="h-4 bg-gray-200/60 dark:bg-slate-700/60 rounded-lg w-4/6 animate-shimmer"></div>
+                  </div>
+                </div>
+                
+                {/* Sources skeleton */}
+                <div className="border-2 border-gray-200/60 dark:border-slate-700/50 rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-lg">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-5 w-5 bg-gray-200/60 dark:bg-slate-700/60 rounded animate-shimmer"></div>
+                    <div className="h-7 bg-gray-200/60 dark:bg-slate-700/60 rounded-lg w-32 animate-shimmer"></div>
                   </div>
                   <div className="space-y-3">
-                    <div className="h-4 bg-bureau-border rounded w-full"></div>
-                    <div className="h-4 bg-bureau-border rounded w-5/6"></div>
-                    <div className="h-4 bg-bureau-border rounded w-4/6"></div>
+                    <div className="h-16 bg-gray-200/60 dark:bg-slate-700/60 rounded-xl animate-shimmer"></div>
+                    <div className="h-16 bg-gray-200/60 dark:bg-slate-700/60 rounded-xl animate-shimmer"></div>
+                    <div className="h-16 bg-gray-200/60 dark:bg-slate-700/60 rounded-xl animate-shimmer"></div>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Loading indicator at bottom */}
-            <div className="mt-8 flex items-center justify-center gap-3 text-bureau-ink">
-              <Loader2 className="w-5 h-5 animate-spin text-bureau-signal" />
-              <span className="text-sm font-medium">Analyzing intelligence...</span>
+            <div className="mt-12">
+              <LoadingSpinner size="md" text="Analyzing intelligence..." />
             </div>
           </div>
         )}
 
         {/* Loading overlay for follow-up questions (when payload exists) */}
         {isLoading && payload && (
-          <div className="absolute inset-0 bg-white/95 backdrop-blur-md z-[100] flex items-center justify-center rounded-lg">
+          <div className="absolute inset-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md z-[100] flex items-center justify-center rounded-lg animate-in fade-in duration-200">
             <div className="text-center max-w-md px-8">
-              <Loader2 className="w-12 h-12 animate-spin text-bureau-signal mx-auto mb-4" />
-              <p className="text-lg font-bold text-bureau-ink mb-2">Creating Your Intelligence Brief</p>
-              <p className="text-sm text-bureau-slate">Analyzing data and generating insights... This may take 6-8 seconds.</p>
+              <LoadingSpinner size="xl" />
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2 mt-4">Creating Your Intelligence Brief</p>
+              <p className="text-sm text-gray-700 dark:text-gray-200">Gathering the latest data and insights... This usually takes 6-8 seconds.</p>
             </div>
           </div>
         )}
@@ -325,27 +385,27 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
             <>
               <button
                 onClick={handleDownloadPDF}
-                className="p-2 hover:bg-bureau-border rounded-sm transition-colors"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-2"
                 aria-label="Download PDF"
                 title="Download PDF"
               >
-                <Download className="w-5 h-5 text-bureau-slate" />
+                <Download className="w-5 h-5 text-gray-700 dark:text-gray-200" />
               </button>
               <button
                 onClick={handleShareLinkedIn}
-                className="p-2 hover:bg-bureau-border rounded-sm transition-colors"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-2"
                 aria-label="Share on LinkedIn"
                 title="Share on LinkedIn"
               >
-                <Share2 className="w-5 h-5 text-bureau-slate" />
+                <Share2 className="w-5 h-5 text-gray-600 dark:text-gray-300" />
               </button>
               <button
                 onClick={handleEmail}
-                className="p-2 hover:bg-bureau-border rounded-sm transition-colors"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-2"
                 aria-label="Email this brief"
                 title="Email this brief"
               >
-                <Mail className="w-5 h-5 text-bureau-slate" />
+                <Mail className="w-5 h-5 text-gray-700 dark:text-gray-200" />
               </button>
             </>
           )}
@@ -353,10 +413,10 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
           {/* Close button - always visible */}
           <button
             onClick={onClose}
-            className="p-2 hover:bg-bureau-border rounded-sm transition-colors ml-2 border-l border-bureau-border pl-4"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200 ml-2 border-l border-gray-200 dark:border-slate-700 pl-4 focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-2"
             aria-label="Close modal"
           >
-            <X className="w-6 h-6 text-bureau-slate" />
+            <X className="w-6 h-6 text-gray-700 dark:text-gray-200" />
           </button>
         </div>
 
@@ -365,16 +425,16 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
           <div className="p-8 md:p-12">
             {/* Top: Query label */}
             <div className="mb-6">
-              <p className="font-display text-xs font-bold text-bureau-slate uppercase tracking-wider mb-2">
+              <p className="font-display text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider mb-2">
                 Your Query
               </p>
-              <p className="font-sans text-base text-bureau-ink font-medium leading-relaxed">
+              <p className="font-sans text-base text-gray-900 dark:text-gray-100 font-medium leading-relaxed">
                 {payload.query}
               </p>
             </div>
 
           {/* Big heading */}
-          <h1 className="font-display text-4xl md:text-5xl font-black text-planner-navy uppercase tracking-tight mb-12">
+          <h1 className="font-display text-4xl md:text-5xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight mb-12">
             Intelligence Brief
           </h1>
 
@@ -384,12 +444,12 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
               {/* Section 1: SUMMARY */}
               <section>
                 <div className="flex items-center gap-3 mb-4">
-                  <FileText className="w-6 h-6 text-bureau-signal" />
-                  <h2 className="font-display text-xl font-black text-planner-navy uppercase tracking-tight">
+                  <FileText className="w-6 h-6 text-bureau-signal dark:text-planner-orange" />
+                  <h2 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
                     Summary
                   </h2>
                 </div>
-                <div className="font-sans text-base text-bureau-ink leading-relaxed">
+                <div className="font-sans text-base text-gray-900 dark:text-gray-100 leading-relaxed">
                   {parseMarkdown(payload.summary)}
                 </div>
               </section>
@@ -398,15 +458,15 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
               {payload.keySignals.length > 0 && (
                 <section>
                   <div className="flex items-center gap-3 mb-4">
-                    <Zap className="w-6 h-6 text-bureau-signal" />
-                    <h2 className="font-display text-xl font-black text-planner-navy uppercase tracking-tight">
+                    <Zap className="w-6 h-6 text-bureau-signal dark:text-planner-orange" />
+                    <h2 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
                       Key Signals
                     </h2>
                   </div>
                   <ul className="space-y-3 font-sans">
                     {payload.keySignals.map((signal, index) => (
-                      <li key={index} className="text-base text-bureau-ink leading-relaxed flex items-start gap-2">
-                        <span className="text-bureau-signal font-bold mt-0.5 shrink-0">•</span>
+                      <li key={index} className="text-base text-gray-900 dark:text-gray-100 leading-relaxed flex items-start gap-2">
+                        <span className="text-bureau-signal dark:text-planner-orange font-bold mt-0.5 shrink-0">•</span>
                         <span>{parseInlineMarkdown(signal)}</span>
                       </li>
                     ))}
@@ -418,16 +478,16 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
               {payload.movesForLeaders.length > 0 && (
                 <section>
                   <div className="flex items-center gap-3 mb-4">
-                    <Target className="w-6 h-6 text-bureau-signal" />
-                    <h2 className="font-display text-xl font-black text-planner-navy uppercase tracking-tight">
+                    <Target className="w-6 h-6 text-bureau-signal dark:text-planner-orange" />
+                    <h2 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
                       Moves for Leaders
                     </h2>
                   </div>
                   <ul className="space-y-3 font-sans">
                     {payload.movesForLeaders.map((move, index) => (
                       <li key={index} className="flex items-start gap-3">
-                        <span className="text-bureau-signal font-bold mt-0.5 flex-shrink-0">•</span>
-                        <span className="text-base text-bureau-ink leading-relaxed">
+                        <span className="text-bureau-signal dark:text-planner-orange font-bold mt-0.5 flex-shrink-0">•</span>
+                        <span className="text-base text-gray-900 dark:text-gray-100 leading-relaxed">
                           {parseInlineMarkdown(move)}
                         </span>
                       </li>
@@ -439,21 +499,21 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
 
             {/* Right side panel: Framework tabs (always shown with defaults if needed) */}
             <div className="lg:w-96 flex-shrink-0">
-              <div className="sticky top-8 border-2 border-bureau-border rounded-sm bg-bureau-surface p-6">
-                <h3 className="font-display text-xl font-black text-planner-navy uppercase tracking-tight mb-6">
+              <div className="sticky top-8 border-2 border-gray-200/60 dark:border-slate-700/50 rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-lg">
+                <h3 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight mb-6">
                   Strategic Frameworks
                 </h3>
 
                 {/* Horizontal tabs */}
-                <div className="flex flex-wrap gap-2 mb-6 border-b border-bureau-border pb-4">
+                <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-200/60 dark:border-slate-700/50 pb-4">
                   {frameworks.map((framework) => (
                     <button
                       key={framework.id}
                       onClick={() => setActiveFrameworkTab(framework.id)}
-                      className={`px-3 py-2 text-xs font-bold uppercase tracking-wider transition-colors rounded-sm ${
+                      className={`px-3 py-2 text-xs font-bold uppercase tracking-wider transition-all duration-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-1 ${
                         activeFrameworkTab === framework.id
-                          ? 'bg-planner-navy text-white'
-                          : 'bg-white text-bureau-slate border border-bureau-border hover:border-bureau-signal'
+                          ? 'bg-gray-900 dark:bg-planner-orange text-white shadow-sm'
+                          : 'bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600 hover:border-bureau-signal dark:hover:border-planner-orange hover:shadow-sm'
                       }`}
                     >
                       {framework.label}
@@ -464,14 +524,14 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
                 {/* Framework actions */}
                 {activeFramework && (
                   <div>
-                    <h4 className="font-display text-xs font-bold text-bureau-slate uppercase tracking-wider mb-4">
+                    <h4 className="font-display text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider mb-4">
                       Actions
                     </h4>
                     <ul className="space-y-3 font-sans">
                       {activeFramework.actions.map((action, index) => (
                         <li key={index} className="flex items-start gap-3">
-                          <span className="text-bureau-signal font-bold mt-0.5 flex-shrink-0">•</span>
-                          <span className="text-sm text-bureau-ink leading-relaxed">
+                          <span className="text-bureau-signal dark:text-planner-orange font-bold mt-0.5 flex-shrink-0">•</span>
+                          <span className="text-sm text-gray-900 dark:text-gray-100 leading-relaxed">
                             {parseInlineMarkdown(action)}
                           </span>
                         </li>
@@ -481,82 +541,87 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
                 )}
               </div>
 
-              {/* Sources section - below Strategic Frameworks */}
-              {payload.signals && payload.signals.length > 0 && (() => {
-                // Only show sources if at least one signal has a valid URL
-                const validSources = payload.signals.filter(s => s.sourceUrl && s.sourceUrl !== '#');
+              {/* Sources section - ALWAYS shown below Strategic Frameworks */}
+              <div className="mt-6 border-2 border-gray-200/60 dark:border-slate-700/50 rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-lg">
+                <div className="flex items-center gap-3 mb-4">
+                  <BookOpen className="w-5 h-5 text-bureau-signal dark:text-planner-orange" />
+                  <h3 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
+                    Sources
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  {(() => {
+                    // Always show sources section - extract from signals or show placeholder
+                    const validSignals = payload.signals?.filter(signal => signal.sourceUrl && signal.sourceUrl !== '#') || [];
+                    
+                    if (validSignals.length === 0) {
+                      // No valid sources - show helpful message
+                      return (
+                        <div className="text-center py-4">
+                          <p className="text-sm text-gray-700 dark:text-gray-200 italic">
+                            Sources will be provided when available from intelligence analysis.
+                          </p>
+                          <p className="text-xs text-gray-600 dark:text-gray-300 mt-2">
+                            All intelligence briefs include source citations from Perplexity research.
+                          </p>
+                        </div>
+                      );
+                    }
+                    
+                    return validSignals.map((signal, index) => {
+                      let hostname = '';
+                      try {
+                        hostname = new URL(signal.sourceUrl).hostname;
+                      } catch {
+                        hostname = signal.sourceUrl;
+                      }
 
-                if (validSources.length === 0) {
-                  // No valid sources, don't render the section
-                  return null;
-                }
-
-                return (
-                  <div className="mt-6 border-2 border-bureau-border rounded-sm bg-bureau-surface p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <BookOpen className="w-5 h-5 text-bureau-signal" />
-                      <h3 className="font-display text-xl font-black text-planner-navy uppercase tracking-tight">
-                        Sources
-                      </h3>
-                    </div>
-                    <div className="space-y-3">
-                      {payload.signals.map((signal, index) => {
-                        // Skip signals without valid URLs
-                        if (!signal.sourceUrl || signal.sourceUrl === '#') {
-                          return null;
-                        }
-
-                        let hostname = '';
-                        try {
-                          hostname = new URL(signal.sourceUrl).hostname;
-                        } catch {
-                          hostname = signal.sourceUrl;
-                        }
-
-                        return (
-                          <a
-                            key={signal.id || index}
-                            href={signal.sourceUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="group flex items-start gap-3 p-3 rounded-sm border border-bureau-border hover:border-bureau-signal hover:bg-blue-50 transition-all"
-                          >
-                            <span className="font-mono text-xs font-bold text-bureau-signal shrink-0 mt-0.5">
-                              [{index + 1}]
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <p className="font-sans text-sm font-semibold text-bureau-ink group-hover:text-bureau-signal line-clamp-2 mb-1">
-                                {signal.sourceName || signal.title || signal.sourceUrl}
-                              </p>
-                              <p className="font-mono text-xs text-bureau-slate truncate">
-                                {hostname}
-                              </p>
-                            </div>
-                            <ExternalLink className="w-4 h-4 text-bureau-slate group-hover:text-bureau-signal shrink-0 mt-1" />
-                          </a>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })()}
+                      return (
+                        <a
+                          key={signal.id || index}
+                          href={signal.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex items-start gap-3 p-3 rounded-xl border border-gray-200/60 dark:border-slate-700/50 hover:border-bureau-signal/60 dark:hover:border-planner-orange/60 hover:bg-blue-50 dark:hover:bg-slate-700/80 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-1"
+                        >
+                          <span className="font-mono text-xs font-bold text-bureau-signal dark:text-planner-orange shrink-0 mt-0.5">
+                            [{index + 1}]
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-sans text-sm font-semibold text-gray-900 dark:text-gray-100 group-hover:text-bureau-signal dark:group-hover:text-planner-orange line-clamp-2 mb-1">
+                              {signal.sourceName || signal.title || signal.sourceUrl}
+                            </p>
+                            <p className="font-mono text-xs text-gray-700 dark:text-gray-300 truncate">
+                              {hostname}
+                            </p>
+                          </div>
+                          <ExternalLink className="w-4 h-4 text-gray-700 dark:text-gray-300 group-hover:text-bureau-signal dark:group-hover:text-planner-orange shrink-0 mt-1" />
+                        </a>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Bottom row: Continue exploring buttons - only if followUps provided */}
+          {/* Related section - Perplexity-style follow-up questions */}
           {payload.followUps && payload.followUps.length > 0 && (
-            <div className="mt-12 pt-8 border-t-2 border-bureau-border">
-              <h3 className="font-display text-xs font-bold text-bureau-slate uppercase tracking-wider mb-4">
-                Continue Exploring
+            <div className="mt-12 pt-8 border-t-2 border-gray-200/60 dark:border-slate-700/50">
+              <h3 className="font-display text-lg font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight mb-6">
+                Related
               </h3>
-              <div className="flex flex-wrap gap-2">
+              <div className="space-y-3">
                 {payload.followUps.map((followUp, index) => (
                   <button
-                    key={followUp.question}
+                    key={followUp.question || index}
                     onClick={() => onFollowUp && onFollowUp(followUp.question, followUp.displayQuery)}
-                    className="px-4 py-2 text-xs font-bold text-bureau-slate bg-white border border-bureau-border hover:border-bureau-signal hover:text-bureau-signal rounded-sm transition-colors uppercase tracking-wider"
+                    className="w-full text-left flex items-start gap-3 p-4 rounded-xl border border-gray-200/60 dark:border-slate-700/50 hover:border-bureau-signal dark:hover:border-planner-orange hover:bg-blue-50/50 dark:hover:bg-slate-700/50 transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-2"
                   >
-                    {followUp.label}
+                    <span className="text-bureau-signal dark:text-planner-orange mt-0.5 text-lg font-bold flex-shrink-0">→</span>
+                    <span className="text-sm text-gray-900 dark:text-gray-100 group-hover:text-bureau-signal dark:group-hover:text-planner-orange leading-relaxed">
+                      {followUp.displayQuery || followUp.question}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -564,10 +629,10 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
           )}
 
           {/* Follow-up Chat Section */}
-          <section className="mt-12 pt-8 border-t-2 border-bureau-border">
+          <section className="mt-12 pt-8 border-t-2 border-gray-200/60 dark:border-slate-700/50">
             <div className="flex items-center gap-3 mb-6">
-              <MessageCircle className="w-6 h-6 text-bureau-signal" />
-              <h3 className="font-display text-xl font-black text-planner-navy uppercase tracking-tight">
+              <MessageCircle className="w-6 h-6 text-bureau-signal dark:text-planner-orange" />
+              <h3 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
                 Ask a Follow-Up
               </h3>
             </div>
@@ -591,11 +656,11 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[85%] ${
                         msg.role === 'user'
-                          ? 'bg-planner-navy text-white px-5 py-3 rounded-sm'
-                          : 'bg-white px-0 py-0'
+                          ? 'bg-gray-900 dark:bg-planner-orange text-white px-5 py-3 rounded-lg'
+                          : 'bg-white dark:bg-slate-800 px-0 py-0'
                       }`}>
                         {msg.role === 'assistant' ? (
-                          <div className="font-sans text-base text-bureau-ink leading-relaxed space-y-3">
+                          <div className="font-sans text-base text-gray-900 dark:text-gray-100 leading-relaxed space-y-3">
                             {parseMarkdown(safeContent)}
                           </div>
                         ) : (
@@ -606,10 +671,9 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
                   );
                 })}
                 {followUpLoading && (
-                  <div className="flex justify-start">
-                    <div className="bg-white p-5 flex items-center gap-3">
-                      <Loader2 className="w-5 h-5 animate-spin text-bureau-signal" />
-                      <span className="font-sans text-base text-bureau-slate italic">Searching intelligence sources...</span>
+                  <div className="flex justify-center py-8">
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-200/60 dark:border-slate-700/50 shadow-sm">
+                      <LoadingSpinner size="sm" text="Finding the latest insights..." />
                     </div>
                   </div>
                 )}
@@ -623,24 +687,24 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
                 value={followUpInput}
                 onChange={(e) => setFollowUpInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && !followUpLoading && handleFollowUpSubmit()}
-                placeholder="Ask about this intelligence..."
+                placeholder="Ask a follow-up..."
                 disabled={followUpLoading}
-                className="flex-1 px-4 py-3 border-2 border-bureau-border rounded-sm focus:outline-none focus:border-bureau-signal disabled:bg-bureau-border disabled:cursor-not-allowed font-sans text-base"
+                className="flex-1 px-4 py-3 border-2 border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-300 focus:outline-none focus:border-bureau-signal dark:focus:border-planner-orange focus:ring-2 focus:ring-bureau-signal/20 dark:focus:ring-planner-orange/20 disabled:bg-gray-100 dark:disabled:bg-slate-900 disabled:cursor-not-allowed font-sans text-base transition-all duration-200"
               />
               <button
                 onClick={handleFollowUpSubmit}
                 disabled={!followUpInput.trim() || followUpLoading}
-                className="px-6 py-3 bg-planner-orange text-white rounded-sm hover:bg-orange-600 transition-colors disabled:bg-bureau-border disabled:cursor-not-allowed flex items-center gap-2 font-display text-xs font-bold uppercase tracking-wider"
+                className="px-6 py-3 bg-planner-orange text-white rounded-lg hover:bg-orange-600 hover:shadow-md active:scale-[0.98] transition-all duration-200 disabled:bg-gray-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed flex items-center gap-2 font-display text-xs font-bold uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-planner-orange focus:ring-offset-2"
               >
                 {followUpLoading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Thinking</span>
+                    <Loader2 className="w-4 h-4 animate-spin-smooth" />
+                    <span>Thinking...</span>
                   </>
                 ) : (
                   <>
                     <Send className="w-4 h-4" />
-                    <span>Ask</span>
+                    <span>Send</span>
                   </>
                 )}
               </button>

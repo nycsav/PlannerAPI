@@ -52,29 +52,43 @@ export function parseMarkdown(text: string): React.ReactNode {
 }
 
 /**
+ * Remove citation numbers in square brackets (e.g., [1], [2][3]) from text
+ * PRD requirement: Citation numbers should not appear in Moves for Leaders
+ */
+export function removeCitationNumbers(text: string): string {
+  if (!text) return text;
+  // Remove citation numbers in square brackets: [1], [2][3], [1][2][3], etc.
+  return text.replace(/\[\d+\](\[\d+\])*/g, '').trim();
+}
+
+/**
  * Parse a single line with markdown (for inline use)
+ * Automatically removes citation numbers per PRD requirements
  */
 export function parseInlineMarkdown(text: string): React.ReactNode {
   if (!text) return null;
+
+  // Remove citation numbers first (PRD requirement)
+  const cleanedText = removeCitationNumbers(text);
 
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
   const boldRegex = /\*\*(.*?)\*\*/g;
   let match;
 
-  while ((match = boldRegex.exec(text)) !== null) {
+  while ((match = boldRegex.exec(cleanedText)) !== null) {
     // Add text before bold
     if (match.index > lastIndex) {
-      parts.push(text.substring(lastIndex, match.index));
+      parts.push(cleanedText.substring(lastIndex, match.index));
     }
     // Add bold text
-    parts.push(<strong key={`bold-${match.index}`} className="font-bold text-bureau-ink">{match[1]}</strong>);
+    parts.push(<strong key={`bold-${match.index}`} className="font-bold text-bureau-ink dark:text-gray-100">{match[1]}</strong>);
     lastIndex = match.index + match[0].length;
   }
 
   // Add remaining text
-  if (lastIndex < text.length) {
-    parts.push(text.substring(lastIndex));
+  if (lastIndex < cleanedText.length) {
+    parts.push(cleanedText.substring(lastIndex));
   }
 
   return <>{parts}</>;

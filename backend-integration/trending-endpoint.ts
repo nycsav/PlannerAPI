@@ -13,8 +13,10 @@ import express, { Request, Response } from 'express';
 const router = express.Router();
 
 const PPLX_API_KEY = process.env.PPLX_API_KEY;
-const PPLX_MODEL_FAST = process.env.PPLX_MODEL_FAST || 'sonar';
+const PPLX_MODEL_FAST = process.env.PPLX_MODEL_FAST || 'sonar-pro'; // Use sonar-pro for real-time data
 const PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions';
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 1000;
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 type TrendingTopic = {
@@ -157,32 +159,75 @@ SAMPLE_QUERY: [Specific strategic question for ${audience}]
 
 Make the sample queries compelling, specific, and relevant to current market conditions.`;
 
-  const response = await fetch(PERPLEXITY_API_URL, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${PPLX_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: PPLX_MODEL_FAST,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: `What are the top ${limit} trending marketing intelligence topics for ${audience} right now?` }
-      ],
-      temperature: 0.3,
-      max_tokens: 1500,
-    }),
-  });
+  // Retry logic with exponential backoff for reliable real-time data
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      const response = await fetch(PERPLEXITY_API_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${PPLX_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: PPLX_MODEL_FAST,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: `What are the top ${limit} trending marketing intelligence topics for ${audience} right now?` }
+          ],
+          temperature: 0.3,
+          max_tokens: 1500,
+          search_recency_filter: 'day', // Real-time data from last 24 hours
+          return_citations: true,
+        }),
+        signal: AbortSignal.timeout(40000), // 40 second timeout
+      });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Perplexity API error (${response.status}): ${errorText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        const error = new Error(`Perplexity API error (${response.status}): ${errorText}`);
+        
+        if (response.status >= 400 && response.status < 500) {
+          throw error;
+        }
+        
+        lastError = error;
+        if (attempt < MAX_RETRIES - 1) {
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * Math.pow(2, attempt)));
+        }
+        continue;
+      }
+
+      const data: PerplexityResponse = await response.json();
+      
+      if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+        throw new Error('Invalid Perplexity API response: missing choices');
+      }
+
+      const content = data.choices[0]?.message?.content || '';
+      
+      if (!content || content.trim().length === 0) {
+        throw new Error('Perplexity API returned empty content');
+      }
+
+      return parseTopicsResponse(content, limit);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      
+      if (lastError.name === 'AbortError' || lastError.message.includes('timeout')) {
+        throw new Error('Request timeout: Please try again.');
+      }
+      
+      if (attempt === MAX_RETRIES - 1) {
+        throw new Error(`Failed to fetch trending topics after ${MAX_RETRIES} attempts: ${lastError.message}`);
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * Math.pow(2, attempt)));
+    }
   }
 
-  const data: PerplexityResponse = await response.json();
-  const content = data.choices[0]?.message?.content || '';
-
-  return parseTopicsResponse(content, limit);
+  throw lastError || new Error('Unknown error occurred');
 }
 
 /**

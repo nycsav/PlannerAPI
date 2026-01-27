@@ -106,10 +106,10 @@ export const ContentSliderCard: React.FC<ContentSliderCardProps> = ({ card, onCl
     >
       <div className="
         rounded-2xl overflow-hidden
-        bg-white border border-slate-200
-        shadow-sm hover:shadow-xl
-        transition-all duration-300
-        hover:-translate-y-1
+        bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700
+        shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-slate-300 dark:hover:border-slate-600
+        transition-all duration-200 ease-out
+        focus-within:ring-2 focus-within:ring-blue-400 focus-within:ring-offset-2 focus-within:outline-none
       ">
         {/* Visual Header with Gradient */}
         <div className={`bg-gradient-to-br ${theme.gradient} p-5 relative overflow-hidden`}>
@@ -151,26 +151,26 @@ export const ContentSliderCard: React.FC<ContentSliderCardProps> = ({ card, onCl
         {/* Content */}
         <div className="p-5">
           {/* Title */}
-          <h3 className="text-base font-bold text-slate-900 leading-snug mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">
+          <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 leading-snug mb-3 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-planner-orange transition-colors">
             {card.title}
           </h3>
 
           {/* Summary */}
-          <p className="text-sm text-slate-500 leading-relaxed line-clamp-2 mb-4">
+          <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed line-clamp-2 mb-4">
             {card.summary}
           </p>
 
           {/* Footer */}
-          <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-            <div className="flex items-center gap-2 text-xs text-slate-400">
+          <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700">
+            <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
               <span className="font-medium">{formatDate(card.publishedAt)}</span>
-              <span>·</span>
+              <span className="text-gray-400 dark:text-gray-500">·</span>
               <span>{readTime}m read</span>
             </div>
 
             {/* Read indicator */}
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 text-slate-400 group-hover:text-white transition-all"
+              className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-gray-300 group-hover:text-white transition-all duration-200"
               style={{ backgroundColor: 'transparent' }}
             >
               <div

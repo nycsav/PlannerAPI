@@ -19,8 +19,14 @@ export interface PDFExportData {
 }
 
 export function exportIntelligenceBriefToPDF(data: PDFExportData) {
-  // Clean markdown asterisks from text
-  const cleanText = (text: string) => text.replace(/\*\*/g, '');
+  // Clean markdown asterisks and citation numbers from text
+  // PRD requirement: Citation numbers should not appear in Moves for Leaders
+  const cleanText = (text: string) => {
+    return text
+      .replace(/\*\*/g, '') // Remove markdown bold
+      .replace(/\[\d+\](\[\d+\])*/g, '') // Remove citation numbers like [1], [2][3]
+      .trim();
+  };
 
   // Create a new window with print-optimized content
   const printWindow = window.open('', '', 'width=800,height=600');
