@@ -2,7 +2,11 @@
  * CopilotKit Runtime - Firebase Cloud Function
  * 
  * Handles CopilotKit AI interactions for Intelligence Briefs
- * Uses OpenAI GPT-4 for responses with strategic intelligence context
+ * Supports both OpenAI and OpenRouter (OpenAI-compatible API)
+ * 
+ * Configuration:
+ * - For OpenAI: Set OPENAI_API_KEY
+ * - For OpenRouter: Set OPENROUTER_API_KEY (uses OpenRouter by default if set)
  */
 
 import * as functions from 'firebase-functions';
@@ -13,10 +17,31 @@ import {
 } from '@copilotkit/runtime';
 import OpenAI from 'openai';
 
-// Initialize OpenAI client
+// Determine which provider to use (OpenRouter preferred if available)
+const useOpenRouter = !!(process.env.OPENROUTER_API_KEY || functions.config().openrouter?.api_key);
+
+// Initialize OpenAI-compatible client
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || functions.config().openai?.api_key,
+  apiKey: useOpenRouter 
+    ? (process.env.OPENROUTER_API_KEY || functions.config().openrouter?.api_key)
+    : (process.env.OPENAI_API_KEY || functions.config().openai?.api_key),
+  baseURL: useOpenRouter 
+    ? 'https://openrouter.ai/api/v1'
+    : undefined, // Uses default OpenAI URL
+  defaultHeaders: useOpenRouter 
+    ? {
+        'HTTP-Referer': 'https://plannerapi.com',
+        'X-Title': 'PlannerAPI Intelligence Brief',
+      }
+    : undefined,
 });
+
+// Model configuration - GPT-4o-mini for cost efficiency
+// OpenRouter model: openai/gpt-4o-mini
+// Direct OpenAI model: gpt-4o-mini
+const MODEL = useOpenRouter ? 'openai/gpt-4o-mini' : 'gpt-4o-mini';
+
+console.log(`[CopilotKit] Using ${useOpenRouter ? 'OpenRouter' : 'OpenAI'} with model: ${MODEL}`);
 
 // Type definitions for action parameters
 interface VisualizeParams {
@@ -90,8 +115,11 @@ const runtime = new CopilotRuntime({
   ],
 });
 
-// Create the service adapter
-const serviceAdapter = new OpenAIAdapter({ openai: openai as any });
+// Create the service adapter with cost-efficient model
+const serviceAdapter = new OpenAIAdapter({ 
+  openai: openai as any,
+  model: MODEL,
+});
 
 /**
  * CopilotKit Runtime HTTP Endpoint
