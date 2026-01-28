@@ -46,8 +46,10 @@ export const ENDPOINTS = {
    * Used by: App.tsx, ConversationalBrief.tsx, ExecutiveStrategyChat.tsx
    * Method: POST
    * Body: { query: string, audience: string }
+   * 
+   * Using Cloud Functions endpoint for reliable source extraction
    */
-  chatIntel: `${API_CONFIG.cloudRun}/chat-intel`,
+  chatIntel: `${API_CONFIG.cloudFunctions}/chatIntel`,
 
   /**
    * Trending Topics: Fetch trending topics for a given audience

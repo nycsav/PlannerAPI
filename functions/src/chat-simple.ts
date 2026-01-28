@@ -98,7 +98,9 @@ export const chatSimple = functions.https.onRequest(async (req, res) => {
           }
         ],
         temperature: 0.2,
-        max_tokens: 500
+        max_tokens: 500,
+        return_citations: true, // Request source citations
+        search_recency_filter: 'week', // Get recent data
       }),
     });
 

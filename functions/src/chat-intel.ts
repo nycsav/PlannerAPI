@@ -28,6 +28,7 @@ type PlannerChatResponse = {
   }>;
   implications: string[];
   actions: string[];
+  citations?: string[]; // Perplexity source citations
 };
 
 interface PerplexityResponse {
@@ -163,6 +164,8 @@ Keep it concise, data-driven, and business-focused.`;
       ],
       temperature: 0.2,
       max_tokens: 1500,
+      return_citations: true, // Request citations from Perplexity
+      search_recency_filter: 'week', // Get recent data
     }),
   });
 
@@ -176,6 +179,31 @@ Keep it concise, data-driven, and business-focused.`;
   const citations = data.citations || [];
 
   return parsePerplexityResponse(content, citations);
+}
+
+/**
+ * Extract a valid URL from text that may contain extra content
+ * e.g., "https://example.com [4]; some text" → "https://example.com"
+ */
+function extractValidUrl(text: string): string | null {
+  if (!text) return null;
+  
+  // Match URL pattern - stop at whitespace, brackets, or semicolons
+  const urlMatch = text.match(/https?:\/\/[^\s\[\];,<>"']+/i);
+  if (urlMatch) {
+    let url = urlMatch[0];
+    // Clean trailing punctuation
+    url = url.replace(/[.,)]+$/, '');
+    
+    // Validate it's a proper URL
+    try {
+      new URL(url);
+      return url;
+    } catch {
+      return null;
+    }
+  }
+  return null;
 }
 
 /**
@@ -198,20 +226,57 @@ function parsePerplexityResponse(content: string, citations: string[]): PlannerC
       const lines = block.trim().split('\n').filter(l => l.trim());
       if (lines.length === 0) return;
 
-      const title = lines[0].trim();
-      const summaryLine = lines.find(l => l.startsWith('Summary:'));
-      const sourceLine = lines.find(l => l.startsWith('Source:'));
+      const title = lines[0].trim().replace(/^\*\*|\*\*$/g, ''); // Remove markdown bold
+      const summaryLine = lines.find(l => l.toLowerCase().startsWith('summary:'));
+      const sourceLine = lines.find(l => l.toLowerCase().startsWith('source:'));
 
-      const summary = summaryLine?.replace('Summary:', '').trim() || '';
-      const sourceText = sourceLine?.replace('Source:', '').trim() || '';
-      const [sourceName = 'Industry Analysis', sourceUrl = ''] = sourceText.split('|').map(s => s.trim());
+      const summary = summaryLine?.replace(/^summary:\s*/i, '').trim() || '';
+      const sourceText = sourceLine?.replace(/^source:\s*/i, '').trim() || '';
+      
+      // Parse source name and URL, handling malformed content
+      let sourceName = 'Industry Analysis';
+      let sourceUrl = '#';
+      
+      if (sourceText.includes('|')) {
+        const parts = sourceText.split('|').map(s => s.trim());
+        sourceName = parts[0] || sourceName;
+        const extractedUrl = extractValidUrl(parts[1] || '');
+        sourceUrl = extractedUrl || '#';
+      } else {
+        // Try to extract URL from the entire source text
+        const extractedUrl = extractValidUrl(sourceText);
+        if (extractedUrl) {
+          sourceUrl = extractedUrl;
+          // Extract hostname as source name
+          try {
+            sourceName = new URL(extractedUrl).hostname.replace('www.', '');
+          } catch {
+            // Keep default
+          }
+        } else {
+          sourceName = sourceText.split(/[[\];]/)[0].trim() || sourceName;
+        }
+      }
+      
+      // If no valid URL found but we have citations, use citation
+      if (sourceUrl === '#' && citations[index]) {
+        const citationUrl = extractValidUrl(citations[index]);
+        if (citationUrl) {
+          sourceUrl = citationUrl;
+          try {
+            sourceName = new URL(citationUrl).hostname.replace('www.', '');
+          } catch {
+            // Keep existing sourceName
+          }
+        }
+      }
 
       signals.push({
         id: `SIG-${index + 1}`,
         title,
         summary,
         sourceName,
-        sourceUrl: sourceUrl || '#',
+        sourceUrl,
       });
     });
   }
@@ -234,7 +299,29 @@ function parsePerplexityResponse(content: string, citations: string[]): PlannerC
     actions.push(...actionLines);
   }
 
-  // Fallback: If parsing fails, create from raw content
+  // Fallback: If parsing fails, create from raw content using citations
+  if (signals.length === 0 && citations.length > 0) {
+    citations.slice(0, 5).forEach((citation, index) => {
+      const citationUrl = extractValidUrl(citation);
+      if (citationUrl) {
+        let hostname = 'Source';
+        try {
+          hostname = new URL(citationUrl).hostname.replace('www.', '');
+        } catch {
+          // Keep default
+        }
+        signals.push({
+          id: `SIG-${index + 1}`,
+          title: `Source ${index + 1}`,
+          summary: `Intelligence from ${hostname}`,
+          sourceName: hostname,
+          sourceUrl: citationUrl,
+        });
+      }
+    });
+  }
+
+  // Fallback: If still no signals, create from raw content
   if (signals.length === 0) {
     const bullets = content.match(/^[-•]\s+.+$/gm) || [];
     bullets.slice(0, 5).forEach((bullet, index) => {
@@ -243,7 +330,7 @@ function parsePerplexityResponse(content: string, citations: string[]): PlannerC
         title: bullet.substring(0, 60).trim(),
         summary: bullet.substring(2).trim(),
         sourceName: 'Perplexity Analysis',
-        sourceUrl: citations[index] || '#',
+        sourceUrl: citations[index] ? extractValidUrl(citations[index]) || '#' : '#',
       });
     });
   }
@@ -258,7 +345,17 @@ function parsePerplexityResponse(content: string, citations: string[]): PlannerC
     actions.push('Analyze internal data to validate findings');
   }
 
-  return { signals, implications, actions };
+  // Include valid citations in the response
+  const validCitations = citations
+    .map(c => extractValidUrl(c))
+    .filter((url): url is string => url !== null);
+
+  return { 
+    signals, 
+    implications, 
+    actions,
+    citations: validCitations.length > 0 ? validCitations : undefined
+  };
 }
 
 function extractSection(content: string, sectionName: string): string | null {
