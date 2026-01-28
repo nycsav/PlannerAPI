@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect, useCallback, lazy, Suspense } from 'react';
-import { X, Download, Share2, Mail, Loader2, FileText, Zap, Target, ExternalLink, Send, BookOpen, MessageCircle, BarChart2, Sparkles, BarChart3, FileSearch } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { X, Download, Share2, Mail, Loader2, FileText, Zap, Target, ExternalLink, Send, BookOpen, MessageCircle, BarChart2, BarChart3 } from 'lucide-react';
 import { parseMarkdown, parseInlineMarkdown, parsePerplexityMarkdown } from '../utils/markdown';
 import { exportIntelligenceBriefToPDF } from '../utils/exportPDF';
 import { MetricCard } from './MetricCard';
@@ -7,22 +7,6 @@ import { extractMetrics } from '../utils/extractMetrics';
 import { ENDPOINTS, fetchWithTimeout } from '../src/config/api';
 import { LoadingSpinner } from './LoadingSpinner';
 import { InsightDashboard } from './InsightDashboard';
-import { CopilotActionButton } from './copilot';
-
-// Lazy load CopilotKit to prevent app crash if it fails
-const CopilotKit = lazy(() => 
-  import('@copilotkit/react-core').then(mod => ({ default: mod.CopilotKit }))
-    .catch(() => ({ default: ({ children }: { children: React.ReactNode }) => <>{children}</> }))
-);
-const CopilotPopup = lazy(() => 
-  import('@copilotkit/react-ui').then(mod => ({ default: mod.CopilotPopup }))
-    .catch(() => ({ default: () => null }))
-);
-
-// Import CSS only on client side
-if (typeof window !== 'undefined') {
-  import('@copilotkit/react-ui/styles.css').catch(() => {});
-}
 
 type IntelligenceFramework = {
   id: string;
@@ -253,26 +237,7 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
   // Dashboard visualization state
   const [showDashboard, setShowDashboard] = useState(false);
 
-  // CopilotKit chat visibility state
-  const [showCopilotChat, setShowCopilotChat] = useState(false);
 
-  // Handle Copilot tool invocation
-  const handleCopilotTool = useCallback((toolName: string) => {
-    console.log(`[CopilotKit] Tool invoked: ${toolName}`);
-    // Tool actions - will be connected to CopilotKit runtime when ready
-    switch (toolName) {
-      case 'visualize_brief_insights':
-        setShowDashboard(true);
-        break;
-      case 'open_source_explorer':
-        // Scroll to sources section
-        document.querySelector('[data-section="sources"]')?.scrollIntoView({ behavior: 'smooth' });
-        break;
-      case 'ask_copilot':
-        setShowCopilotChat(true);
-        break;
-    }
-  }, []);
 
   // Extract metrics from summary for visualization
   const metrics = useMemo(() => {
@@ -802,37 +767,6 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
                 </div>
               </div>
 
-              {/* AI Actions Bar - CopilotKit Integration */}
-              <div className="mt-6 p-4 bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-800/60 dark:to-slate-900/40 rounded-xl border border-slate-200/60 dark:border-slate-700/40">
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="w-4 h-4 text-violet-500" />
-                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">
-                    AI Actions
-                  </span>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-auto">
-                    Powered by CopilotKit
-                  </span>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <CopilotActionButton
-                    icon={<BarChart3 className="w-3.5 h-3.5" />}
-                    label="Visualize signals"
-                    onClick={() => handleCopilotTool('visualize_brief_insights')}
-                  />
-                  <CopilotActionButton
-                    icon={<FileSearch className="w-3.5 h-3.5" />}
-                    label="Explore sources"
-                    onClick={() => handleCopilotTool('open_source_explorer')}
-                  />
-                  <CopilotActionButton
-                    icon={<MessageCircle className="w-3.5 h-3.5" />}
-                    label="Ask about brief"
-                    onClick={() => handleCopilotTool('ask_copilot')}
-                    variant="primary"
-                  />
-                </div>
-              </div>
             </div>
           </div>
 
@@ -944,55 +878,6 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
           </div>
         )}
 
-        {/* CopilotKit Chat - Real AI Integration (lazy loaded) */}
-        {showCopilotChat && payload && (
-          <Suspense fallback={
-            <div className="fixed bottom-4 right-4 z-[60] bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6">
-              <div className="flex items-center gap-3">
-                <Loader2 className="w-5 h-5 animate-spin text-violet-500" />
-                <span className="text-sm text-slate-600 dark:text-slate-300">Loading Brief Copilot...</span>
-              </div>
-            </div>
-          }>
-            <CopilotKit runtimeUrl={ENDPOINTS.copilotRuntime}>
-              <div className="fixed bottom-4 right-4 z-[60]">
-                <CopilotPopup
-                  instructions={`You are a strategic intelligence copilot for marketing and AI strategy leaders.
-
-CURRENT BRIEF CONTEXT:
-Query: "${payload.query}"
-
-Summary: ${payload.summary}
-
-Key Signals:
-${payload.keySignals.map((s, i) => `${i + 1}. ${s}`).join('\n')}
-
-Moves for Leaders:
-${payload.movesForLeaders.map((m, i) => `${i + 1}. ${m}`).join('\n')}
-
-YOUR ROLE:
-- Answer questions about this specific intelligence brief
-- Help users understand the strategic implications
-- Provide actionable recommendations based on the brief
-- Be concise, analytical, and executive-friendly
-- Reference specific data points from the brief when relevant
-
-TONE: Professional, direct, no fluff. Write as if advising a CMO.`}
-                  labels={{
-                    title: "Brief Copilot",
-                    initial: "Ask me anything about this intelligence brief...",
-                    placeholder: "What would you like to know?",
-                  }}
-                  defaultOpen={true}
-                  clickOutsideToClose={false}
-                  onSetOpen={(open) => {
-                    if (!open) setShowCopilotChat(false);
-                  }}
-                />
-              </div>
-            </CopilotKit>
-          </Suspense>
-        )}
       </div>
     </div>
   );
