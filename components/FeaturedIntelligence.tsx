@@ -8,20 +8,52 @@ interface FeaturedIntelligenceProps {
   onCardClick: (card: IntelligenceCard) => void;
 }
 
-// Extract numeric data from signals for visualization with improved parsing
+/**
+ * EDITORIAL LOGIC: Only show charts when data is meaningful
+ * - Requires 2+ data points with descriptive labels
+ * - Rejects generic labels like "Signal 1", "Metric", etc.
+ * - Better to show no chart than a confusing one
+ */
+
+// Check if a label is meaningful (not generic)
+const isGenericLabel = (label: string): boolean => {
+  return /^(signal|metric|value|data|item)\s*\d*$/i.test(label.trim());
+};
+
+// Extract a meaningful label from signal text
+const extractMeaningfulLabel = (signal: string): string | null => {
+  // Try to find entity/company names at start
+  const entityMatch = signal.match(/^([A-Z][a-zA-Z\s&']+?)\s+(?:[\d$%])/);
+  if (entityMatch && entityMatch[1].length > 2 && entityMatch[1].length < 25) {
+    return entityMatch[1].trim();
+  }
+  
+  // Try to find descriptive phrase before the number
+  const beforeNumber = signal.split(/[\d$%]/)[0].trim();
+  if (beforeNumber.length > 3 && beforeNumber.length < 30 && !isGenericLabel(beforeNumber)) {
+    const cleaned = beforeNumber.replace(/^(the|a|an|in|of|for|with)\s+/i, '').trim();
+    if (cleaned.length > 3) return cleaned;
+  }
+  
+  return null;
+};
+
+// Extract numeric data from signals for visualization - WITH QUALITY FILTERING
 const extractChartData = (card: IntelligenceCard, graphData?: any) => {
   const data: { label: string; value: number; color: string; unit: string; displayValue: string; context: string }[] = [];
   const colors = ['#2563EB', '#7C3AED', '#059669', '#EA580C'];
 
-  // Return empty array if no data available
   if (!card && !graphData) return [];
 
-  // If backend provided structured graph data, use it
+  // Priority 1: Use backend graphData - but FILTER for quality
   if (graphData?.comparisons && Array.isArray(graphData.comparisons) && graphData.comparisons.length > 0) {
     graphData.comparisons.forEach((comp: any, i: number) => {
+      // SKIP if label is generic
+      if (!comp.label || isGenericLabel(comp.label)) return;
+      
       if (comp && typeof comp.value === 'number' && !isNaN(comp.value) && comp.value > 0) {
         data.push({
-          label: (comp.label || `Item ${i + 1}`).trim(),
+          label: comp.label.trim().substring(0, 18),
           value: comp.value,
           color: colors[i % colors.length],
           unit: (comp.unit || '%').trim(),
@@ -30,14 +62,19 @@ const extractChartData = (card: IntelligenceCard, graphData?: any) => {
         });
       }
     });
-    if (data.length > 0) return data;
+    // Only use if we have 2+ quality entries (for comparison)
+    if (data.length >= 2) return data.slice(0, 4);
+    data.length = 0; // Clear and try signals
   }
 
   if (graphData?.metrics && Array.isArray(graphData.metrics) && graphData.metrics.length > 0) {
     graphData.metrics.forEach((metric: any, i: number) => {
+      // SKIP if label is generic
+      if (!metric.label || isGenericLabel(metric.label)) return;
+      
       if (metric && typeof metric.value === 'number' && !isNaN(metric.value) && metric.value > 0) {
         data.push({
-          label: (metric.label || `Metric ${i + 1}`).trim(),
+          label: metric.label.trim().substring(0, 18),
           value: metric.value,
           color: colors[i % colors.length],
           unit: (metric.unit || '%').trim(),
@@ -46,15 +83,20 @@ const extractChartData = (card: IntelligenceCard, graphData?: any) => {
         });
       }
     });
-    if (data.length > 0) return data;
+    if (data.length >= 2) return data.slice(0, 4);
+    data.length = 0;
   }
 
-  // Fallback: Extract from signals with improved parsing
+  // Priority 2: Extract from signals - ONLY with meaningful labels
   if (card?.signals && Array.isArray(card.signals)) {
     card.signals.forEach((signal, i) => {
       if (!signal || typeof signal !== 'string') return;
 
-      // Try to extract company/entity comparisons first
+      // Get meaningful label first - skip if none
+      const label = extractMeaningfulLabel(signal);
+      if (!label) return;
+
+      // Try company/entity comparisons
       const companyMatch = signal.match(/([A-Z][a-zA-Z\s&]+(?:'s)?)\s+([\d.]+)\s*([%xBMK$]?)/);
       if (companyMatch) {
         const entity = companyMatch[1].trim();
@@ -63,14 +105,13 @@ const extractChartData = (card: IntelligenceCard, graphData?: any) => {
 
         if (isNaN(value) || value <= 0) return;
 
-        // Normalize for visualization
         if (unit === 'B') value = value * 1000;
         else if (unit === 'M') value = value;
         else if (unit === 'K') value = value / 1000;
         else if (unit === 'x') value = value * 10;
 
         data.push({
-          label: entity.length > 15 ? entity.substring(0, 12) + '...' : entity,
+          label: entity.substring(0, 18),
           value: value,
           color: colors[i % colors.length],
           unit: unit,
@@ -85,11 +126,8 @@ const extractChartData = (card: IntelligenceCard, graphData?: any) => {
       if (percentMatch) {
         const value = parseFloat(percentMatch[1]);
         if (!isNaN(value) && value > 0) {
-          const labelMatch = signal.match(/^([^%\d]+)/);
-          const label = labelMatch ? labelMatch[1].trim().slice(0, 20) : `Signal ${i + 1}`;
-          
           data.push({
-            label: label.length > 15 ? label.substring(0, 12) + '...' : label,
+            label: label.substring(0, 18),
             value: value,
             color: colors[i % colors.length],
             unit: '%',
@@ -111,12 +149,9 @@ const extractChartData = (card: IntelligenceCard, graphData?: any) => {
         if (suffix === 'B') value = value * 1000;
         else if (suffix === 'M') value = value;
         else if (suffix === 'K') value = value / 1000;
-
-        const labelMatch = signal.match(/^([^$\d]+)/);
-        const label = labelMatch ? labelMatch[1].trim().slice(0, 20) : `Signal ${i + 1}`;
         
         data.push({
-          label: label.length > 15 ? label.substring(0, 12) + '...' : label,
+          label: label.substring(0, 18),
           value: value,
           color: colors[i % colors.length],
           unit: `$${suffix}`,
@@ -127,10 +162,13 @@ const extractChartData = (card: IntelligenceCard, graphData?: any) => {
     });
   }
 
-  // Ensure all entries have required properties before returning
-  return data
-    .filter(d => d && typeof d.value === 'number' && !isNaN(d.value) && d.value > 0 && d.label && d.displayValue)
-    .slice(0, 4); // Max 4 bars
+  // QUALITY GATE: Only return data if we have 2+ meaningful entries
+  // A chart with 1 bar or generic labels is confusing, not helpful
+  const validData = data.filter(d => 
+    d && d.value > 0 && d.label && !isGenericLabel(d.label)
+  );
+  
+  return validData.length >= 2 ? validData.slice(0, 4) : [];
 };
 
 export const FeaturedIntelligence: React.FC<FeaturedIntelligenceProps> = ({ cards, onCardClick }) => {
@@ -281,46 +319,58 @@ export const FeaturedIntelligence: React.FC<FeaturedIntelligenceProps> = ({ card
         {secondaryCards.map((card) => {
           const cardConfig = PILLAR_CONFIG[card.pillar];
           
-          // Extract metric with context for display
-          const extractMetricWithContext = (signals: string[]) => {
+          // Extract metric ONLY if we can provide meaningful context
+          const extractMetricWithContext = (signals: string[], title: string) => {
             if (!signals || signals.length === 0) return null;
+            
+            // Try to extract metric from title first (most relevant)
+            const titleMatch = title.match(/\$?([\d.]+)\s*([BMKTbmkt]?)\s*(%|x)?/i);
+            if (titleMatch) {
+              const val = `${titleMatch[1]}${(titleMatch[2] || '').toUpperCase()}${titleMatch[3] || ''}`;
+              const beforeTitle = title.substring(0, title.indexOf(titleMatch[0])).split(/\s+/).slice(-2).join(' ');
+              const afterTitle = title.substring(title.indexOf(titleMatch[0]) + titleMatch[0].length).split(/\s+/).slice(0, 2).join(' ');
+              const ctx = `${beforeTitle} ${afterTitle}`.toLowerCase();
+              const lbl = determineContextLabel(ctx);
+              if (lbl) return { value: val, label: lbl };
+            }
             
             const signal = signals[0];
             const match = signal.match(/(\$?[\d.]+\s*[BMKTbmkt]?%?x?)/i);
             if (!match) return null;
             
             const value = match[0].toUpperCase();
-            
-            // Extract context words around the metric
             const beforeMatch = signal.substring(0, match.index).split(/\s+/).slice(-3).join(' ').trim();
             const afterMatch = signal.substring((match.index || 0) + match[0].length).split(/\s+/).slice(0, 3).join(' ').trim();
-            
-            // Create a meaningful label from context
-            let label = 'Key Metric';
             const context = `${beforeMatch} ${afterMatch}`.toLowerCase();
             
-            if (context.includes('market') || context.includes('industry')) label = 'Market Size';
-            else if (context.includes('revenue') || context.includes('sales')) label = 'Revenue';
-            else if (context.includes('growth') || context.includes('increase')) label = 'Growth Rate';
-            else if (context.includes('spend') || context.includes('budget') || context.includes('investment')) label = 'Investment';
-            else if (context.includes('roi') || context.includes('return')) label = 'ROI';
-            else if (context.includes('adoption') || context.includes('usage')) label = 'Adoption Rate';
-            else if (context.includes('user') || context.includes('customer')) label = 'Users';
-            else if (context.includes('save') || context.includes('cost')) label = 'Cost Impact';
-            else if (context.includes('higher') || context.includes('better') || context.includes('more')) label = 'Improvement';
-            else if (afterMatch.length > 2) {
-              // Use first 2-3 words after metric as label
-              label = afterMatch.split(/\s+/).slice(0, 2).map(w => 
-                w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
-              ).join(' ');
-            }
-            
-            return { value, label };
+            const label = determineContextLabel(context);
+            // Only return if we found a meaningful label
+            return label ? { value, label } : null;
           };
           
-          const metricData = extractMetricWithContext(card.signals);
+          // Determine label from context - return null if can't determine
+          const determineContextLabel = (ctx: string): string | null => {
+            if (ctx.includes('market') && ctx.includes('size')) return 'Market Size';
+            if (ctx.includes('market') && ctx.includes('share')) return 'Market Share';
+            if (ctx.includes('market')) return 'Market';
+            if (ctx.includes('revenue') || ctx.includes('sales')) return 'Revenue';
+            if (ctx.includes('growth') || ctx.includes('increase') || ctx.includes('grew')) return 'Growth';
+            if (ctx.includes('spend') || ctx.includes('budget')) return 'Spend';
+            if (ctx.includes('investment') || ctx.includes('funding')) return 'Investment';
+            if (ctx.includes('roi') || ctx.includes('return')) return 'ROI';
+            if (ctx.includes('adoption') || ctx.includes('use')) return 'Adoption';
+            if (ctx.includes('user') || ctx.includes('customer')) return 'Users';
+            if (ctx.includes('save') || ctx.includes('saving')) return 'Savings';
+            if (ctx.includes('cost') || ctx.includes('price')) return 'Cost';
+            if (ctx.includes('hit') || ctx.includes('reach') || ctx.includes('total')) return 'Total';
+            if (ctx.includes('contract') || ctx.includes('deal')) return 'Contracts';
+            if (ctx.includes('network') || ctx.includes('platform')) return 'Scale';
+            return null; // Don't show metric if no meaningful context
+          };
+          
+          const metricData = extractMetricWithContext(card.signals, card.title);
           const metric = metricData?.value;
-          const metricLabel = metricData?.label || 'Key Metric';
+          const metricLabel = metricData?.label;
 
           return (
             <div
@@ -349,7 +399,8 @@ export const FeaturedIntelligence: React.FC<FeaturedIntelligenceProps> = ({ card
                     {card.title}
                   </h4>
                 </div>
-                {metric && (
+                {/* Only show metric if we have meaningful context */}
+                {metric && metricLabel && (
                   <div className="text-right shrink-0">
                     <div className="text-2xl font-black text-gray-900 dark:text-gray-100">{metric}</div>
                     <div className="text-[10px] text-slate-500 dark:text-gray-300 uppercase">{metricLabel}</div>

@@ -76,9 +76,25 @@ export const ContentSliderCard: React.FC<ContentSliderCardProps> = ({ card, onCl
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  // Extract the primary metric with context for display
-  const extractMetricWithContext = (signals: string[]) => {
+  // Extract the primary metric ONLY if we can provide meaningful context
+  // Better to show no metric than a confusing one
+  const extractMetricWithContext = (signals: string[], title: string) => {
     if (!signals || signals.length === 0) return null;
+    
+    // First, try to extract metric that's mentioned in the title (most relevant)
+    const titleMatch = title.match(/\$?([\d.]+)\s*([BMKTbmkt]?)\s*(%|x)?/i);
+    if (titleMatch) {
+      const value = `${titleMatch[1]}${(titleMatch[2] || '').toUpperCase()}${titleMatch[3] || ''}`;
+      
+      // Get context from title around the number
+      const beforeTitle = title.substring(0, title.indexOf(titleMatch[0])).split(/\s+/).slice(-2).join(' ');
+      const afterTitle = title.substring(title.indexOf(titleMatch[0]) + titleMatch[0].length).split(/\s+/).slice(0, 2).join(' ');
+      
+      const label = determineLabel(`${beforeTitle} ${afterTitle}`);
+      if (label !== 'Key Metric') {
+        return { value: titleMatch[0].includes('$') ? value : `${value}`, label };
+      }
+    }
     
     const signal = signals[0];
     const match = signal.match(/(\$?[\d.]+\s*[BMKTbmkt]?%?x?)/i);
@@ -90,32 +106,43 @@ export const ContentSliderCard: React.FC<ContentSliderCardProps> = ({ card, onCl
     const beforeMatch = signal.substring(0, match.index).split(/\s+/).slice(-3).join(' ').trim();
     const afterMatch = signal.substring((match.index || 0) + match[0].length).split(/\s+/).slice(0, 3).join(' ').trim();
     
-    // Create a meaningful label from context
-    let label = 'Key Metric';
-    const context = `${beforeMatch} ${afterMatch}`.toLowerCase();
+    const label = determineLabel(`${beforeMatch} ${afterMatch}`);
     
-    if (context.includes('market') || context.includes('industry')) label = 'Market Size';
-    else if (context.includes('revenue') || context.includes('sales')) label = 'Revenue';
-    else if (context.includes('growth') || context.includes('increase')) label = 'Growth Rate';
-    else if (context.includes('spend') || context.includes('budget') || context.includes('investment')) label = 'Investment';
-    else if (context.includes('roi') || context.includes('return')) label = 'ROI';
-    else if (context.includes('adoption') || context.includes('usage')) label = 'Adoption Rate';
-    else if (context.includes('user') || context.includes('customer')) label = 'Users';
-    else if (context.includes('save') || context.includes('cost')) label = 'Cost Impact';
-    else if (context.includes('higher') || context.includes('better') || context.includes('more')) label = 'Improvement';
-    else if (afterMatch.length > 2) {
-      // Use first 2-3 words after metric as label
-      label = afterMatch.split(/\s+/).slice(0, 2).map(w => 
-        w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
-      ).join(' ');
-    }
+    // QUALITY GATE: Only return if we have a meaningful label
+    // If label is still "Key Metric", don't show it - it adds no value
+    if (label === 'Key Metric') return null;
     
     return { value, label };
   };
   
-  const metricData = extractMetricWithContext(card.signals);
+  // Determine meaningful label from context
+  const determineLabel = (context: string): string => {
+    const c = context.toLowerCase();
+    
+    if (c.includes('market') && c.includes('size')) return 'Market Size';
+    if (c.includes('market') && c.includes('share')) return 'Market Share';
+    if (c.includes('market')) return 'Market';
+    if (c.includes('revenue') || c.includes('sales')) return 'Revenue';
+    if (c.includes('growth') || c.includes('increase') || c.includes('grew')) return 'Growth';
+    if (c.includes('spend') || c.includes('budget')) return 'Spend';
+    if (c.includes('investment') || c.includes('funding')) return 'Investment';
+    if (c.includes('roi') || c.includes('return')) return 'ROI';
+    if (c.includes('adoption') || c.includes('using') || c.includes('use')) return 'Adoption';
+    if (c.includes('user') || c.includes('customer')) return 'Users';
+    if (c.includes('save') || c.includes('saving')) return 'Savings';
+    if (c.includes('cost') || c.includes('price')) return 'Cost';
+    if (c.includes('hit') || c.includes('reach') || c.includes('total')) return 'Total';
+    if (c.includes('contract') || c.includes('deal')) return 'Contracts';
+    if (c.includes('higher') || c.includes('better') || c.includes('improve')) return 'Improvement';
+    if (c.includes('network') || c.includes('platform')) return 'Scale';
+    
+    // If no specific match, don't show a generic label
+    return 'Key Metric';
+  };
+  
+  const metricData = extractMetricWithContext(card.signals, card.title);
   const primaryMetric = metricData?.value || null;
-  const metricLabel = metricData?.label || 'Key Metric';
+  const metricLabel = metricData?.label || null;
 
   const handleClick = () => {
     // Track click before navigating
@@ -173,8 +200,8 @@ export const ContentSliderCard: React.FC<ContentSliderCardProps> = ({ card, onCl
             )}
           </div>
 
-          {/* Big Metric */}
-          {primaryMetric && (
+          {/* Big Metric - Only show if we have meaningful context */}
+          {primaryMetric && metricLabel && (
             <div className="relative">
               <div className="text-4xl font-black text-white tracking-tight">
                 {primaryMetric}
