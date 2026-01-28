@@ -339,9 +339,11 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
   const handleFollowUpSubmit = async () => {
     if (!followUpInput.trim() || !payload || followUpLoading) return;
 
-    const newMessages = [...followUpMessages, { role: 'user' as const, content: followUpInput }];
+    // Ensure user input is definitely a string
+    const userContent = String(followUpInput).trim();
+    const newMessages = [...followUpMessages, { role: 'user' as const, content: userContent }];
     setFollowUpMessages(newMessages);
-    const currentInput = followUpInput;
+    const currentInput = userContent;
     setFollowUpInput('');
     setFollowUpLoading(true);
 
@@ -960,32 +962,40 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
                     </p>
                   </div>
                 ) : (
-                  followUpMessages.map((msg, index) => (
-                    <div
-                      key={index}
-                      className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      {msg.role === 'assistant' && (
-                        <div className="flex-shrink-0 w-8 h-8 bg-violet-100 dark:bg-violet-900/30 rounded-full flex items-center justify-center">
-                          <Sparkles className="w-4 h-4 text-violet-600 dark:text-violet-400" />
-                        </div>
-                      )}
+                  followUpMessages.map((msg, index) => {
+                    // Safety check: ensure content is always a string
+                    const safeContent = typeof msg.content === 'string' 
+                      ? msg.content 
+                      : (msg.content as any)?.text || JSON.stringify(msg.content);
+                    
+                    return (
                       <div
-                        className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                          msg.role === 'user'
-                            ? 'bg-violet-500 text-white'
-                            : 'bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-gray-100'
-                        }`}
+                        key={index}
+                        className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                       >
+                        {msg.role === 'assistant' && (
+                          <div className="flex-shrink-0 w-8 h-8 bg-violet-100 dark:bg-violet-900/30 rounded-full flex items-center justify-center">
+                            <Sparkles className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                          </div>
+                        )}
                         <div
-                          className="text-sm leading-relaxed"
-                          dangerouslySetInnerHTML={{
-                            __html: parsePerplexityMarkdown(msg.content)
-                          }}
-                        />
+                          className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                            msg.role === 'user'
+                              ? 'bg-violet-500 text-white'
+                              : 'bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-gray-100'
+                          }`}
+                        >
+                          <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none">
+                            {msg.role === 'user' ? (
+                              <span>{safeContent}</span>
+                            ) : (
+                              parsePerplexityMarkdown(safeContent)
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
                 {followUpLoading && (
                   <div className="flex gap-3 justify-start">
