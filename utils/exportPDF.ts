@@ -17,6 +17,22 @@ export interface PDFExportData {
     label: string;
     actions: string[];
   }>;
+  metrics?: Array<{
+    value: number;
+    label?: string;
+    trend?: 'up' | 'down' | 'neutral';
+    context?: string;
+  }>;
+  comparisons?: Array<{
+    label: string;
+    value: number;
+    unit: string;
+    context: string;
+  }>;
+  followUpMessages?: Array<{
+    role: 'user' | 'assistant';
+    content: string;
+  }>;
 }
 
 export function exportIntelligenceBriefToPDF(data: PDFExportData) {
@@ -248,6 +264,64 @@ export function exportIntelligenceBriefToPDF(data: PDFExportData) {
               <div class="source-item">
                 ${index + 1}. ${signal.sourceName}
                 ${signal.sourceUrl && signal.sourceUrl !== '#' ? `<br><a href="${signal.sourceUrl}" class="source-link">${signal.sourceUrl}</a>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+
+      ${(data.metrics && data.metrics.length > 0) || (data.comparisons && data.comparisons.length > 0) ? `
+        <div class="section">
+          <h2 class="section-title">Key Metrics & Insights</h2>
+          <div class="section-content">
+            ${data.metrics && data.metrics.length > 0 ? `
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px;">
+                ${data.metrics.map(metric => `
+                  <div style="border: 1px solid #ddd; padding: 10px; border-radius: 8px; background: #f9fafb;">
+                    <div style="font-size: 20px; font-weight: bold; color: #1B365D; margin-bottom: 5px;">
+                      ${metric.value}${metric.label?.includes('%') ? '%' : ''}
+                    </div>
+                    <div style="font-size: 10px; color: #666; text-transform: uppercase; margin-bottom: 3px;">
+                      ${metric.label || 'Metric'}
+                    </div>
+                    ${metric.context ? `<div style="font-size: 9px; color: #888; margin-top: 5px;">${cleanText(metric.context)}</div>` : ''}
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+            ${data.comparisons && data.comparisons.length > 0 ? `
+              <div style="margin-top: 10px;">
+                <div style="font-size: 11px; font-weight: bold; margin-bottom: 8px; color: #666;">Comparative Analysis</div>
+                ${data.comparisons.map(comp => `
+                  <div style="margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 3px;">
+                      <span style="font-weight: 600;">${comp.label}</span>
+                      <span style="color: #1B365D; font-weight: bold;">${comp.value}${comp.unit}</span>
+                    </div>
+                    <div style="background: #e5e7eb; height: 6px; border-radius: 3px; overflow: hidden;">
+                      <div style="background: #1B365D; height: 100%; width: ${Math.min(comp.value, 100)}%; border-radius: 3px;"></div>
+                    </div>
+                    ${comp.context ? `<div style="font-size: 8px; color: #888; margin-top: 2px;">${cleanText(comp.context)}</div>` : ''}
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      ` : ''}
+
+      ${data.followUpMessages && data.followUpMessages.length > 0 ? `
+        <div class="section">
+          <h2 class="section-title">Follow-Up Discussion</h2>
+          <div class="section-content">
+            ${data.followUpMessages.map((msg, index) => `
+              <div style="margin-bottom: 12px; ${msg.role === 'user' ? 'padding-left: 0;' : 'padding-left: 15px; border-left: 3px solid #FF6B35;'}">
+                <div style="font-size: 9px; text-transform: uppercase; color: ${msg.role === 'user' ? '#1B365D' : '#FF6B35'}; font-weight: bold; margin-bottom: 3px;">
+                  ${msg.role === 'user' ? 'Question' : 'Answer'}
+                </div>
+                <div style="font-size: 10px; line-height: 1.5;">
+                  ${cleanText(msg.content)}
+                </div>
               </div>
             `).join('')}
           </div>

@@ -236,6 +236,9 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
 
   // Dashboard visualization state
   const [showDashboard, setShowDashboard] = useState(false);
+  
+  // Quick chat modal state
+  const [showQuickChat, setShowQuickChat] = useState(false);
 
 
 
@@ -276,7 +279,10 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
         keySignals: payload.keySignals,
         movesForLeaders: payload.movesForLeaders,
         signals: payload.signals,
-        frameworks: frameworks
+        frameworks: frameworks,
+        metrics: metrics.length > 0 ? metrics : undefined,
+        comparisons: payload.graphData?.comparisons,
+        followUpMessages: followUpMessages.length > 0 ? followUpMessages : undefined
       });
       // Optional: Show success notification
       console.log('PDF downloaded successfully');
@@ -795,7 +801,7 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
                     <span>Explore sources</span>
                   </button>
                   <button
-                    onClick={() => document.querySelector('[data-section="follow-up"]')?.scrollIntoView({ behavior: 'smooth' })}
+                    onClick={() => setShowQuickChat(true)}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-violet-500 hover:bg-violet-600 text-white transition-all duration-200"
                   >
                     <MessageCircle className="w-3.5 h-3.5" />
@@ -911,6 +917,119 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
               </button>
             </div>
           </section>
+          </div>
+        )}
+
+        {/* Quick Chat Modal - Powered by existing follow-up system */}
+        {showQuickChat && payload && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-700">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-lg">
+                    <Sparkles className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-display text-lg font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
+                      Brief Assistant
+                    </h3>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      Ask questions about this intelligence brief
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowQuickChat(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                </button>
+              </div>
+
+              {/* Chat Messages */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {followUpMessages.length === 0 ? (
+                  <div className="text-center py-12">
+                    <MessageCircle className="w-12 h-12 text-gray-300 dark:text-slate-600 mx-auto mb-4" />
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                      Start by asking a question about this brief
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-500">
+                      Examples: "What are the key metrics?" or "What should I prioritize?"
+                    </p>
+                  </div>
+                ) : (
+                  followUpMessages.map((msg, index) => (
+                    <div
+                      key={index}
+                      className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      {msg.role === 'assistant' && (
+                        <div className="flex-shrink-0 w-8 h-8 bg-violet-100 dark:bg-violet-900/30 rounded-full flex items-center justify-center">
+                          <Sparkles className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                        </div>
+                      )}
+                      <div
+                        className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                          msg.role === 'user'
+                            ? 'bg-violet-500 text-white'
+                            : 'bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-gray-100'
+                        }`}
+                      >
+                        <div
+                          className="text-sm leading-relaxed"
+                          dangerouslySetInnerHTML={{
+                            __html: parsePerplexityMarkdown(msg.content)
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))
+                )}
+                {followUpLoading && (
+                  <div className="flex gap-3 justify-start">
+                    <div className="flex-shrink-0 w-8 h-8 bg-violet-100 dark:bg-violet-900/30 rounded-full flex items-center justify-center">
+                      <Sparkles className="w-4 h-4 text-violet-600 dark:text-violet-400 animate-pulse" />
+                    </div>
+                    <div className="bg-gray-100 dark:bg-slate-800 rounded-2xl px-4 py-3">
+                      <LoadingSpinner size="sm" text="Thinking..." />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Input */}
+              <div className="p-6 border-t border-gray-200 dark:border-slate-700">
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    value={followUpInput}
+                    onChange={(e) => setFollowUpInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey && followUpInput.trim() && !followUpLoading) {
+                        e.preventDefault();
+                        handleFollowUpSubmit();
+                      }
+                    }}
+                    placeholder="Ask a question about this brief..."
+                    disabled={followUpLoading}
+                    className="flex-1 px-4 py-3 border-2 border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:border-violet-500 dark:focus:border-violet-400 focus:ring-2 focus:ring-violet-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <button
+                    onClick={handleFollowUpSubmit}
+                    disabled={!followUpInput.trim() || followUpLoading}
+                    className="px-6 py-3 bg-violet-500 text-white rounded-lg hover:bg-violet-600 hover:shadow-md active:scale-95 transition-all duration-200 disabled:bg-gray-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {followUpLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Send className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
