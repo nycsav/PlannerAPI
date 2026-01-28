@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { X, Download, Share2, Mail, Loader2, FileText, Zap, Target, ExternalLink, Send, BookOpen, MessageCircle, BarChart2, BarChart3 } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { X, Download, Share2, Mail, Loader2, FileText, Zap, Target, ExternalLink, Send, BookOpen, MessageCircle, BarChart2, BarChart3, FileSearch, Sparkles } from 'lucide-react';
 import { parseMarkdown, parseInlineMarkdown, parsePerplexityMarkdown } from '../utils/markdown';
 import { exportIntelligenceBriefToPDF } from '../utils/exportPDF';
 import { MetricCard } from './MetricCard';
@@ -767,6 +767,43 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
                 </div>
               </div>
 
+              {/* Quick Actions Bar */}
+              <div className="mt-6 p-4 bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-800/60 dark:to-slate-900/40 rounded-xl border border-slate-200/60 dark:border-slate-700/40">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="w-4 h-4 text-violet-500" />
+                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">
+                    Quick Actions
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setShowDashboard(!showDashboard)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 ${
+                      showDashboard
+                        ? 'bg-violet-500 text-white'
+                        : 'bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600'
+                    }`}
+                  >
+                    <BarChart3 className="w-3.5 h-3.5" />
+                    <span>{showDashboard ? 'Hide' : 'Visualize'} signals</span>
+                  </button>
+                  <button
+                    onClick={() => document.querySelector('[data-section="sources"]')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 transition-all duration-200"
+                  >
+                    <FileSearch className="w-3.5 h-3.5" />
+                    <span>Explore sources</span>
+                  </button>
+                  <button
+                    onClick={() => document.querySelector('[data-section="follow-up"]')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-violet-500 hover:bg-violet-600 text-white transition-all duration-200"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>Ask about brief</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -794,7 +831,7 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
           )}
 
           {/* Follow-up Chat Section */}
-          <section className="mt-12 pt-8 border-t-2 border-gray-200/60 dark:border-slate-700/50">
+          <section data-section="follow-up" className="mt-12 pt-8 border-t-2 border-gray-200/60 dark:border-slate-700/50">
             <div className="flex items-center gap-3 mb-6">
               <MessageCircle className="w-6 h-6 text-bureau-signal dark:text-planner-orange" />
               <h3 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
