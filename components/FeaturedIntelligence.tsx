@@ -280,8 +280,47 @@ export const FeaturedIntelligence: React.FC<FeaturedIntelligenceProps> = ({ card
         </h3>
         {secondaryCards.map((card) => {
           const cardConfig = PILLAR_CONFIG[card.pillar];
-          // Extract first metric for display
-          const metric = card.signals?.[0]?.match(/(\$?[\d.]+[BMK%x]?)/)?.[0];
+          
+          // Extract metric with context for display
+          const extractMetricWithContext = (signals: string[]) => {
+            if (!signals || signals.length === 0) return null;
+            
+            const signal = signals[0];
+            const match = signal.match(/(\$?[\d.]+\s*[BMKTbmkt]?%?x?)/i);
+            if (!match) return null;
+            
+            const value = match[0].toUpperCase();
+            
+            // Extract context words around the metric
+            const beforeMatch = signal.substring(0, match.index).split(/\s+/).slice(-3).join(' ').trim();
+            const afterMatch = signal.substring((match.index || 0) + match[0].length).split(/\s+/).slice(0, 3).join(' ').trim();
+            
+            // Create a meaningful label from context
+            let label = 'Key Metric';
+            const context = `${beforeMatch} ${afterMatch}`.toLowerCase();
+            
+            if (context.includes('market') || context.includes('industry')) label = 'Market Size';
+            else if (context.includes('revenue') || context.includes('sales')) label = 'Revenue';
+            else if (context.includes('growth') || context.includes('increase')) label = 'Growth Rate';
+            else if (context.includes('spend') || context.includes('budget') || context.includes('investment')) label = 'Investment';
+            else if (context.includes('roi') || context.includes('return')) label = 'ROI';
+            else if (context.includes('adoption') || context.includes('usage')) label = 'Adoption Rate';
+            else if (context.includes('user') || context.includes('customer')) label = 'Users';
+            else if (context.includes('save') || context.includes('cost')) label = 'Cost Impact';
+            else if (context.includes('higher') || context.includes('better') || context.includes('more')) label = 'Improvement';
+            else if (afterMatch.length > 2) {
+              // Use first 2-3 words after metric as label
+              label = afterMatch.split(/\s+/).slice(0, 2).map(w => 
+                w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+              ).join(' ');
+            }
+            
+            return { value, label };
+          };
+          
+          const metricData = extractMetricWithContext(card.signals);
+          const metric = metricData?.value;
+          const metricLabel = metricData?.label || 'Key Metric';
 
           return (
             <div
@@ -313,7 +352,7 @@ export const FeaturedIntelligence: React.FC<FeaturedIntelligenceProps> = ({ card
                 {metric && (
                   <div className="text-right shrink-0">
                     <div className="text-2xl font-black text-gray-900 dark:text-gray-100">{metric}</div>
-                    <div className="text-[10px] text-slate-500 dark:text-gray-300 uppercase">Key Metric</div>
+                    <div className="text-[10px] text-slate-500 dark:text-gray-300 uppercase">{metricLabel}</div>
                   </div>
                 )}
               </div>

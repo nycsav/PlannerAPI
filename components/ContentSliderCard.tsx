@@ -76,8 +76,46 @@ export const ContentSliderCard: React.FC<ContentSliderCardProps> = ({ card, onCl
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  // Extract the primary metric for display
-  const primaryMetric = card.signals?.[0]?.match(/(\$?[\d.]+[BMK%x]?)/)?.[0] || null;
+  // Extract the primary metric with context for display
+  const extractMetricWithContext = (signals: string[]) => {
+    if (!signals || signals.length === 0) return null;
+    
+    const signal = signals[0];
+    const match = signal.match(/(\$?[\d.]+\s*[BMKTbmkt]?%?x?)/i);
+    if (!match) return null;
+    
+    const value = match[0].toUpperCase();
+    
+    // Extract context words around the metric
+    const beforeMatch = signal.substring(0, match.index).split(/\s+/).slice(-3).join(' ').trim();
+    const afterMatch = signal.substring((match.index || 0) + match[0].length).split(/\s+/).slice(0, 3).join(' ').trim();
+    
+    // Create a meaningful label from context
+    let label = 'Key Metric';
+    const context = `${beforeMatch} ${afterMatch}`.toLowerCase();
+    
+    if (context.includes('market') || context.includes('industry')) label = 'Market Size';
+    else if (context.includes('revenue') || context.includes('sales')) label = 'Revenue';
+    else if (context.includes('growth') || context.includes('increase')) label = 'Growth Rate';
+    else if (context.includes('spend') || context.includes('budget') || context.includes('investment')) label = 'Investment';
+    else if (context.includes('roi') || context.includes('return')) label = 'ROI';
+    else if (context.includes('adoption') || context.includes('usage')) label = 'Adoption Rate';
+    else if (context.includes('user') || context.includes('customer')) label = 'Users';
+    else if (context.includes('save') || context.includes('cost')) label = 'Cost Impact';
+    else if (context.includes('higher') || context.includes('better') || context.includes('more')) label = 'Improvement';
+    else if (afterMatch.length > 2) {
+      // Use first 2-3 words after metric as label
+      label = afterMatch.split(/\s+/).slice(0, 2).map(w => 
+        w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+      ).join(' ');
+    }
+    
+    return { value, label };
+  };
+  
+  const metricData = extractMetricWithContext(card.signals);
+  const primaryMetric = metricData?.value || null;
+  const metricLabel = metricData?.label || 'Key Metric';
 
   const handleClick = () => {
     // Track click before navigating
@@ -142,7 +180,7 @@ export const ContentSliderCard: React.FC<ContentSliderCardProps> = ({ card, onCl
                 {primaryMetric}
               </div>
               <div className="text-xs text-white/70 uppercase tracking-wider mt-1">
-                Key Metric
+                {metricLabel}
               </div>
             </div>
           )}

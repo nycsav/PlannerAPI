@@ -99,13 +99,68 @@ export const InsightDashboard: React.FC<InsightDashboardProps> = ({
     return null;
   }
 
-  // Clean up label for display
+  // Clean up label for display - improve generic labels like "Signal 1"
   const formatLabel = (label: string, context?: string) => {
-    // Use context if it's more descriptive
-    if (context && context.length > label.length && context.length < 60) {
-      return context;
+    // If label is generic (Signal X, Metric, etc.), use context to generate better label
+    if (/^(Signal|Metric|Value|Data)\s*\d*$/i.test(label) && context) {
+      // Extract meaningful words from context
+      const words = context.toLowerCase().split(/\s+/).filter(w => 
+        w.length > 2 && 
+        !['the', 'and', 'for', 'with', 'from', 'that', 'this', 'are', 'was', 'has'].includes(w)
+      );
+      
+      // Try to find business-relevant terms
+      if (context.includes('market')) return 'Market';
+      if (context.includes('revenue')) return 'Revenue';
+      if (context.includes('growth')) return 'Growth';
+      if (context.includes('adoption')) return 'Adoption';
+      if (context.includes('spend')) return 'Spend';
+      if (context.includes('roi')) return 'ROI';
+      
+      // Use first 2 meaningful words as label
+      if (words.length >= 2) {
+        return words.slice(0, 2).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      }
+      if (words.length === 1) {
+        return words[0].charAt(0).toUpperCase() + words[0].slice(1);
+      }
+    }
+    
+    // Use context if it's more descriptive and reasonably short
+    if (context && context.length > label.length && context.length < 50) {
+      // Capitalize first letter and clean up
+      return context.charAt(0).toUpperCase() + context.slice(1);
     }
     return label;
+  };
+  
+  // Improve comparison labels using context
+  const improveComparisonLabel = (comparison: ComparisonData, index: number) => {
+    // If label is generic, create better one from context
+    if (/^(Signal|Metric|Value|Data|Average|Benchmark)\s*\d*$/i.test(comparison.label)) {
+      if (comparison.context && comparison.context.length > 5) {
+        // Extract key info from context
+        const contextLower = comparison.context.toLowerCase();
+        if (contextLower.includes('market')) return 'Market Size';
+        if (contextLower.includes('revenue')) return 'Revenue';
+        if (contextLower.includes('growth')) return 'Growth Rate';
+        if (contextLower.includes('adoption')) return 'Adoption';
+        if (contextLower.includes('roi')) return 'ROI';
+        if (contextLower.includes('spend') || contextLower.includes('cost')) return 'Investment';
+        if (contextLower.includes('user') || contextLower.includes('customer')) return 'Users';
+        
+        // Extract first meaningful words
+        const words = comparison.context.split(/\s+/)
+          .filter(w => w.length > 2 && !/^\d/.test(w) && !/^[%$]/.test(w))
+          .slice(0, 2);
+        if (words.length > 0) {
+          return words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+        }
+      }
+      // Fallback to generic but numbered
+      return `Metric ${index + 1}`;
+    }
+    return comparison.label;
   };
 
   return (
@@ -198,12 +253,13 @@ export const InsightDashboard: React.FC<InsightDashboardProps> = ({
               <div className="space-y-2.5">
                 {comparisons.slice(0, 5).map((comparison, index) => {
                   const barWidth = (comparison.value / maxComparisonValue) * 100;
+                  const displayLabel = improveComparisonLabel(comparison, index);
                   
                   return (
                     <div key={index} className="group">
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                          {comparison.label}
+                          {displayLabel}
                         </span>
                         <span className="text-xs font-bold text-slate-900 dark:text-white tabular-nums">
                           {comparison.value}{comparison.unit}
