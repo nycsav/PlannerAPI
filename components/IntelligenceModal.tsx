@@ -8,6 +8,9 @@ import { ENDPOINTS, fetchWithTimeout } from '../src/config/api';
 import { LoadingSpinner } from './LoadingSpinner';
 import { InsightDashboard } from './InsightDashboard';
 import { CopilotActionButton } from './copilot';
+import { CopilotKit } from '@copilotkit/react-core';
+import { CopilotPopup } from '@copilotkit/react-ui';
+import '@copilotkit/react-ui/styles.css';
 
 type IntelligenceFramework = {
   id: string;
@@ -238,31 +241,8 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
   // Dashboard visualization state
   const [showDashboard, setShowDashboard] = useState(false);
 
-  // CopilotKit state (placeholder until backend is ready)
+  // CopilotKit chat visibility state
   const [showCopilotChat, setShowCopilotChat] = useState(false);
-  const [copilotMessages, setCopilotMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([]);
-  const [copilotInput, setCopilotInput] = useState('');
-  const [copilotLoading, setCopilotLoading] = useState(false);
-
-  // Handle Copilot chat submit (placeholder until CopilotKit is connected)
-  const handleCopilotSubmit = useCallback(async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!copilotInput.trim() || copilotLoading) return;
-
-    const userMessage = copilotInput.trim();
-    setCopilotInput('');
-    setCopilotMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-    setCopilotLoading(true);
-
-    // Placeholder response - replace with CopilotKit runtime
-    setTimeout(() => {
-      setCopilotMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: `[CopilotKit Integration Pending]\n\nTo enable AI responses:\n1. Install: npm install @copilotkit/react-core @copilotkit/react-ui\n2. Set up /api/copilot-runtime endpoint\n3. Configure with your API keys\n\nYour question: "${userMessage}"` 
-      }]);
-      setCopilotLoading(false);
-    }, 500);
-  }, [copilotInput, copilotLoading]);
 
   // Handle Copilot tool invocation
   const handleCopilotTool = useCallback((toolName: string) => {
@@ -952,79 +932,45 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
           </div>
         )}
 
-        {/* Copilot Chat Modal */}
-        {showCopilotChat && (
-          <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center p-4 bg-black/40 backdrop-blur-sm">
-            <div className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-200">
-              {/* Chat Header */}
-              <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-violet-500 to-purple-500">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-white" />
-                  <span className="font-semibold text-white">Brief Copilot</span>
-                </div>
-                <button
-                  onClick={() => setShowCopilotChat(false)}
-                  className="p-1 hover:bg-white/20 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-white" />
-                </button>
-              </div>
+        {/* CopilotKit Chat - Real AI Integration */}
+        {showCopilotChat && payload && (
+          <CopilotKit runtimeUrl={ENDPOINTS.copilotRuntime}>
+            <div className="fixed bottom-4 right-4 z-[60]">
+              <CopilotPopup
+                instructions={`You are a strategic intelligence copilot for marketing and AI strategy leaders.
 
-              {/* Chat Messages */}
-              <div className="h-64 overflow-y-auto p-4 space-y-3">
-                {copilotMessages.length === 0 && (
-                  <div className="text-center text-slate-400 dark:text-slate-500 text-sm py-8">
-                    <Sparkles className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p>Ask questions about this intelligence brief</p>
-                    <p className="text-xs mt-1 text-slate-500">e.g., "What's the key takeaway?" or "Summarize the risks"</p>
-                  </div>
-                )}
-                {copilotMessages.map((msg, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-[80%] px-3 py-2 rounded-xl text-sm whitespace-pre-wrap ${
-                        msg.role === 'user'
-                          ? 'bg-violet-500 text-white'
-                          : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
-                      }`}
-                    >
-                      {msg.content}
-                    </div>
-                  </div>
-                ))}
-                {copilotLoading && (
-                  <div className="flex justify-start">
-                    <div className="bg-slate-100 dark:bg-slate-700 px-3 py-2 rounded-xl">
-                      <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
-                    </div>
-                  </div>
-                )}
-              </div>
+CURRENT BRIEF CONTEXT:
+Query: "${payload.query}"
 
-              {/* Chat Input */}
-              <form onSubmit={handleCopilotSubmit} className="p-3 border-t border-slate-200 dark:border-slate-700">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={copilotInput}
-                    onChange={(e) => setCopilotInput(e.target.value)}
-                    placeholder="Ask about this brief..."
-                    className="flex-1 px-3 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!copilotInput.trim() || copilotLoading}
-                    className="px-4 py-2 bg-violet-500 hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
-                  >
-                    Send
-                  </button>
-                </div>
-              </form>
+Summary: ${payload.summary}
+
+Key Signals:
+${payload.keySignals.map((s, i) => `${i + 1}. ${s}`).join('\n')}
+
+Moves for Leaders:
+${payload.movesForLeaders.map((m, i) => `${i + 1}. ${m}`).join('\n')}
+
+YOUR ROLE:
+- Answer questions about this specific intelligence brief
+- Help users understand the strategic implications
+- Provide actionable recommendations based on the brief
+- Be concise, analytical, and executive-friendly
+- Reference specific data points from the brief when relevant
+
+TONE: Professional, direct, no fluff. Write as if advising a CMO.`}
+                labels={{
+                  title: "Brief Copilot",
+                  initial: "Ask me anything about this intelligence brief...",
+                  placeholder: "What would you like to know?",
+                }}
+                defaultOpen={true}
+                clickOutsideToClose={false}
+                onSetOpen={(open) => {
+                  if (!open) setShowCopilotChat(false);
+                }}
+              />
             </div>
-          </div>
+          </CopilotKit>
         )}
       </div>
     </div>
