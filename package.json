@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@copilotkit/react-core": "^1.51.2",
+    "@copilotkit/react-ui": "^1.51.2",
     "firebase": "^12.7.0",
     "lucide-react": "^0.562.0",
     "openai": "^6.16.0",

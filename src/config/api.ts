@@ -86,6 +86,21 @@ export const ENDPOINTS = {
    * Used by: utils/perplexityClient.ts
    */
   perplexityAPI: `${API_CONFIG.perplexity.baseUrl}/chat/completions`,
+
+  /**
+   * CopilotKit Runtime: AI copilot for intelligence briefs
+   * Used by: IntelligenceModal.tsx, CopilotBriefWrapper.tsx
+   * Method: POST
+   * Body: CopilotKit protocol messages
+   */
+  copilotRuntime: `${API_CONFIG.cloudFunctions}/copilotRuntime`,
+
+  /**
+   * CopilotKit Health: Health check endpoint
+   * Used by: diagnostics
+   * Method: GET
+   */
+  copilotHealth: `${API_CONFIG.cloudFunctions}/copilotHealth`,
 } as const;
 
 /**

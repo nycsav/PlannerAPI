@@ -171,7 +171,7 @@ Base score = 50
 5. Format as valid JSON
 
 Return ONLY the JSON object, no additional text or markdown formatting.`,
-  cache_control: { type: 'ephemeral' },
+  cache_control: { type: 'ephemeral' as const },
 };
 
 /**

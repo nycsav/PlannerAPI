@@ -10,3 +10,6 @@ export { generateDiscoverCards } from './generateDiscoverCards';
 export { storeN8nCards } from './storeN8nCards';
 export { markLinkedInPosted } from './markLinkedInPosted';
 export { getTopCardForPublishing } from './getTopCardForPublishing';
+
+// CopilotKit Runtime
+export { copilotRuntime, copilotHealth } from './copilot-runtime';
