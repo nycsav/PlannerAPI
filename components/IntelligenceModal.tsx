@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, lazy, Suspense } from 'react';
 import { X, Download, Share2, Mail, Loader2, FileText, Zap, Target, ExternalLink, Send, BookOpen, MessageCircle, BarChart2, Sparkles, BarChart3, FileSearch } from 'lucide-react';
 import { parseMarkdown, parseInlineMarkdown, parsePerplexityMarkdown } from '../utils/markdown';
 import { exportIntelligenceBriefToPDF } from '../utils/exportPDF';
@@ -8,9 +8,21 @@ import { ENDPOINTS, fetchWithTimeout } from '../src/config/api';
 import { LoadingSpinner } from './LoadingSpinner';
 import { InsightDashboard } from './InsightDashboard';
 import { CopilotActionButton } from './copilot';
-import { CopilotKit } from '@copilotkit/react-core';
-import { CopilotPopup } from '@copilotkit/react-ui';
-import '@copilotkit/react-ui/styles.css';
+
+// Lazy load CopilotKit to prevent app crash if it fails
+const CopilotKit = lazy(() => 
+  import('@copilotkit/react-core').then(mod => ({ default: mod.CopilotKit }))
+    .catch(() => ({ default: ({ children }: { children: React.ReactNode }) => <>{children}</> }))
+);
+const CopilotPopup = lazy(() => 
+  import('@copilotkit/react-ui').then(mod => ({ default: mod.CopilotPopup }))
+    .catch(() => ({ default: () => null }))
+);
+
+// Import CSS only on client side
+if (typeof window !== 'undefined') {
+  import('@copilotkit/react-ui/styles.css').catch(() => {});
+}
 
 type IntelligenceFramework = {
   id: string;
@@ -932,12 +944,20 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
           </div>
         )}
 
-        {/* CopilotKit Chat - Real AI Integration */}
+        {/* CopilotKit Chat - Real AI Integration (lazy loaded) */}
         {showCopilotChat && payload && (
-          <CopilotKit runtimeUrl={ENDPOINTS.copilotRuntime}>
-            <div className="fixed bottom-4 right-4 z-[60]">
-              <CopilotPopup
-                instructions={`You are a strategic intelligence copilot for marketing and AI strategy leaders.
+          <Suspense fallback={
+            <div className="fixed bottom-4 right-4 z-[60] bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6">
+              <div className="flex items-center gap-3">
+                <Loader2 className="w-5 h-5 animate-spin text-violet-500" />
+                <span className="text-sm text-slate-600 dark:text-slate-300">Loading Brief Copilot...</span>
+              </div>
+            </div>
+          }>
+            <CopilotKit runtimeUrl={ENDPOINTS.copilotRuntime}>
+              <div className="fixed bottom-4 right-4 z-[60]">
+                <CopilotPopup
+                  instructions={`You are a strategic intelligence copilot for marketing and AI strategy leaders.
 
 CURRENT BRIEF CONTEXT:
 Query: "${payload.query}"
@@ -958,19 +978,20 @@ YOUR ROLE:
 - Reference specific data points from the brief when relevant
 
 TONE: Professional, direct, no fluff. Write as if advising a CMO.`}
-                labels={{
-                  title: "Brief Copilot",
-                  initial: "Ask me anything about this intelligence brief...",
-                  placeholder: "What would you like to know?",
-                }}
-                defaultOpen={true}
-                clickOutsideToClose={false}
-                onSetOpen={(open) => {
-                  if (!open) setShowCopilotChat(false);
-                }}
-              />
-            </div>
-          </CopilotKit>
+                  labels={{
+                    title: "Brief Copilot",
+                    initial: "Ask me anything about this intelligence brief...",
+                    placeholder: "What would you like to know?",
+                  }}
+                  defaultOpen={true}
+                  clickOutsideToClose={false}
+                  onSetOpen={(open) => {
+                    if (!open) setShowCopilotChat(false);
+                  }}
+                />
+              </div>
+            </CopilotKit>
+          </Suspense>
         )}
       </div>
     </div>
