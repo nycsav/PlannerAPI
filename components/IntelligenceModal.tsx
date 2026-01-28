@@ -353,7 +353,6 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
         body: JSON.stringify({
           query: contextualQuery
         }),
-        timeout: 30000,
       });
 
       if (!response.ok) {
