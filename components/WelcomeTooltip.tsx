@@ -46,7 +46,7 @@ export const WelcomeTooltip: React.FC<WelcomeTooltipProps> = ({ onDismiss }) => 
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
               Ask any marketing question and get structured analysis with signals, recommended moves, and sources. Try:{' '}
-              <span className="text-gray-900 dark:text-gray-100 font-medium">"What's driving the $4.2B shift in attribution spend?"</span>
+              <span className="text-gray-900 dark:text-gray-100 font-medium">"How is DeepSeek disrupting enterprise AI pricing strategies?"</span>
             </p>
             <div className="flex items-center gap-3">
               <button

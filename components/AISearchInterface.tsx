@@ -42,13 +42,14 @@ const extractMetrics = (text: string) => {
 };
 
 // Rotating placeholder prompts for inspiration
+// Last updated: January 2026
 const placeholderPrompts = [
-  "What competitive threats should CMOs watch in 2026?",
-  "How are leading brands using AI for customer retention?",
-  "What's driving the shift in digital ad spend allocation?",
-  "Compare attribution models post-cookie deprecation",
-  "What revenue impact can we expect from retail media?",
-  "Break down the ROI of first-party data strategies"
+  "How is DeepSeek changing enterprise AI cost calculations?",
+  "What's the business case for AI agents over workflows?",
+  "How should CMOs respond to Google's AI Mode rollout?",
+  "Which brands are winning with AI-powered personalization?",
+  "What Q1 2026 retail media benchmarks matter most?",
+  "How are marketing teams restructuring for AI-native ops?"
 ];
 
 const getPlaceholderPrompt = () => {
@@ -219,8 +220,8 @@ const getRelatedQuestions = (content: string): string[] => {
     ] : []),
     // Privacy/cookies
     ...(hasCookie ? [
-      "What privacy-first tracking solutions are most effective?",
-      "How are competitors adapting to cookieless attribution?"
+      "What privacy-first measurement solutions are leading in 2026?",
+      "How are brands building zero-party data strategies?"
     ] : []),
     // Default fallbacks
     "What competitive threats should we monitor?",

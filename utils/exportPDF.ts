@@ -1,6 +1,7 @@
 /**
  * Export Intelligence Brief to PDF
- * Uses browser's native print-to-PDF functionality
+ * Uses browser's native print-to-PDF functionality with Blob URLs
+ * to avoid network interception/CAPTCHA issues
  */
 
 export interface PDFExportData {
@@ -27,14 +28,6 @@ export function exportIntelligenceBriefToPDF(data: PDFExportData) {
       .replace(/\[\d+\](\[\d+\])*/g, '') // Remove citation numbers like [1], [2][3]
       .trim();
   };
-
-  // Create a new window with print-optimized content
-  const printWindow = window.open('', '', 'width=800,height=600');
-
-  if (!printWindow) {
-    alert('Please allow popups to download PDF');
-    return;
-  }
 
   // Build HTML content
   const htmlContent = `
@@ -269,17 +262,47 @@ export function exportIntelligenceBriefToPDF(data: PDFExportData) {
     </html>
   `;
 
-  printWindow.document.write(htmlContent);
-  printWindow.document.close();
-
-  // Wait for content to load, then trigger print dialog
-  printWindow.onload = () => {
+  // Use hidden iframe approach for reliable printing without network requests
+  // This avoids CAPTCHA/interception issues completely
+  
+  // Create a hidden iframe
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+  iframe.setAttribute('id', 'pdf-print-frame');
+  
+  // Remove any existing print frame
+  const existingFrame = document.getElementById('pdf-print-frame');
+  if (existingFrame) {
+    existingFrame.remove();
+  }
+  
+  document.body.appendChild(iframe);
+  
+  const iframeDoc = iframe.contentWindow?.document;
+  if (!iframeDoc || !iframe.contentWindow) {
+    alert('Unable to create print preview. Please try again.');
+    iframe.remove();
+    return;
+  }
+  
+  // Write content to iframe
+  iframeDoc.open();
+  iframeDoc.write(htmlContent);
+  iframeDoc.close();
+  
+  // Wait for content to render, then print
+  setTimeout(() => {
+    try {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+    } catch (e) {
+      console.error('Print failed:', e);
+      alert('Print failed. Please try again.');
+    }
+    
+    // Clean up iframe after a delay (to allow print dialog to complete)
     setTimeout(() => {
-      printWindow.print();
-      // Close the print window after printing (user can cancel)
-      printWindow.onafterprint = () => {
-        printWindow.close();
-      };
-    }, 250);
-  };
+      iframe.remove();
+    }, 1000);
+  }, 300);
 }

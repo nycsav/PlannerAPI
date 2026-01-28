@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 
 interface TypewriterTextProps {
   phrases: string[];
@@ -17,44 +17,78 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
   className = '',
   style = {},
 }) => {
-  const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
-  const [currentText, setCurrentText] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [displayText, setDisplayText] = useState('');
+  
+  // Memoize phrases to prevent effect from restarting on parent re-renders
+  const stablePhrases = useMemo(() => phrases, [JSON.stringify(phrases)]);
+  
+  // Store config in refs so animation loop always has latest values
+  const configRef = useRef({ typingSpeed, deletingSpeed, pauseDuration });
+  configRef.current = { typingSpeed, deletingSpeed, pauseDuration };
 
   useEffect(() => {
-    const currentPhrase = phrases[currentPhraseIndex];
+    if (!stablePhrases || stablePhrases.length === 0) return;
 
-    const timeout = setTimeout(
-      () => {
-        if (!isDeleting) {
-          // Typing forward
-          if (currentText.length < currentPhrase.length) {
-            setCurrentText(currentPhrase.slice(0, currentText.length + 1));
-          } else {
-            // Finished typing, pause then start deleting
-            setTimeout(() => setIsDeleting(true), pauseDuration);
-          }
+    let phraseIndex = 0;
+    let charIndex = 0;
+    let isDeleting = false;
+    let isPaused = false;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    let isCancelled = false;
+
+    const tick = () => {
+      if (isCancelled) return;
+      
+      const { typingSpeed, deletingSpeed, pauseDuration } = configRef.current;
+      const currentPhrase = stablePhrases[phraseIndex] || '';
+      let nextDelay: number;
+
+      if (isPaused) {
+        isPaused = false;
+        isDeleting = true;
+        nextDelay = deletingSpeed;
+      } else if (isDeleting) {
+        if (charIndex > 0) {
+          charIndex--;
+          setDisplayText(currentPhrase.slice(0, charIndex));
+          nextDelay = deletingSpeed;
         } else {
-          // Deleting backward
-          if (currentText.length > 0) {
-            setCurrentText(currentText.slice(0, -1));
-          } else {
-            // Finished deleting, move to next phrase
-            setIsDeleting(false);
-            setCurrentPhraseIndex((currentPhraseIndex + 1) % phrases.length);
-          }
+          isDeleting = false;
+          phraseIndex = (phraseIndex + 1) % stablePhrases.length;
+          nextDelay = typingSpeed;
         }
-      },
-      isDeleting ? deletingSpeed : typingSpeed
-    );
+      } else {
+        // Typing
+        if (charIndex < currentPhrase.length) {
+          charIndex++;
+          setDisplayText(currentPhrase.slice(0, charIndex));
+          nextDelay = typingSpeed;
+        } else {
+          isPaused = true;
+          nextDelay = pauseDuration;
+        }
+      }
 
-    return () => clearTimeout(timeout);
-  }, [currentText, isDeleting, currentPhraseIndex, phrases, typingSpeed, deletingSpeed, pauseDuration]);
+      timeoutId = setTimeout(tick, nextDelay);
+    };
+
+    // Start immediately
+    timeoutId = setTimeout(tick, 0);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [stablePhrases]);
 
   return (
     <span className={className} style={style}>
-      {currentText}
-      <span className="animate-pulse">|</span>
+      {displayText}
+      <span 
+        className="inline-block w-[3px] h-[1em] bg-current ml-0.5 animate-pulse"
+        style={{ verticalAlign: 'text-bottom' }}
+        aria-hidden="true"
+      />
     </span>
   );
 };

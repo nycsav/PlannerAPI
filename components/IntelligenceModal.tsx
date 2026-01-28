@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { X, Download, Share2, Mail, Loader2, FileText, Zap, Target, ExternalLink, Send, BookOpen, MessageCircle } from 'lucide-react';
+import { X, Download, Share2, Mail, Loader2, FileText, Zap, Target, ExternalLink, Send, BookOpen, MessageCircle, BarChart2 } from 'lucide-react';
 import { parseMarkdown, parseInlineMarkdown, parsePerplexityMarkdown } from '../utils/markdown';
 import { exportIntelligenceBriefToPDF } from '../utils/exportPDF';
 import { MetricCard } from './MetricCard';
 import { extractMetrics } from '../utils/extractMetrics';
 import { ENDPOINTS, fetchWithTimeout } from '../src/config/api';
 import { LoadingSpinner } from './LoadingSpinner';
+import { InsightDashboard } from './InsightDashboard';
 
 type IntelligenceFramework = {
   id: string;
@@ -54,36 +55,145 @@ type IntelligenceModalProps = {
   isLoading?: boolean;
 };
 
-// Default frameworks if none provided
-const DEFAULT_FRAMEWORKS: IntelligenceFramework[] = [
-  {
-    id: 'digital-strategy',
-    label: 'Digital Strategy',
-    actions: [
-      'Identify priority customer journeys for AI enhancement.',
-      'Map data sources needed for personalization and measurement.',
-      'Align AI roadmap with product and engineering stakeholders.'
-    ]
-  },
-  {
-    id: 'media-strategy',
-    label: 'Media Strategy',
-    actions: [
-      'Rank channels by AI-readiness (data, measurement, automation).',
-      'Test one AI-assisted optimization pilot per quarter.',
-      'Define guardrails for brand safety and creative quality.'
-    ]
-  },
-  {
-    id: 'cx-strategy',
-    label: 'CX Strategy',
-    actions: [
-      'Audit current customer touchpoints for latency and friction.',
-      'Prototype one AI-powered assist experience in a high-friction step.',
-      'Define success metrics (NPS, CSAT, resolution time, etc.).'
-    ]
+/**
+ * Generate contextual strategic frameworks based on the query and summary
+ * This creates tailored actions specific to each intelligence brief
+ */
+function generateContextualFrameworks(query: string, summary: string, keySignals: string[]): IntelligenceFramework[] {
+  const lowerQuery = query.toLowerCase();
+  const lowerSummary = summary.toLowerCase();
+  const combinedText = `${lowerQuery} ${lowerSummary} ${keySignals.join(' ').toLowerCase()}`;
+  
+  // Extract key topic from query for personalization
+  const topicMatch = query.match(/(?:about|for|on|regarding|with)\s+(.+?)(?:\?|$)/i);
+  const topic = topicMatch ? topicMatch[1].trim() : query.replace(/\?$/, '').trim();
+  const shortTopic = topic.length > 40 ? topic.substring(0, 40) + '...' : topic;
+  
+  // Detect primary themes
+  const isAI = /\b(ai|artificial intelligence|machine learning|ml|llm|gpt|claude|deepseek|chatbot|automation)\b/i.test(combinedText);
+  const isRetailMedia = /\b(retail media|amazon ads|walmart connect|instacart|kroger|commerce media)\b/i.test(combinedText);
+  const isAttribution = /\b(attribution|measurement|mmm|media mix|incrementality|roi|roas)\b/i.test(combinedText);
+  const isPricing = /\b(pricing|cost|budget|spend|investment|roi)\b/i.test(combinedText);
+  const isCompetitive = /\b(compet|rival|market share|positioning|benchmark)\b/i.test(combinedText);
+  const isPersonalization = /\b(personali|segment|target|audience|first.party|zero.party|customer data)\b/i.test(combinedText);
+  const isContent = /\b(content|creative|campaign|messaging|brand|storytelling)\b/i.test(combinedText);
+  const isSearch = /\b(search|seo|sem|google|bing|ai overview|ai mode)\b/i.test(combinedText);
+  const isSocial = /\b(social|tiktok|instagram|meta|facebook|influencer|creator)\b/i.test(combinedText);
+  const isData = /\b(data|analytics|dashboard|insight|report|metric)\b/i.test(combinedText);
+  
+  const frameworks: IntelligenceFramework[] = [];
+  
+  // Framework 1: Implementation/Adoption Strategy (always relevant)
+  if (isAI) {
+    frameworks.push({
+      id: 'implementation',
+      label: 'AI Adoption',
+      actions: [
+        `Assess current tech stack readiness for ${shortTopic}.`,
+        `Identify 2-3 pilot use cases where ${shortTopic.includes('AI') ? 'this' : 'AI'} can drive quick wins.`,
+        `Build internal capability roadmap with training and hiring priorities.`
+      ]
+    });
+  } else if (isRetailMedia) {
+    frameworks.push({
+      id: 'implementation',
+      label: 'Retail Media Playbook',
+      actions: [
+        `Map retail media networks by relevance to your category and audience.`,
+        `Establish measurement framework connecting retail media to sales lift.`,
+        `Negotiate data-sharing agreements for closed-loop attribution.`
+      ]
+    });
+  } else if (isSearch) {
+    frameworks.push({
+      id: 'implementation',
+      label: 'Search Strategy',
+      actions: [
+        `Audit current search visibility and identify AI Overview opportunities.`,
+        `Restructure content for answer-engine optimization (AEO).`,
+        `Reallocate budget between traditional SEO/SEM and emerging search formats.`
+      ]
+    });
+  } else {
+    frameworks.push({
+      id: 'implementation',
+      label: 'Implementation',
+      actions: [
+        `Define success criteria and KPIs for ${shortTopic}.`,
+        `Identify quick-win opportunities to demonstrate value within 30 days.`,
+        `Establish cross-functional alignment with key stakeholders.`
+      ]
+    });
   }
-];
+  
+  // Framework 2: Measurement/ROI Strategy
+  if (isAttribution || isPricing) {
+    frameworks.push({
+      id: 'measurement',
+      label: 'Measurement Strategy',
+      actions: [
+        `Build incrementality testing framework for ${shortTopic}.`,
+        `Establish baseline metrics before any changes are implemented.`,
+        `Create executive dashboard showing leading and lagging indicators.`
+      ]
+    });
+  } else if (isCompetitive) {
+    frameworks.push({
+      id: 'competitive',
+      label: 'Competitive Response',
+      actions: [
+        `Map competitor positioning and identify differentiation opportunities.`,
+        `Establish competitive monitoring cadence (weekly/monthly).`,
+        `Define defensive vs. offensive strategic plays based on findings.`
+      ]
+    });
+  } else {
+    frameworks.push({
+      id: 'measurement',
+      label: 'ROI Framework',
+      actions: [
+        `Quantify potential impact of ${shortTopic} on key business metrics.`,
+        `Establish baseline measurements before implementation.`,
+        `Build reporting cadence to track progress and iterate.`
+      ]
+    });
+  }
+  
+  // Framework 3: Organizational/Operational Strategy
+  if (isPersonalization || isData) {
+    frameworks.push({
+      id: 'data-ops',
+      label: 'Data Operations',
+      actions: [
+        `Audit data sources and identify gaps for ${shortTopic}.`,
+        `Establish data governance and privacy compliance protocols.`,
+        `Build data activation workflows connecting insights to action.`
+      ]
+    });
+  } else if (isContent || isSocial) {
+    frameworks.push({
+      id: 'creative-ops',
+      label: 'Creative Operations',
+      actions: [
+        `Develop content playbook tailored to ${shortTopic}.`,
+        `Establish creative testing framework with clear success metrics.`,
+        `Build approval workflows that balance speed with brand safety.`
+      ]
+    });
+  } else {
+    frameworks.push({
+      id: 'org-readiness',
+      label: 'Org Readiness',
+      actions: [
+        `Assess team capabilities and identify skill gaps for ${shortTopic}.`,
+        `Define RACI matrix for cross-functional initiatives.`,
+        `Create change management plan for organizational adoption.`
+      ]
+    });
+  }
+  
+  return frameworks;
+}
 
 export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
   open,
@@ -94,8 +204,26 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
 }) => {
   console.log('[IntelligenceModal] Rendered with open:', open, 'isLoading:', isLoading, 'hasPayload:', !!payload, 'payload:', payload);
 
-  // Use provided frameworks or fall back to defaults
-  const frameworks = payload?.frameworks || DEFAULT_FRAMEWORKS;
+  // Generate contextual frameworks based on the query and content
+  // Use provided frameworks from API if available, otherwise generate dynamically
+  const frameworks = useMemo(() => {
+    if (payload?.frameworks && payload.frameworks.length > 0) {
+      return payload.frameworks;
+    }
+    if (payload?.query && payload?.summary) {
+      return generateContextualFrameworks(
+        payload.query,
+        payload.summary,
+        payload.keySignals || []
+      );
+    }
+    // Fallback for loading state
+    return [
+      { id: 'loading-1', label: 'Strategy', actions: ['Loading...'] },
+      { id: 'loading-2', label: 'Measurement', actions: ['Loading...'] },
+      { id: 'loading-3', label: 'Operations', actions: ['Loading...'] }
+    ];
+  }, [payload?.query, payload?.summary, payload?.keySignals, payload?.frameworks]);
 
   const [activeFrameworkTab, setActiveFrameworkTab] = useState<string | null>(
     frameworks[0]?.id || null
@@ -105,6 +233,9 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
   const [followUpMessages, setFollowUpMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([]);
   const [followUpInput, setFollowUpInput] = useState('');
   const [followUpLoading, setFollowUpLoading] = useState(false);
+
+  // Dashboard visualization state
+  const [showDashboard, setShowDashboard] = useState(false);
 
   // Extract metrics from summary for visualization
   const metrics = useMemo(() => {
@@ -457,12 +588,43 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
               {/* Section 2: KEY SIGNALS */}
               {payload.keySignals.length > 0 && (
                 <section>
-                  <div className="flex items-center gap-3 mb-4">
-                    <Zap className="w-6 h-6 text-bureau-signal dark:text-planner-orange" />
-                    <h2 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
-                      Key Signals
-                    </h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <Zap className="w-6 h-6 text-bureau-signal dark:text-planner-orange" />
+                      <h2 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
+                        Key Signals
+                      </h2>
+                    </div>
+                    {/* Visualize Trends Button */}
+                    {(metrics.length > 0 || payload.graphData?.comparisons?.length) && (
+                      <button
+                        onClick={() => setShowDashboard(!showDashboard)}
+                        className={`flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 ${
+                          showDashboard
+                            ? 'bg-bureau-signal dark:bg-planner-orange text-white'
+                            : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 hover:bg-bureau-signal/10 dark:hover:bg-planner-orange/10 hover:text-bureau-signal dark:hover:text-planner-orange'
+                        }`}
+                      >
+                        <BarChart2 className="w-4 h-4" />
+                        {showDashboard ? 'Hide' : 'Visualize'} Trends
+                      </button>
+                    )}
                   </div>
+                  
+                  {/* Insight Dashboard - shown when toggled */}
+                  {showDashboard && (
+                    <InsightDashboard
+                      metrics={metrics.map(m => ({
+                        value: m.value,
+                        label: m.label || 'Metric',
+                        trend: m.trend,
+                        context: m.context
+                      }))}
+                      comparisons={payload.graphData?.comparisons}
+                      query={payload.query}
+                    />
+                  )}
+                  
                   <ul className="space-y-3 font-sans">
                     {payload.keySignals.map((signal, index) => (
                       <li key={index} className="text-base text-gray-900 dark:text-gray-100 leading-relaxed flex items-start gap-2">

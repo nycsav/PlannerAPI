@@ -256,14 +256,15 @@ function parseTopicsResponse(content: string, limit: number): TrendingTopic[] {
   }
 
   // Fallback: If parsing fails, create default topics
+  // Last updated: January 2026
   if (topics.length === 0) {
     const defaultTopics = [
-      { label: 'AI Strategy', trending: true, sampleQuery: 'How are CMOs using AI to transform marketing operations in 2026?' },
-      { label: 'Market Trends', trending: true, sampleQuery: 'What emerging market shifts are reshaping customer acquisition strategies?' },
-      { label: 'Revenue Growth', trending: false, sampleQuery: 'How are top brands increasing customer lifetime value through personalization?' },
-      { label: 'Competitive Analysis', trending: true, sampleQuery: 'Which competitors are gaining market share through innovative positioning?' },
-      { label: 'Brand Intelligence', trending: false, sampleQuery: 'How are leading brands measuring and improving brand equity in real-time?' },
-      { label: 'Customer Retention', trending: false, sampleQuery: 'What retention strategies are driving 90%+ customer renewal rates?' }
+      { label: 'AI Strategy', trending: true, sampleQuery: 'How is DeepSeek disrupting enterprise AI pricing for marketing teams?' },
+      { label: 'Market Trends', trending: true, sampleQuery: 'What does Google AI Mode mean for 2026 paid search budgets?' },
+      { label: 'Revenue Growth', trending: true, sampleQuery: 'Which brands are winning Q1 2026 with AI-powered personalization?' },
+      { label: 'Competitive Analysis', trending: true, sampleQuery: 'How are agencies repositioning around AI agents vs automation?' },
+      { label: 'Brand Intelligence', trending: false, sampleQuery: 'What zero-party data strategies are driving measurable brand lift?' },
+      { label: 'Customer Retention', trending: false, sampleQuery: 'How are AI chatbots impacting customer retention metrics in 2026?' }
     ];
 
     return defaultTopics.slice(0, limit);

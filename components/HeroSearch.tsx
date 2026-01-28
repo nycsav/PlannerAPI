@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ArrowRight, CornerDownRight, ShieldCheck, Database, TrendingUp, MessageSquare } from 'lucide-react';
+import { Search, ArrowRight, TrendingUp, Pencil, X, Plus, Trash2, Sparkles } from 'lucide-react';
 import { TrustStrip } from './TrustStrip';
 import { TypewriterText } from './TypewriterText';
 import { useAudience } from '../contexts/AudienceContext';
@@ -12,15 +12,38 @@ interface HeroSearchProps {
   onOpenChat?: (query?: string) => void;
 }
 
-// Default fallback placeholders
+// localStorage key for custom queries
+const CUSTOM_QUERIES_KEY = 'plannerapi_custom_queries';
+
+// Default fallback placeholders (used when API fails)
+// Last updated: January 2026
 const DEFAULT_PLACEHOLDERS = [
-  "What's driving the $4.2B shift in attribution spend?",
-  "How are competitors using AI to increase retention 23%?",
-  "Show me retail media ROI benchmarks for 2026",
-  "Which brands are winning with first-party data strategies?",
-  "Break down the business case for cookieless attribution",
-  "What marketing automation ROI can I present to the board?"
+  "How is DeepSeek disrupting enterprise AI pricing strategies?",
+  "What's the ROI case for AI agents vs traditional automation?",
+  "Show me Q1 2026 retail media spend benchmarks by vertical",
+  "Which brands are gaining share with zero-party data strategies?",
+  "How are CMOs restructuring teams for AI-native marketing?",
+  "What does Google's AI Mode mean for paid search strategy?"
 ];
+
+// Load custom queries from localStorage
+const loadCustomQueries = (): string[] => {
+  try {
+    const stored = localStorage.getItem(CUSTOM_QUERIES_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+
+// Save custom queries to localStorage
+const saveCustomQueries = (queries: string[]) => {
+  try {
+    localStorage.setItem(CUSTOM_QUERIES_KEY, JSON.stringify(queries));
+  } catch (e) {
+    console.error('Failed to save custom queries:', e);
+  }
+};
 
 // Default fallback categories
 const DEFAULT_CATEGORIES = [
@@ -45,8 +68,35 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
   // Dynamic state
-  const [searchPlaceholders, setSearchPlaceholders] = useState<string[]>(DEFAULT_PLACEHOLDERS);
+  const [trendingPlaceholders, setTrendingPlaceholders] = useState<string[]>(DEFAULT_PLACEHOLDERS);
+  const [customQueries, setCustomQueries] = useState<string[]>(() => loadCustomQueries());
   const [categories, setCategories] = useState<Array<{ label: string; trending: boolean }>>(DEFAULT_CATEGORIES);
+  
+  // Edit modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [newQueryInput, setNewQueryInput] = useState('');
+  const editModalRef = useRef<HTMLDivElement>(null);
+
+  // Combined placeholders: custom queries first, then trending
+  const searchPlaceholders = [...customQueries, ...trendingPlaceholders];
+
+  // Persist custom queries to localStorage whenever they change
+  useEffect(() => {
+    saveCustomQueries(customQueries);
+  }, [customQueries]);
+
+  // Close edit modal when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (editModalRef.current && !editModalRef.current.contains(event.target as Node)) {
+        setShowEditModal(false);
+      }
+    };
+    if (showEditModal) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showEditModal]);
 
   // Fetch trending topics on mount and when audience changes
   useEffect(() => {
@@ -146,13 +196,27 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
       const data = await res.json();
 
       if (data.topics && data.topics.length > 0) {
-        setSearchPlaceholders(data.topics.map((t: any) => t.sampleQuery));
+        setTrendingPlaceholders(data.topics.map((t: any) => t.sampleQuery));
         setCategories(data.topics.map((t: any) => ({ label: t.label, trending: t.trending })));
       }
     } catch (error) {
       console.error('Failed to fetch trending topics, using defaults:', error);
       // Keep defaults on error
     }
+  };
+
+  // Add a new custom query
+  const addCustomQuery = () => {
+    const trimmed = newQueryInput.trim();
+    if (trimmed && !customQueries.includes(trimmed)) {
+      setCustomQueries(prev => [...prev, trimmed]);
+      setNewQueryInput('');
+    }
+  };
+
+  // Remove a custom query
+  const removeCustomQuery = (queryToRemove: string) => {
+    setCustomQueries(prev => prev.filter(q => q !== queryToRemove));
   };
 
   const runPerplexitySearch = async (q: string) => {
@@ -216,12 +280,18 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (query.trim()) {
+    // Use typed query, or fall back to current placeholder text
+    const searchQuery = query.trim() || searchPlaceholders[placeholderIndex];
+    if (searchQuery) {
+      // If using placeholder, populate the input so user sees what was searched
+      if (!query.trim()) {
+        setQuery(searchQuery);
+      }
       // Track search query
-      trackSearch(query.trim(), 'hero');
+      trackSearch(searchQuery, 'hero');
       // Trigger intelligence modal with search query
-      console.log('[HeroSearch] Search submitted:', query.trim());
-      onSearch(query.trim());
+      console.log('[HeroSearch] Search submitted:', searchQuery);
+      onSearch(searchQuery);
       // Don't clear input - let users see what they searched and modify it
       inputRef.current?.focus();
     }
@@ -292,6 +362,15 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
                 onFocus={() => {
                   if (suggestions.length > 0) {
                     setShowSuggestions(true);
+                  }
+                }}
+                onClick={() => {
+                  // If input is empty and user clicks, populate with current placeholder
+                  if (!query.trim()) {
+                    const currentPlaceholder = searchPlaceholders[placeholderIndex];
+                    setQuery(currentPlaceholder);
+                    // Select all so user can easily type over it
+                    setTimeout(() => inputRef.current?.select(), 0);
                   }
                 }}
                 onKeyDown={(e) => {
@@ -396,7 +475,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
             <button
               type="submit"
               className="bg-gradient-to-r from-gray-900 to-gray-800 dark:from-planner-orange dark:to-planner-navy text-white px-6 py-3 rounded-lg flex items-center gap-2 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-2"
-              disabled={loading || !query.trim()}
+              disabled={loading}
               aria-label={loading ? 'Searching...' : 'Search for intelligence'}
             >
               <span>{loading ? 'Analyzing...' : 'SEARCH'}</span>
@@ -407,6 +486,170 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
             Type your search query or click a category below. Press Escape to clear. You can edit any pre-filled text.
           </p>
         </form>
+
+        {/* Edit queries button and indicator */}
+        <div className="flex items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowEditModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-bureau-signal dark:hover:text-planner-orange hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-all duration-200"
+            aria-label="Customize search suggestions"
+          >
+            <Pencil className="w-3 h-3" />
+            <span>Customize suggestions</span>
+            {customQueries.length > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 bg-bureau-signal/10 dark:bg-planner-orange/10 text-bureau-signal dark:text-planner-orange rounded-full text-[10px] font-bold">
+                {customQueries.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Edit Modal */}
+        {showEditModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div
+              ref={editModalRef}
+              className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-700">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                    Customize Search Suggestions
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                    Add your own queries to the rotation
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                  aria-label="Close"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Add New Query */}
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newQueryInput}
+                    onChange={(e) => setNewQueryInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addCustomQuery();
+                      }
+                    }}
+                    placeholder="Type a custom search query..."
+                    className="flex-1 px-4 py-2.5 text-sm border border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:border-transparent"
+                  />
+                  <button
+                    type="button"
+                    onClick={addCustomQuery}
+                    disabled={!newQueryInput.trim()}
+                    className="px-4 py-2.5 bg-bureau-signal dark:bg-planner-orange text-white rounded-lg font-medium text-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex items-center gap-1.5"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add
+                  </button>
+                </div>
+              </div>
+
+              {/* Query Lists */}
+              <div className="flex-1 overflow-y-auto">
+                {/* Custom Queries Section */}
+                {customQueries.length > 0 && (
+                  <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-xs font-bold uppercase tracking-wider text-bureau-signal dark:text-planner-orange">
+                        Your Custom Queries
+                      </span>
+                      <span className="px-2 py-0.5 bg-bureau-signal/10 dark:bg-planner-orange/10 text-bureau-signal dark:text-planner-orange rounded-full text-xs font-bold">
+                        {customQueries.length}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {customQueries.map((q, idx) => (
+                        <div
+                          key={`custom-${idx}`}
+                          className="flex items-start gap-3 p-3 bg-bureau-signal/5 dark:bg-planner-orange/5 rounded-lg group"
+                        >
+                          <div className="flex-1 text-sm text-gray-900 dark:text-gray-100">
+                            {q}
+                          </div>
+                          <button
+                            onClick={() => removeCustomQuery(q)}
+                            className="p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                            aria-label="Remove query"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Trending Queries Section */}
+                <div className="px-6 py-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      Real-time from Perplexity
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {trendingPlaceholders.map((q, idx) => (
+                      <div
+                        key={`trending-${idx}`}
+                        className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-slate-800/50 rounded-lg group"
+                      >
+                        <div className="flex-1 text-sm text-gray-700 dark:text-gray-300">
+                          {q}
+                        </div>
+                        <button
+                          onClick={() => {
+                            if (!customQueries.includes(q)) {
+                              setCustomQueries(prev => [...prev, q]);
+                            }
+                          }}
+                          disabled={customQueries.includes(q)}
+                          className="p-1 text-gray-400 hover:text-bureau-signal dark:hover:text-planner-orange opacity-0 group-hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                          aria-label="Save to custom queries"
+                          title={customQueries.includes(q) ? 'Already saved' : 'Save to my queries'}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-6 py-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {customQueries.length > 0 
+                      ? `${customQueries.length} custom + ${trendingPlaceholders.length} trending queries in rotation`
+                      : `${trendingPlaceholders.length} trending queries from Perplexity`
+                    }
+                  </p>
+                  <button
+                    onClick={() => setShowEditModal(false)}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-col md:flex-row items-center justify-center gap-3 px-sm text-center">
           <div className="flex items-center gap-2">

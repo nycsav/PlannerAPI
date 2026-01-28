@@ -194,9 +194,9 @@ const App: React.FC = () => {
 
         // Extract entities (companies, technologies, products) from content
         const extractEntities = (text: string) => {
-          // Common tech companies and products
+          // Common tech companies and products (canonical names only - no duplicates)
           const companies = [
-            'Nvidia', 'NVIDIA', 'Groq', 'DeepSeek', 'OpenAI', 'Anthropic', 'Google', 'Meta', 'Microsoft', 'Amazon',
+            'Nvidia', 'Groq', 'DeepSeek', 'OpenAI', 'Anthropic', 'Google', 'Meta', 'Microsoft', 'Amazon',
             'Apple', 'Boston Dynamics', 'Hyundai', 'Shopify', 'Walmart', 'Target', 'TikTok', 'Instagram',
             'Facebook', 'Twitter', 'X', 'LinkedIn', 'Reddit', 'Smartly', 'GPT', 'Claude', 'Gemini'
           ];
@@ -215,7 +215,12 @@ const App: React.FC = () => {
             text.includes(tech) || lowerContent.includes(tech.toLowerCase())
           );
           
-          return { companies: foundCompanies, technologies: foundTechnologies };
+          // Deduplicate companies by case-insensitive comparison
+          const uniqueCompanies = foundCompanies.filter((company, index, arr) => 
+            arr.findIndex(c => c.toLowerCase() === company.toLowerCase()) === index
+          );
+          
+          return { companies: uniqueCompanies, technologies: foundTechnologies };
         };
 
         // Extract metrics and transactions
@@ -311,7 +316,13 @@ const App: React.FC = () => {
         // 4. Company-specific questions
         if (entities.companies.length >= 2) {
           const [company1, company2] = entities.companies.slice(0, 2);
-          if (company1 && company2 && !followUps.some(f => f.displayQuery.includes(company1))) {
+          // Validate: companies must be different (case-insensitive) and not similar names
+          const areDifferentCompanies = company1 && company2 && 
+            company1.toLowerCase() !== company2.toLowerCase() &&
+            !company1.toLowerCase().includes(company2.toLowerCase()) &&
+            !company2.toLowerCase().includes(company1.toLowerCase());
+            
+          if (areDifferentCompanies && !followUps.some(f => f.displayQuery.includes(company1))) {
             followUps.push({
               label: 'Competitive Analysis',
               question: `How does ${company1} compare to ${company2} in ${entities.technologies[0] || 'AI strategy'}`,
@@ -383,8 +394,38 @@ const App: React.FC = () => {
           }
         }
 
-        // Return top 5-7 most relevant (matching Perplexity's "Related" section)
-        return followUps.slice(0, 7);
+        // Validate and filter follow-ups before returning
+        const validateFollowUp = (followUp: { label: string; question: string; displayQuery: string }) => {
+          const display = followUp.displayQuery.toLowerCase();
+          const question = followUp.question.toLowerCase();
+          
+          // Check for redundant comparisons (X vs X, X vs X comparison)
+          const vsMatch = display.match(/(.+?)\s+vs\s+(.+?)(?:\s+comparison)?$/i);
+          if (vsMatch) {
+            const [, item1, item2] = vsMatch;
+            const clean1 = item1.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+            const clean2 = item2.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (clean1 === clean2 || clean1.includes(clean2) || clean2.includes(clean1)) {
+              console.log('[FollowUp] Filtered redundant comparison:', followUp.displayQuery);
+              return false;
+            }
+          }
+          
+          // Check for empty or too short questions
+          if (!followUp.question || followUp.question.trim().length < 10) {
+            return false;
+          }
+          
+          // Check for placeholder text that wasn't filled
+          if (question.includes('undefined') || question.includes('null') || display.includes('undefined')) {
+            return false;
+          }
+          
+          return true;
+        };
+
+        // Return top 5-7 most relevant, filtered for quality
+        return followUps.filter(validateFollowUp).slice(0, 7);
       };
 
       // Build payload for modal
