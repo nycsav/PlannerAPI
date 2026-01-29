@@ -27,7 +27,11 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
   configRef.current = { typingSpeed, deletingSpeed, pauseDuration };
 
   useEffect(() => {
-    if (!stablePhrases || stablePhrases.length === 0) return;
+    // Ensure we have phrases to animate
+    if (!stablePhrases || stablePhrases.length === 0) {
+      setDisplayText('MARKETING LEADERS'); // Fallback
+      return;
+    }
 
     let phraseIndex = 0;
     let charIndex = 0;
@@ -36,11 +40,26 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
     let timeoutId: ReturnType<typeof setTimeout>;
     let isCancelled = false;
 
+    // Initialize with first character of first phrase
+    const firstPhrase = stablePhrases[0] || '';
+    if (firstPhrase.length > 0) {
+      charIndex = 1;
+      setDisplayText(firstPhrase.slice(0, 1));
+    }
+
     const tick = () => {
       if (isCancelled) return;
       
       const { typingSpeed, deletingSpeed, pauseDuration } = configRef.current;
       const currentPhrase = stablePhrases[phraseIndex] || '';
+      
+      // Safety check - if no phrase, cycle to next
+      if (!currentPhrase) {
+        phraseIndex = (phraseIndex + 1) % stablePhrases.length;
+        timeoutId = setTimeout(tick, typingSpeed);
+        return;
+      }
+      
       let nextDelay: number;
 
       if (isPaused) {
@@ -55,6 +74,7 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
         } else {
           isDeleting = false;
           phraseIndex = (phraseIndex + 1) % stablePhrases.length;
+          charIndex = 0; // Reset for new phrase
           nextDelay = typingSpeed;
         }
       } else {
@@ -72,12 +92,12 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
       timeoutId = setTimeout(tick, nextDelay);
     };
 
-    // Start immediately
-    timeoutId = setTimeout(tick, 0);
+    // Start animation after initial character
+    timeoutId = setTimeout(tick, typingSpeed);
 
     return () => {
       isCancelled = true;
-      clearTimeout(timeoutId);
+      if (timeoutId) clearTimeout(timeoutId);
     };
   }, [stablePhrases]);
 

@@ -6,7 +6,12 @@
 import { extractMetrics, ExtractedMetric } from './extractMetrics';
 import { Timestamp } from 'firebase/firestore';
 
-export type Pillar = 'ai_strategy' | 'brand_performance' | 'competitive_intel' | 'media_trends';
+export type Pillar =
+  | 'ai_strategy'
+  | 'brand_performance'
+  | 'competitive_intel'
+  | 'media_trends'
+  | 'org_readiness';
 
 export interface IntelligenceCard {
   id: string;
@@ -50,6 +55,7 @@ export interface TrendDataPoint {
   brand_performance: number;
   competitive_intel: number;
   media_trends: number;
+  org_readiness: number;
 }
 
 // Pillar configuration
@@ -77,6 +83,12 @@ export const PILLAR_CONFIG: Record<Pillar, { label: string; color: string; gradi
     color: '#059669',
     gradient: 'from-emerald-500 to-teal-500',
     icon: 'Radio'
+  },
+  org_readiness: {
+    label: 'Org Readiness',
+    color: '#FBBF24',
+    gradient: 'from-amber-400 to-yellow-500',
+    icon: 'Users'
   }
 };
 
@@ -125,7 +137,8 @@ export function groupByPillar(cards: IntelligenceCard[]): PillarDistribution[] {
     ai_strategy: 0,
     brand_performance: 0,
     competitive_intel: 0,
-    media_trends: 0
+    media_trends: 0,
+    org_readiness: 0
   };
 
   cards.forEach(card => {
@@ -160,7 +173,8 @@ export function generateTrendData(cards: IntelligenceCard[], days: number = 7): 
       ai_strategy: 0,
       brand_performance: 0,
       competitive_intel: 0,
-      media_trends: 0
+      media_trends: 0,
+      org_readiness: 0
     });
   }
 

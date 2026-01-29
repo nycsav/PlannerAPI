@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { Brain, TrendingUp, Compass, Radio, ArrowUpRight, Zap } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Brain, TrendingUp, Compass, Radio, ArrowUpRight, Flame, Users } from 'lucide-react';
 import { Timestamp } from 'firebase/firestore';
 import { PILLAR_CONFIG, Pillar, calculateReadTime, IntelligenceCard } from '../utils/dashboardMetrics';
 import { useAnalytics } from '../hooks/useAnalytics';
@@ -15,37 +15,25 @@ const PILLAR_ICONS: Record<Pillar, React.ComponentType<{ className?: string }>> 
   ai_strategy: Brain,
   brand_performance: TrendingUp,
   competitive_intel: Compass,
-  media_trends: Radio
+  media_trends: Radio,
+  org_readiness: Users
 };
 
-// Visual themes per pillar - gradient backgrounds for impact
-const PILLAR_THEMES: Record<Pillar, {
-  gradient: string;
-  accent: string;
-}> = {
-  ai_strategy: {
-    gradient: 'from-violet-600 to-purple-700',
-    accent: '#7C3AED',
-  },
-  brand_performance: {
-    gradient: 'from-blue-600 to-indigo-700',
-    accent: '#2563EB',
-  },
-  competitive_intel: {
-    gradient: 'from-orange-500 to-red-600',
-    accent: '#EA580C',
-  },
-  media_trends: {
-    gradient: 'from-emerald-500 to-teal-600',
-    accent: '#059669',
-  }
+// Discover slider category accent colors (per spec)
+const CATEGORY_COLORS: Record<Pillar, string> = {
+  ai_strategy: '#22d3ee', // cyan
+  brand_performance: '#a78bfa', // violet
+  competitive_intel: '#f97316', // orange
+  media_trends: '#34d399', // emerald
+  org_readiness: '#fbbf24' // amber
 };
 
 export const ContentSliderCard: React.FC<ContentSliderCardProps> = ({ card, onClick, index = 0 }) => {
   const config = PILLAR_CONFIG[card.pillar];
   const IconComponent = PILLAR_ICONS[card.pillar];
-  const theme = PILLAR_THEMES[card.pillar];
   const readTime = calculateReadTime(card);
+  const accent = CATEGORY_COLORS[card.pillar];
+  const [isPressed, setIsPressed] = useState(false);
 
   // Analytics
   const { trackCardImpression, trackCardClick } = useAnalytics();
@@ -75,6 +63,32 @@ export const ContentSliderCard: React.FC<ContentSliderCardProps> = ({ card, onCl
     const date = timestamp.toDate();
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
+
+  const isHot = useMemo(() => {
+    if (card.type === 'hot_take') return true;
+    // If we don't have an explicit isHot, treat stories <24h as hot/trending
+    const published = card.publishedAt?.toDate?.();
+    if (!published) return false;
+    return Date.now() - published.getTime() < 24 * 60 * 60 * 1000;
+  }, [card.type, card.publishedAt]);
+
+  // Content guards per spec (frontend enforcement)
+  const displayTitle = useMemo(() => {
+    const raw = (card.title || '').trim();
+    if (raw.length <= 70) return raw;
+    const truncated = raw.slice(0, 70);
+    const lastSpace = truncated.lastIndexOf(' ');
+    return `${(lastSpace > 40 ? truncated.slice(0, lastSpace) : truncated).trim()}…`;
+  }, [card.title]);
+
+  const displayPreview = useMemo(() => {
+    const raw = (card.summary || '').replace(/\s+/g, ' ').trim();
+    if (!raw) return '';
+    const hard = raw.length <= 120 ? raw : `${raw.slice(0, 120).trim()}…`;
+    // Prefer implication-forward feel; avoid dead-ending on a fact-period when truncated
+    if (hard.endsWith('.')) return `${hard.slice(0, -1)}…`;
+    return hard;
+  }, [card.summary]);
 
   // Extract the primary metric ONLY if we can provide meaningful context
   // Better to show no metric than a confusing one
@@ -162,87 +176,120 @@ export const ContentSliderCard: React.FC<ContentSliderCardProps> = ({ card, onCl
   return (
     <div
       ref={cardRef}
-      className="flex-shrink-0 w-[300px] group cursor-pointer"
-      onClick={handleClick}
+      className="flex-shrink-0 group cursor-pointer"
+      onClick={() => {
+        setIsPressed(true);
+        window.setTimeout(() => setIsPressed(false), 110);
+        handleClick();
+      }}
       onKeyDown={handleKeyDown}
       role="button"
       tabIndex={0}
-      aria-label={`Read intelligence: ${card.title}`}
+      aria-label={`Read intelligence: ${displayTitle}`}
     >
-      <div className="
-        rounded-2xl overflow-hidden
-        bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700
-        shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-slate-300 dark:hover:border-slate-600
-        transition-all duration-200 ease-out
-        focus-within:ring-2 focus-within:ring-blue-400 focus-within:ring-offset-2 focus-within:outline-none
-      ">
-        {/* Visual Header with Gradient */}
-        <div className={`bg-gradient-to-br ${theme.gradient} p-5 relative overflow-hidden`}>
-          {/* Background pattern */}
-          <div className="absolute inset-0 opacity-10" style={{
-            backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
-            backgroundSize: '20px 20px'
-          }} />
-
-          {/* Pillar badge */}
-          <div className="relative flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
-              <IconComponent className="w-4 h-4 text-white" />
-              <span className="text-xs font-bold text-white uppercase tracking-wider">
-                {config.label}
-              </span>
+      <div 
+        className="
+          rounded-2xl overflow-hidden
+          border
+          bg-[#0b1020]
+          shadow-[0_10px_30px_rgba(0,0,0,0.35)]
+          transition-all duration-200 ease-out
+          hover:-translate-y-[4px]
+          focus-within:ring-2 focus-within:ring-offset-2 focus-within:outline-none
+        "
+        style={{
+          borderColor: 'rgba(30, 41, 59, 0.9)',
+          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.35)',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = `${accent}40`;
+          e.currentTarget.style.boxShadow = `0 0 20px ${accent}26, 0 10px 30px rgba(0, 0, 0, 0.35)`;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = 'rgba(30, 41, 59, 0.9)';
+          e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.35)';
+        }}
+      >
+        {/* Premium editorial card body */}
+        <div
+          className={`
+            p-5 h-full flex flex-col
+            ${isPressed ? 'scale-[0.98]' : ''}
+          `}
+          style={{
+            boxShadow: `0 0 0 1px rgba(30,41,59,0.9)`,
+          }}
+        >
+          {/* Top row: Category tag + flame */}
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div
+              className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full border text-[11px] font-bold uppercase tracking-wider"
+              style={{
+                borderColor: `${accent}66`,
+                color: accent
+              }}
+            >
+              <IconComponent className="w-3.5 h-3.5" />
+              <span>{config.label}</span>
             </div>
-            {card.type === 'hot_take' && (
-              <div className="flex items-center gap-1 bg-amber-400 text-amber-900 px-2 py-1 rounded-full">
-                <Zap className="w-3 h-3 fill-current" />
-                <span className="text-[10px] font-bold uppercase">Hot</span>
-              </div>
+
+            {/* Flame icon (no text) per spec */}
+            {isHot && (
+              <Flame
+                className="w-4 h-4"
+                style={{ color: '#f97316' }}
+                aria-label="Trending"
+              />
             )}
           </div>
 
-          {/* Big Metric - Only show if we have meaningful context */}
+          {/* Headline */}
+          <h3
+            className="text-[15px] font-black leading-snug mb-3 line-clamp-2 transition-colors duration-200 ease-out group-hover:text-white"
+            style={{ color: '#f1f5f9' }}
+          >
+            {displayTitle}
+          </h3>
+
+          {/* Preview */}
+          <p className="text-sm leading-relaxed line-clamp-2 mb-5" style={{ color: '#94a3b8' }}>
+            {displayPreview}
+          </p>
+
+          {/* Optional metric row (only if meaningful) */}
           {primaryMetric && metricLabel && (
-            <div className="relative">
-              <div className="text-4xl font-black text-white tracking-tight">
-                {primaryMetric}
-              </div>
-              <div className="text-xs text-white/70 uppercase tracking-wider mt-1">
+            <div className="mt-auto mb-4 flex items-baseline justify-between gap-3">
+              <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#64748b' }}>
                 {metricLabel}
+              </div>
+              <div className="text-lg font-black" style={{ color: '#f1f5f9' }}>
+                {primaryMetric}
               </div>
             </div>
           )}
-        </div>
 
-        {/* Content */}
-        <div className="p-5">
-          {/* Title */}
-          <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 leading-snug mb-3 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-planner-orange transition-colors">
-            {card.title}
-          </h3>
-
-          {/* Summary */}
-          <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed line-clamp-2 mb-4">
-            {card.summary}
-          </p>
-
-          {/* Footer */}
-          <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700">
-            <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
-              <span className="font-medium">{formatDate(card.publishedAt)}</span>
-              <span className="text-gray-400 dark:text-gray-500">·</span>
+          {/* Footer: date · read time */}
+          <div className="mt-auto flex items-center justify-between pt-3 border-t border-slate-800/70">
+            <div className="flex items-center gap-2 text-[12px]" style={{ color: '#64748b' }}>
+              <span>{formatDate(card.publishedAt)}</span>
+              <span aria-hidden="true">·</span>
               <span>{readTime}m read</span>
             </div>
 
-            {/* Read indicator */}
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-gray-300 group-hover:text-white transition-all duration-200"
-              style={{ backgroundColor: 'transparent' }}
+              className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 ease-out"
+              style={{
+                backgroundColor: 'transparent'
+              }}
             >
               <div
-                className="w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
-                style={{ backgroundColor: theme.accent }}
+                className="w-9 h-9 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out"
+                style={{
+                  backgroundColor: `${accent}33`,
+                  boxShadow: `0 0 20px ${accent}26`
+                }}
               >
-                <ArrowUpRight className="w-4 h-4 text-white" />
+                <ArrowUpRight className="w-4 h-4" style={{ color: '#ffffff' }} />
               </div>
             </div>
           </div>

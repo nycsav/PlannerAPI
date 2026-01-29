@@ -69,10 +69,10 @@ export const ContentSlider: React.FC<ContentSliderProps> = ({
           disabled={!canScrollLeft}
           className={`
             w-10 h-10 rounded-full flex items-center justify-center
-            transition-all duration-200 ease-out
+            transition-all duration-200 ease-out active:scale-95
             ${canScrollLeft
-              ? 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600 hover:text-gray-900 dark:hover:text-gray-100 hover:shadow-md hover:scale-105 active:scale-95 shadow-sm focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-2'
-              : 'bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 text-gray-300 dark:text-gray-600 cursor-not-allowed'
+              ? 'bg-slate-900/30 hover:bg-slate-800/70 border border-slate-700/70 text-slate-200 hover:text-white hover:shadow-md hover:scale-105 shadow-sm focus:outline-none focus:ring-2 focus:ring-planner-orange focus:ring-offset-2 focus:ring-offset-transparent'
+              : 'bg-slate-900/10 border border-slate-800/50 text-slate-600 cursor-not-allowed opacity-50 pointer-events-none'
             }
           `}
           aria-label="Scroll left"
@@ -84,10 +84,10 @@ export const ContentSlider: React.FC<ContentSliderProps> = ({
           disabled={!canScrollRight}
           className={`
             w-10 h-10 rounded-full flex items-center justify-center
-            transition-all duration-200 ease-out
+            transition-all duration-200 ease-out active:scale-95
             ${canScrollRight
-              ? 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600 hover:text-gray-900 dark:hover:text-gray-100 hover:shadow-md hover:scale-105 active:scale-95 shadow-sm focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-2'
-              : 'bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 text-gray-300 dark:text-gray-600 cursor-not-allowed'
+              ? 'bg-slate-900/30 hover:bg-slate-800/70 border border-slate-700/70 text-slate-200 hover:text-white hover:shadow-md hover:scale-105 shadow-sm focus:outline-none focus:ring-2 focus:ring-planner-orange focus:ring-offset-2 focus:ring-offset-transparent'
+              : 'bg-slate-900/10 border border-slate-800/50 text-slate-600 cursor-not-allowed opacity-50 pointer-events-none'
             }
           `}
           aria-label="Scroll right"
@@ -111,6 +111,15 @@ export const ContentSlider: React.FC<ContentSliderProps> = ({
             <div
               key={card.id}
               style={{ scrollSnapAlign: 'start' }}
+              className="
+                flex-shrink-0
+                w-[calc((100%-40px)/3)]
+                lg:w-[calc((100%-40px)/3)]
+                xl:w-[calc((100%-60px)/4)]
+                2xl:w-[calc((100%-80px)/5)]
+                min-w-[280px]
+                max-w-[320px]
+              "
             >
               <ContentSliderCard
                 card={card}

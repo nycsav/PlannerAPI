@@ -7,6 +7,7 @@ import { extractMetrics } from '../utils/extractMetrics';
 import { ENDPOINTS, fetchWithTimeout } from '../src/config/api';
 import { LoadingSpinner } from './LoadingSpinner';
 import { InsightDashboard } from './InsightDashboard';
+import { InteractiveDashboard } from './InteractiveDashboard';
 
 type IntelligenceFramework = {
   id: string;
@@ -351,15 +352,16 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
       // Build contextual query in a natural, conversational way
       const contextualQuery = `Based on this intelligence about "${payload.query}", ${currentInput}`;
 
-      // Call Firebase Cloud Function for follow-up questions
-      const response = await fetchWithTimeout(ENDPOINTS.chatSimple, {
+      // Use chatIntel endpoint for structured, consistent responses (same as ExecutiveStrategyChat)
+      const response = await fetchWithTimeout(ENDPOINTS.chatIntel, {
         timeout: 40000, // Increased timeout for real-time data
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          query: contextualQuery
+          query: contextualQuery,
+          audience: 'CMO' // Default audience for consistency
         }),
       });
 
@@ -371,28 +373,42 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
 
       const data = await response.json();
       console.log('[Follow-up] Raw response data:', data);
-      console.log('[Follow-up] data.response type:', typeof data?.response);
-      console.log('[Follow-up] data.response value:', data?.response);
 
-      // Extract response text - chatSimple returns {response: string, citations: array}
-      let responseText: string = '';
+      // chatIntel returns structured data: { signals, implications, actions, citations }
+      // Format it consistently with other modules
+      let formattedResponse = '';
 
-      // Direct extraction since we know the backend format
-      if (data && data.response) {
-        responseText = String(data.response);
-        console.log('[Follow-up] Extracted from data.response:', responseText.substring(0, 100));
-      } else if (typeof data === 'string') {
-        responseText = data;
-        console.log('[Follow-up] Data was already a string');
-      } else {
-        // Fallback: try other fields or stringify
-        responseText = data?.message || data?.content || data?.text || JSON.stringify(data, null, 2);
-        console.log('[Follow-up] Used fallback extraction');
+      // IMPLICATIONS Section
+      if (data.implications && data.implications.length > 0) {
+        formattedResponse += '**Implications:**\n\n';
+        data.implications.forEach((impl: string) => {
+          formattedResponse += `• ${impl}\n`;
+        });
+        formattedResponse += '\n';
       }
 
-      // Absolute final safety: ensure string type
-      const finalText = String(responseText || 'No response received');
-      console.log('[Follow-up] FINAL TEXT:', finalText.substring(0, 150));
+      // MOVES FOR LEADERS Section
+      if (data.actions && data.actions.length > 0) {
+        formattedResponse += '**Moves for Leaders:**\n\n';
+        data.actions.forEach((action: string) => {
+          formattedResponse += `• ${action}\n`;
+        });
+        formattedResponse += '\n';
+      }
+
+      // SOURCES Section
+      if (data.signals && data.signals.length > 0) {
+        formattedResponse += '**Sources:**\n\n';
+        data.signals.forEach((signal: any, index: number) => {
+          if (signal.sourceUrl && signal.sourceUrl !== '#') {
+            formattedResponse += `[${index + 1}] ${signal.sourceName || signal.title || 'Source'}\n`;
+          }
+        });
+      }
+
+      // Fallback to plain text if structured format fails
+      const finalText = formattedResponse.trim() || JSON.stringify(data, null, 2);
+      console.log('[Follow-up] Formatted response:', finalText.substring(0, 150));
 
       setFollowUpMessages([...newMessages, { role: 'assistant' as const, content: finalText }]);
     } catch (error) {
@@ -562,67 +578,74 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
 
         {/* Main content - only show when we have payload */}
         {payload && !isLoading && (
-          <div className="p-8 md:p-12">
-            {/* Top: Query label */}
-            <div className="mb-6">
-              <p className="font-display text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider mb-2">
-                Your Query
-              </p>
-              <p className="font-sans text-base text-gray-900 dark:text-gray-100 font-medium leading-relaxed">
+          <div className="p-8 md:p-12 lg:p-16">
+            {/* Premium Header Section */}
+            <div className="mb-12 pb-8 border-b border-slate-200/60 dark:border-slate-700/50">
+              {/* Query badge */}
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mb-4">
+                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Your Query
+                </span>
+              </div>
+              <p className="font-sans text-lg text-gray-900 dark:text-gray-100 font-medium leading-relaxed mb-6">
                 {payload.query}
               </p>
+
+              {/* Big heading with premium spacing */}
+              <h1 className="font-display text-5xl md:text-6xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight leading-tight">
+                Intelligence Brief
+              </h1>
             </div>
 
-          {/* Big heading */}
-          <h1 className="font-display text-4xl md:text-5xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight mb-12">
-            Intelligence Brief
-          </h1>
-
-          <div className="flex flex-col lg:flex-row gap-12">
+          <div className="flex flex-col lg:flex-row gap-16">
             {/* Main content (left side) */}
             <div className="flex-1 space-y-10">
-              {/* Section 1: SUMMARY */}
-              <section>
-                <div className="flex items-center gap-3 mb-4">
-                  <FileText className="w-6 h-6 text-bureau-signal dark:text-planner-orange" />
-                  <h2 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
+              {/* Section 1: SUMMARY - Premium Design */}
+              <section className="space-y-6">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-sm">
+                    <FileText className="w-5 h-5 text-white" />
+                  </div>
+                  <h2 className="font-display text-2xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
                     Summary
                   </h2>
                 </div>
-                <div className="font-sans text-base text-gray-900 dark:text-gray-100 leading-relaxed">
+                <div className="font-sans text-lg text-gray-900 dark:text-gray-100 leading-relaxed prose prose-slate dark:prose-invert max-w-none">
                   {parseMarkdown(payload.summary)}
                 </div>
               </section>
 
-              {/* Section 2: KEY SIGNALS */}
+              {/* Section 2: KEY SIGNALS - Premium Design */}
               {payload.keySignals.length > 0 && (
-                <section>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <Zap className="w-6 h-6 text-bureau-signal dark:text-planner-orange" />
-                      <h2 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
+                <section className="space-y-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-4">
+                      <div className="p-2.5 bg-gradient-to-br from-planner-orange to-orange-600 rounded-xl shadow-sm">
+                        <Zap className="w-5 h-5 text-white" />
+                      </div>
+                      <h2 className="font-display text-2xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
                         Key Signals
                       </h2>
                     </div>
-                    {/* Visualize Trends Button */}
+                    {/* Visualize Trends Button - Premium Style */}
                     {(metrics.length > 0 || payload.graphData?.comparisons?.length) && (
                       <button
                         onClick={() => setShowDashboard(!showDashboard)}
-                        className={`flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 ${
+                        className={`flex items-center gap-2 px-4 py-2.5 text-sm font-bold rounded-xl transition-all duration-200 shadow-sm ${
                           showDashboard
-                            ? 'bg-bureau-signal dark:bg-planner-orange text-white'
-                            : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 hover:bg-bureau-signal/10 dark:hover:bg-planner-orange/10 hover:text-bureau-signal dark:hover:text-planner-orange'
+                            ? 'bg-planner-orange text-white shadow-lg scale-[1.02]'
+                            : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-gray-200 hover:bg-slate-200 dark:hover:bg-slate-600 hover:shadow-md'
                         }`}
                       >
                         <BarChart2 className="w-4 h-4" />
-                        {showDashboard ? 'Hide' : 'Visualize'} Trends
+                        {showDashboard ? 'Hide Dashboard' : 'Visualize Signals'}
                       </button>
                     )}
                   </div>
                   
-                  {/* Insight Dashboard - shown when toggled */}
+                  {/* Interactive Dashboard - Premium Hex/Profound-style */}
                   {showDashboard && (
-                    <InsightDashboard
+                    <InteractiveDashboard
                       metrics={metrics.map(m => ({
                         value: m.value,
                         label: m.label || 'Metric',
@@ -631,60 +654,93 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
                       }))}
                       comparisons={payload.graphData?.comparisons}
                       query={payload.query}
+                      signals={payload.signals || []}
+                      onMetricClick={(metric) => {
+                        console.log('[InteractiveDashboard] Metric clicked:', metric);
+                        // Could open drill-down modal or expand section
+                      }}
+                      onComparisonClick={(comparison) => {
+                        console.log('[InteractiveDashboard] Comparison clicked:', comparison);
+                        // Could show detailed comparison view
+                      }}
+                      onExport={(format) => {
+                        console.log('[InteractiveDashboard] Export requested:', format);
+                        // Trigger export with selected visualizations
+                      }}
                     />
                   )}
                   
-                  <ul className="space-y-3 font-sans">
+                  {/* Signal Cards - Premium Expandable Design */}
+                  <div className="space-y-3">
                     {payload.keySignals.map((signal, index) => (
-                      <li key={index} className="text-base text-gray-900 dark:text-gray-100 leading-relaxed flex items-start gap-2">
-                        <span className="text-bureau-signal dark:text-planner-orange font-bold mt-0.5 shrink-0">•</span>
-                        <span>{parseInlineMarkdown(signal)}</span>
-                      </li>
+                      <div
+                        key={index}
+                        className="group p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-md bg-white dark:bg-slate-800/50 transition-all duration-200 cursor-pointer"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-2 h-2 rounded-full bg-planner-orange mt-2 shrink-0" />
+                          <p className="text-base text-gray-900 dark:text-gray-100 leading-relaxed flex-1">
+                            {parseInlineMarkdown(signal)}
+                          </p>
+                        </div>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </section>
               )}
 
-              {/* Section 3: MOVES FOR LEADERS */}
+              {/* Section 3: MOVES FOR LEADERS - Premium Design */}
               {payload.movesForLeaders.length > 0 && (
-                <section>
-                  <div className="flex items-center gap-3 mb-4">
-                    <Target className="w-6 h-6 text-bureau-signal dark:text-planner-orange" />
-                    <h2 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
+                <section className="space-y-6">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-sm">
+                      <Target className="w-5 h-5 text-white" />
+                    </div>
+                    <h2 className="font-display text-2xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
                       Moves for Leaders
                     </h2>
                   </div>
-                  <ul className="space-y-3 font-sans">
+                  <div className="space-y-3">
                     {payload.movesForLeaders.map((move, index) => (
-                      <li key={index} className="flex items-start gap-3">
-                        <span className="text-bureau-signal dark:text-planner-orange font-bold mt-0.5 flex-shrink-0">•</span>
-                        <span className="text-base text-gray-900 dark:text-gray-100 leading-relaxed">
-                          {parseInlineMarkdown(move)}
-                        </span>
-                      </li>
+                      <div
+                        key={index}
+                        className="group p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-600 hover:shadow-md bg-white dark:bg-slate-800/50 transition-all duration-200"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0" />
+                          <p className="text-base text-gray-900 dark:text-gray-100 leading-relaxed flex-1">
+                            {parseInlineMarkdown(move)}
+                          </p>
+                        </div>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </section>
               )}
             </div>
 
-            {/* Right side panel: Framework tabs (always shown with defaults if needed) */}
-            <div className="lg:w-96 flex-shrink-0">
-              <div className="sticky top-8 border-2 border-gray-200/60 dark:border-slate-700/50 rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-lg">
-                <h3 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight mb-6">
-                  Strategic Frameworks
-                </h3>
+            {/* Right side panel: Strategic Frameworks - Premium Design */}
+            <div className="lg:w-[420px] flex-shrink-0">
+              <div className="sticky top-8 rounded-2xl bg-gradient-to-br from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 border-2 border-slate-200/60 dark:border-slate-700/50 p-8 shadow-xl">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2.5 bg-gradient-to-br from-violet-500 to-violet-600 rounded-xl shadow-sm">
+                    <Target className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
+                    Strategic Frameworks
+                  </h3>
+                </div>
 
-                {/* Horizontal tabs */}
-                <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-200/60 dark:border-slate-700/50 pb-4">
+                {/* Premium Framework Tabs */}
+                <div className="flex flex-wrap gap-2 mb-6 pb-6 border-b border-slate-200/60 dark:border-slate-700/50">
                   {frameworks.map((framework) => (
                     <button
                       key={framework.id}
                       onClick={() => setActiveFrameworkTab(framework.id)}
-                      className={`px-3 py-2 text-xs font-bold uppercase tracking-wider transition-all duration-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-1 ${
+                      className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-all duration-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-planner-orange focus:ring-offset-2 ${
                         activeFrameworkTab === framework.id
-                          ? 'bg-gray-900 dark:bg-planner-orange text-white shadow-sm'
-                          : 'bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600 hover:border-bureau-signal dark:hover:border-planner-orange hover:shadow-sm'
+                          ? 'bg-planner-orange text-white shadow-lg scale-[1.02]'
+                          : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-slate-600 hover:border-planner-orange hover:shadow-md hover:bg-slate-50 dark:hover:bg-slate-700/80'
                       }`}
                     >
                       {framework.label}
@@ -692,22 +748,29 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
                   ))}
                 </div>
 
-                {/* Framework actions */}
+                {/* Framework Actions - Premium Card Design */}
                 {activeFramework && (
-                  <div>
-                    <h4 className="font-display text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider mb-4">
+                  <div className="space-y-4">
+                    <h4 className="font-display text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-4">
                       Actions
                     </h4>
-                    <ul className="space-y-3 font-sans">
+                    <div className="space-y-3">
                       {activeFramework.actions.map((action, index) => (
-                        <li key={index} className="flex items-start gap-3">
-                          <span className="text-bureau-signal dark:text-planner-orange font-bold mt-0.5 flex-shrink-0">•</span>
-                          <span className="text-sm text-gray-900 dark:text-gray-100 leading-relaxed">
-                            {parseInlineMarkdown(action)}
-                          </span>
-                        </li>
+                        <div
+                          key={index}
+                          className="group p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-violet-300 dark:hover:border-violet-600 hover:shadow-md bg-white dark:bg-slate-800/50 transition-all duration-200"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-xs font-bold text-violet-600 dark:text-violet-400 mt-0.5">
+                              {index + 1}
+                            </div>
+                            <p className="text-sm text-gray-900 dark:text-gray-100 leading-relaxed flex-1">
+                              {parseInlineMarkdown(action)}
+                            </p>
+                          </div>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 )}
               </div>
@@ -950,7 +1013,7 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
               </div>
 
               {/* Chat Messages */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 {followUpMessages.length === 0 ? (
                   <div className="text-center py-12">
                     <MessageCircle className="w-12 h-12 text-gray-300 dark:text-slate-600 mx-auto mb-4" />
@@ -979,19 +1042,22 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
                           </div>
                         )}
                         <div
-                          className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                          className={`max-w-[85%] ${
                             msg.role === 'user'
-                              ? 'bg-violet-500 text-white'
-                              : 'bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-gray-100'
+                              ? 'bg-violet-500 text-white rounded-2xl px-4 py-3'
+                              : 'bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-0'
                           }`}
                         >
-                          <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none">
-                            {msg.role === 'user' ? (
-                              <span>{safeContent}</span>
-                            ) : (
-                              parsePerplexityMarkdown(safeContent)
-                            )}
-                          </div>
+                          {msg.role === 'user' ? (
+                            <p className="text-sm leading-relaxed font-sans">{safeContent}</p>
+                          ) : (
+                            <div className="p-4 space-y-6">
+                              {/* Parse structured response with consistent sections */}
+                              <div className="font-sans text-sm leading-relaxed text-gray-900 dark:text-gray-100">
+                                {parsePerplexityMarkdown(safeContent)}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
@@ -1002,8 +1068,8 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
                     <div className="flex-shrink-0 w-8 h-8 bg-violet-100 dark:bg-violet-900/30 rounded-full flex items-center justify-center">
                       <Sparkles className="w-4 h-4 text-violet-600 dark:text-violet-400 animate-pulse" />
                     </div>
-                    <div className="bg-gray-100 dark:bg-slate-800 rounded-2xl px-4 py-3">
-                      <LoadingSpinner size="sm" text="Thinking..." />
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 px-4 py-3">
+                      <LoadingSpinner size="sm" text="Analyzing intelligence..." />
                     </div>
                   </div>
                 )}

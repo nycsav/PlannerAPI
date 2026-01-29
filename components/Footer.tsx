@@ -16,15 +16,15 @@ export const Footer: React.FC = () => {
         <div className="mb-2xl grid grid-cols-1 md:grid-cols-3 gap-md">
           <button
             onClick={scrollToTop}
-            className="group bg-bureau-ink dark:bg-planner-orange hover:bg-gray-800 dark:hover:bg-planner-orange/90 text-white p-lg rounded-lg transition-all duration-200 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] border-2 border-bureau-ink dark:border-planner-orange hover:border-bureau-signal dark:hover:border-planner-orange focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-2"
+            className="group btn-primary p-lg hover:shadow-xl"
             aria-label="Scroll to top and try intelligence search"
           >
             <div className="flex items-center justify-between mb-md">
               <Search className="w-6 h-6" />
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </div>
-            <h3 className="font-display text-lg font-black italic mb-2">TRY INTELLIGENCE SEARCH</h3>
-            <p className="text-sm text-gray-200 dark:text-gray-200">Ask any strategic question and get AI-powered insights</p>
+            <h3 className="font-display text-lg font-black uppercase tracking-tight mb-2">TRY INTELLIGENCE SEARCH</h3>
+            <p className="text-sm text-white/90">Ask any strategic question and get AI-powered insights</p>
           </button>
 
           <button
@@ -35,15 +35,15 @@ export const Footer: React.FC = () => {
                 section.scrollIntoView({ behavior: 'smooth', block: 'start' });
               }
             }}
-            className="group bg-white dark:bg-slate-800/50 hover:bg-gray-50 dark:hover:bg-slate-700/80 text-bureau-ink dark:text-gray-100 p-lg rounded-2xl transition-all duration-200 hover:shadow-lg dark:hover:shadow-planner-orange/10 hover:scale-[1.02] active:scale-[0.98] border border-gray-200/60 dark:border-slate-700/50 hover:border-bureau-signal/60 dark:hover:border-planner-orange/60 focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-2"
+            className="group btn-secondary p-lg"
             aria-label="Explore briefings"
           >
             <div className="flex items-center justify-between mb-md">
-              <FileText className="w-6 h-6 text-bureau-ink dark:text-gray-100" />
-              <ArrowRight className="w-5 h-5 text-bureau-ink dark:text-gray-100 group-hover:translate-x-1 transition-transform" />
+              <FileText className="w-6 h-6 text-slate-900 dark:text-gray-100" />
+              <ArrowRight className="w-5 h-5 text-slate-900 dark:text-gray-100 group-hover:translate-x-1 transition-transform duration-200" />
             </div>
-            <h3 className="font-display text-lg font-black italic mb-2 text-bureau-ink dark:text-gray-100">EXPLORE BRIEFINGS</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-200">Review latest market intelligence and strategic analysis</p>
+            <h3 className="font-display text-lg font-black uppercase tracking-tight mb-2 text-slate-900 dark:text-gray-100">EXPLORE BRIEFINGS</h3>
+            <p className="text-sm text-slate-600 dark:text-gray-300">Review latest market intelligence and strategic analysis</p>
           </button>
 
           <button
@@ -54,15 +54,15 @@ export const Footer: React.FC = () => {
                 section.scrollIntoView({ behavior: 'smooth', block: 'start' });
               }
             }}
-            className="group bg-white dark:bg-slate-800/50 hover:bg-gray-50 dark:hover:bg-slate-700/80 text-bureau-ink dark:text-gray-100 p-lg rounded-2xl transition-all duration-200 hover:shadow-lg dark:hover:shadow-planner-orange/10 hover:scale-[1.02] active:scale-[0.98] border border-gray-200/60 dark:border-slate-700/50 hover:border-bureau-signal/60 dark:hover:border-planner-orange/60 focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-2"
+            className="group btn-secondary p-lg"
             aria-label="See how it works"
           >
             <div className="flex items-center justify-between mb-md">
-              <Cpu className="w-6 h-6 text-bureau-ink dark:text-gray-100" />
-              <ArrowRight className="w-5 h-5 text-bureau-ink dark:text-gray-100 group-hover:translate-x-1 transition-transform" />
+              <Cpu className="w-6 h-6 text-slate-900 dark:text-gray-100" />
+              <ArrowRight className="w-5 h-5 text-slate-900 dark:text-gray-100 group-hover:translate-x-1 transition-transform duration-200" />
             </div>
-            <h3 className="font-display text-lg font-black italic mb-2 text-bureau-ink dark:text-gray-100">SEE HOW IT WORKS</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-200">Learn about our AI-powered intelligence capabilities</p>
+            <h3 className="font-display text-lg font-black uppercase tracking-tight mb-2 text-slate-900 dark:text-gray-100">SEE HOW IT WORKS</h3>
+            <p className="text-sm text-slate-600 dark:text-gray-300">Learn about our AI-powered intelligence capabilities</p>
           </button>
         </div>
 

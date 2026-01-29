@@ -474,6 +474,10 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
 
             <button
               type="submit"
+              onClick={(e) => {
+                e.preventDefault();
+                handleSubmit(e);
+              }}
               className="bg-gradient-to-r from-gray-900 to-gray-800 dark:from-planner-orange dark:to-planner-navy text-white px-6 py-3 rounded-lg flex items-center gap-2 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-2"
               disabled={loading}
               aria-label={loading ? 'Searching...' : 'Search for intelligence'}
