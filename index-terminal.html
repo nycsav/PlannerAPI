@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlannerAPI - Strategic Intelligence Terminal</title>
+
+    <!-- Preload monospace fonts for better performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- IBM Plex Mono for terminal aesthetic -->
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+      /* Force dark mode and monospace */
+      html {
+        background-color: #0a0e1a;
+        font-family: 'IBM Plex Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+      }
+
+      body {
+        margin: 0;
+        background-color: #0a0e1a;
+        color: #e2e8f0;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* Loading screen */
+      #loading-screen {
+        position: fixed;
+        inset: 0;
+        background: #0a0e1a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+
+      .loading-content {
+        text-align: center;
+      }
+
+      .loading-bars {
+        display: flex;
+        gap: 4px;
+        justify-content: center;
+        margin-bottom: 16px;
+      }
+
+      .loading-bar {
+        width: 4px;
+        height: 32px;
+        background: rgba(96, 165, 250, 0.3);
+        border-radius: 2px;
+        animation: pulse 1.5s ease-in-out infinite;
+      }
+
+      .loading-bar:nth-child(1) { animation-delay: 0s; }
+      .loading-bar:nth-child(2) { animation-delay: 0.1s; }
+      .loading-bar:nth-child(3) { animation-delay: 0.2s; }
+      .loading-bar:nth-child(4) { animation-delay: 0.3s; }
+      .loading-bar:nth-child(5) { animation-delay: 0.4s; }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 0.3; transform: scaleY(0.5); }
+        50% { opacity: 1; transform: scaleY(1); }
+      }
+
+      .loading-text {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 12px;
+        font-weight: 700;
+        color: #60a5fa;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Loading screen -->
+    <div id="loading-screen">
+      <div class="loading-content">
+        <div class="loading-bars">
+          <div class="loading-bar"></div>
+          <div class="loading-bar"></div>
+          <div class="loading-bar"></div>
+          <div class="loading-bar"></div>
+          <div class="loading-bar"></div>
+        </div>
+        <div class="loading-text">Initializing Terminal...</div>
+      </div>
+    </div>
+
+    <div id="root"></div>
+    <script type="module" src="/src-terminal/main.tsx"></script>
+  </body>
+</html>

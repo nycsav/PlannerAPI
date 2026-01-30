@@ -319,14 +319,14 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
       
       <div className="text-center space-y-sm">
         <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-black text-gray-900 dark:text-gray-100 leading-tight tracking-tight" style={{ fontStyle: 'italic', fontWeight: 900 }}>
-          STRATEGIC INTELLIGENCE FOR<br />
+          REAL-TIME INTELLIGENCE FOR<br />
           <TypewriterText
             phrases={[
               'MARKETING LEADERS',
-              'GROWTH TEAMS',
-              'AGENCY STRATEGISTS',
-              'CX EXECUTIVES',
-              'BRAND DIRECTORS',
+              'BRAND STRATEGISTS',
+              'AGENCY TEAMS',
+              'GROWTH EXECUTIVES',
+              'CMO OFFICES',
             ]}
             typingSpeed={50}
             deletingSpeed={30}
@@ -335,8 +335,9 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
             style={{ fontStyle: 'italic', fontWeight: 900 }}
           />
         </h1>
-        <p className="text-gray-700 dark:text-gray-300 text-lg md:text-xl font-normal max-w-3xl mx-auto pt-md leading-relaxed">
-          Real-time market analysis and competitive intelligence for CMOs, VP Marketing, Brand Directors, and Growth Leaders driving measurable business outcomes.
+
+        <p className="text-gray-700 dark:text-gray-300 text-lg md:text-xl font-normal max-w-3xl mx-auto pt-sm leading-relaxed">
+          Search the marketing and advertising industry in real-time. Powered by Perplexity AI with live data from 1,000+ sources.
         </p>
       </div>
 
@@ -665,7 +666,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
           </div>
           <span className="hidden md:inline text-gray-300 dark:text-slate-500">•</span>
           <p className="text-sm text-gray-600 dark:text-gray-300">
-            Trusted by Fortune 500 marketing teams
+            Real-time data from 1,000+ marketing sources
           </p>
         </div>
 

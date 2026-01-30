@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:terminal": "vite --config vite.config.terminal.ts --mode development",
     "build": "vite build",
+    "build:terminal": "vite build --config vite.config.terminal.ts",
     "preview": "vite preview"
   },
   "dependencies": {

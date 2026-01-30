@@ -6,6 +6,7 @@ import { ConversationalBrief } from './components/ConversationalBrief';
 import { IntelligenceModal, IntelligencePayload } from './components/IntelligenceModal';
 import { EngineInstructions } from './components/EngineInstructions';
 import { HeroSearch } from './components/HeroSearch';
+import { ValueProposition } from './components/ValueProposition';
 import { ExecutiveStrategyChat } from './components/ExecutiveStrategyChat';
 import { SignupModal } from './components/SignupModal';
 import { DailyIntelligence } from './components/DailyIntelligence';
@@ -681,6 +682,13 @@ const App: React.FC = () => {
                   onSearch={(q, data) => openSearch(q, 'Perplexity', data)}
                   onOpenChat={scrollToChat}
                 />
+              </section>
+            </div>
+
+            {/* VALUE PROPOSITION SECTION */}
+            <div className="section-zebra py-2xl border-b border-bureau-border dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
+              <section className="max-w-content mx-auto w-full app-padding-x">
+                <ValueProposition />
               </section>
             </div>
 
