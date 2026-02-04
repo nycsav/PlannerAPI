@@ -5,6 +5,7 @@ import { TrustStrip } from './TrustStrip';
 import { useAudience } from '../contexts/AudienceContext';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { ENDPOINTS, fetchWithTimeout } from '../src/config/api';
+import { getTypographyClasses } from '../src/styles/typography';
 
 interface HeroSearchProps {
   onSearch: (q: string, data?: any) => void;
@@ -314,19 +315,21 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
   }, []); // Empty dependency array - only run on mount
 
   return (
-    <div className="w-full flex flex-col items-center space-y-lg">
-      
-      <div className="text-center space-y-sm">
-        <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-gray-900 dark:text-gray-100 leading-tight tracking-tight" style={{ fontStyle: 'italic', fontWeight: 900 }}>
+    <div className="w-full max-w-5xl mx-auto flex flex-col items-center px-4 sm:px-6 lg:px-8">
+
+      {/* 1. HEADLINE - Clear focus */}
+      <div className="text-center space-y-6 mb-8">
+        <h1 className={`${getTypographyClasses('display')} text-gray-900 dark:text-gray-100 italic`}>
           REAL-TIME INTELLIGENCE FOR <span className="text-bureau-signal dark:text-planner-orange">MARKETING LEADERS</span>
         </h1>
 
-        <p className="text-gray-700 dark:text-gray-300 text-base md:text-xl font-normal max-w-3xl mx-auto pt-sm leading-relaxed">
+        <p className={`${getTypographyClasses('bodyLarge')} text-gray-600 dark:text-gray-300 max-w-3xl mx-auto`}>
           Search the marketing and advertising industry in real-time. Powered by Perplexity AI with live data from 1,000+ sources.
         </p>
       </div>
 
-      <div className="w-full flex flex-col gap-md">
+      {/* 2. SEARCH - Primary action */}
+      <div className="w-full flex flex-col space-y-4 mb-6">
         <form onSubmit={handleSubmit} className="relative w-full">
           <div 
             className="relative flex items-center bg-white dark:bg-slate-800/50 border border-gray-300/60 dark:border-slate-600/50 rounded-2xl p-1 shadow-sm focus-within:ring-4 focus-within:ring-bureau-signal/10 dark:focus-within:ring-planner-orange/20 focus-within:border-bureau-signal/60 dark:focus-within:border-planner-orange/60 transition-all duration-200"
@@ -478,9 +481,9 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
           </p>
         </form>
 
-        {/* Micro-copy explaining output */}
-        <p className="mt-3 text-sm text-gray-600 dark:text-gray-400 text-center max-w-2xl mx-auto">
-          Ask any marketing question → Get a structured intelligence brief with signals, strategic moves, and sources
+        {/* Micro-copy explaining output - subtle and readable */}
+        <p className={`${getTypographyClasses('bodySmall')} text-gray-500 dark:text-gray-400 text-center max-w-2xl mx-auto`}>
+          Ask any marketing question → Get a structured intelligence brief with signals, moves, and sources
         </p>
 
         {/* Edit queries button and indicator */}
@@ -488,7 +491,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
           <button
             type="button"
             onClick={() => setShowEditModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-bureau-signal dark:hover:text-planner-orange hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-all duration-200"
+            className={`${getTypographyClasses('caption')} flex items-center gap-1.5 px-3 py-1.5 text-gray-500 dark:text-gray-400 hover:text-bureau-signal dark:hover:text-planner-orange hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-all duration-200`}
             aria-label="Customize search suggestions"
           >
             <Pencil className="w-3 h-3" />
@@ -647,26 +650,28 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
           </div>
         )}
 
-        <div className="flex flex-col md:flex-row items-center justify-center gap-3 px-sm text-center">
+        {/* 4. TRUST INDICATORS - Tertiary */}
+        <div className="flex flex-col md:flex-row items-center justify-center gap-3 px-4 text-center pt-2 pb-4">
           <div className="flex items-center gap-2">
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
               <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#1FB6FF" />
               <path d="M2 17L12 22L22 17M2 12L12 17L22 12" stroke="#1FB6FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Powered by Perplexity AI</span>
+            <span className={`${getTypographyClasses('bodySmall')} font-semibold text-gray-700 dark:text-gray-300`}>Powered by Perplexity AI</span>
           </div>
           <span className="hidden md:inline text-gray-300 dark:text-slate-500">•</span>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+          <p className={`${getTypographyClasses('bodySmall')} text-gray-600 dark:text-gray-300`}>
             Real-time data from 1,000+ marketing sources
           </p>
         </div>
 
-        <div className="space-y-4 pt-md">
-          <div className="text-center">
-            <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-              Generate a brief about:
+        {/* 3. CATEGORY BUTTONS - Secondary action */}
+        <div className="space-y-4 pt-6">
+          <div className="text-center space-y-2">
+            <h3 className={`${getTypographyClasses('h4')} text-gray-900 dark:text-gray-100`}>
+              Or generate a brief about:
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className={`${getTypographyClasses('bodySmall')} text-gray-600 dark:text-gray-400`}>
               Click any topic to instantly search and get a structured intelligence brief
             </p>
           </div>
@@ -690,7 +695,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
                   console.log('[HeroSearch] Category clicked:', item.label);
                   onSearch(item.label);
                 }}
-                className="group px-4 min-h-[44px] border border-gray-200/60 dark:border-slate-700/50 bg-white dark:bg-slate-800/50 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-200 hover:border-bureau-signal/60 dark:hover:border-planner-orange/60 hover:bg-bureau-signal dark:hover:bg-planner-orange hover:text-white hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-sm dark:hover:shadow-planner-orange/10 hover:shadow-md flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-2"
+                className={`${getTypographyClasses('label')} group px-4 py-2.5 min-h-[44px] border border-gray-200/60 dark:border-slate-700/50 bg-white dark:bg-slate-800/50 rounded-xl text-gray-700 dark:text-gray-200 hover:border-bureau-signal/60 dark:hover:border-planner-orange/60 hover:bg-bureau-signal dark:hover:bg-planner-orange hover:text-white hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-sm dark:hover:shadow-planner-orange/10 hover:shadow-md flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-2`}
               >
                 {item.trending && <TrendingUp className="w-3.5 h-3.5 text-bureau-signal dark:text-planner-orange group-hover:text-white" />}
                 {item.label}

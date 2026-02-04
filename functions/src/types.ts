@@ -24,6 +24,12 @@ export type DiscoverCard = {
   sourceUrl?: string; // Direct URL to source article/report
   sourceTier: number; // 1-5 (1 = Premier, 5 = Ecosystem)
   sourceCount?: number; // Number of sources analyzed (optional)
+  sources?: Array<{ // Array of all sources used (for citation display)
+    sourceName: string;
+    sourceUrl: string;
+    snippet?: string;
+    title?: string;
+  }>;
 
   // Content metadata
   contentSource?: 'n8n' | 'firebase' | 'manual'; // How the card was generated

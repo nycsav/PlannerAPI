@@ -258,8 +258,9 @@ function calculatePriority(
 /**
  * Fetch news from Perplexity API for a specific pillar
  * Uses diverse queries based on card index to ensure content variety
+ * Returns content and citations from Perplexity
  */
-async function fetchPillarNews(pillar: PillarConfig, cardIndexInPillar: number): Promise<string> {
+async function fetchPillarNews(pillar: PillarConfig, cardIndexInPillar: number): Promise<{content: string; citations: string[]}> {
   if (!PPLX_API_KEY) {
     throw new Error('PPLX_API_KEY environment variable is not set');
   }
@@ -288,7 +289,9 @@ async function fetchPillarNews(pillar: PillarConfig, cardIndexInPillar: number):
                   Return 3-5 DISTINCT news items with sources - each about a DIFFERENT company/topic.${exclusionNote}`
       }],
       search_domain_filter: ['adweek.com', 'marketingdive.com', 'adage.com', 'techcrunch.com', 'digiday.com', 'wsj.com', 'bloomberg.com'],
-      search_recency_filter: 'day'
+      search_recency_filter: 'day',
+      return_citations: true, // CRITICAL: Request citations to get real source URLs
+      return_related_questions: false
     })
   });
 
@@ -298,7 +301,12 @@ async function fetchPillarNews(pillar: PillarConfig, cardIndexInPillar: number):
   }
 
   const data = await response.json();
-  return data.choices[0]?.message?.content || '';
+
+  // Return both content and citations
+  return {
+    content: data.choices[0]?.message?.content || '',
+    citations: data.citations || []
+  };
 }
 
 /**
@@ -308,7 +316,8 @@ async function summarizeToCard(
   rawNews: string,
   pillar: string,
   type: 'brief' | 'hot_take',
-  cardIndex: number
+  cardIndex: number,
+  citations: string[] = []
 ): Promise<{ card: Partial<DiscoverCard> | null; cacheMetrics: any }> {
   if (!ANTHROPIC_API_KEY) {
     throw new Error('ANTHROPIC_API_KEY environment variable is not set');
@@ -406,6 +415,26 @@ Return ONLY the JSON object, no markdown code blocks.`;
     // TypeScript: sourceCount is guaranteed to be a number after validation
     const priority = calculatePriority(parsed.sourceCount as number, pillar, type);
 
+    // Parse citations into source objects
+    const sources = citations.map((url, index) => {
+      try {
+        const domain = new URL(url).hostname.replace('www.', '');
+        return {
+          sourceName: domain,
+          sourceUrl: url,
+          snippet: '', // Perplexity doesn't provide snippets in citations array
+          title: domain
+        };
+      } catch {
+        return {
+          sourceName: `Source ${index + 1}`,
+          sourceUrl: url || '#',
+          snippet: '',
+          title: `Source ${index + 1}`
+        };
+      }
+    });
+
     // Build complete card (matching Firestore schema)
     const card: Partial<DiscoverCard> = {
       title: parsed.title,
@@ -413,6 +442,7 @@ Return ONLY the JSON object, no markdown code blocks.`;
       signals: parsed.signals,
       moves: parsed.moves,
       sourceCount: parsed.sourceCount,
+      sources: sources.length > 0 ? sources : undefined, // Only include if we have real sources
       pillar: pillar as 'ai_strategy' | 'brand_performance' | 'competitive_intel' | 'media_trends',
       type,
       priority,
@@ -581,13 +611,17 @@ export const generateDiscoverCards = functions
 
           try {
             // Fetch news for this pillar with diverse query based on card index
-            const rawNews = await fetchPillarNews(pillar, cardIndexInPillar);
+            const newsData = await fetchPillarNews(pillar, cardIndexInPillar);
+            const rawNews = newsData.content;
+            const citations = newsData.citations || [];
+
+            console.log(`[Card ${cardIndex}] 📰 Fetched ${citations.length} citations from Perplexity`);
 
             // Determine card type (80% brief, 20% hot take)
             const type = Math.random() > 0.8 ? 'hot_take' : 'brief';
 
-            // Generate card with Claude
-            const result = await summarizeToCard(rawNews, pillar.id, type, cardIndex);
+            // Generate card with Claude, passing citations
+            const result = await summarizeToCard(rawNews, pillar.id, type, cardIndex, citations);
 
             // Store if successful
             if (result.card) {
