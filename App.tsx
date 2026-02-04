@@ -628,13 +628,21 @@ const App: React.FC = () => {
       const customEvent = e as CustomEvent;
       const briefData = customEvent.detail.brief;
 
+      // Transform citations to signals format
+      const transformedSignals = (briefData.sources || []).map((citation: any, index: number) => ({
+        sourceName: citation.title || `Source ${index + 1}`,
+        sourceUrl: citation.url || '#',
+        snippet: citation.snippet || '',
+        title: citation.title || `Source ${index + 1}`,
+      }));
+
       // Map brief data to IntelligencePayload format
       const payload: IntelligencePayload = {
         query: briefData.title || 'Today\'s Intelligence Brief',
         summary: briefData.summary || '',
         keySignals: [],
         movesForLeaders: [],
-        signals: briefData.sources || [],
+        signals: transformedSignals,
       };
 
       setIntelligencePayload(payload);

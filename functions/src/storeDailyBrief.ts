@@ -52,6 +52,13 @@ export const storeDailyBrief = functions.https.onRequest(async (req, res) => {
   }
 
   try {
+    // Debug: Log citations structure
+    console.log(`[DEBUG] Storing brief for ${payload.date}`);
+    console.log(`[DEBUG] Citations count: ${payload.content.citations?.length || 0}`);
+    if (payload.content.citations && payload.content.citations.length > 0) {
+      console.log('[DEBUG] First citation:', JSON.stringify(payload.content.citations[0]));
+    }
+
     // Store in Firestore
     await db.collection('daily_briefs').doc(payload.date).set({
       content: payload.content,

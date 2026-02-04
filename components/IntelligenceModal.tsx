@@ -396,19 +396,67 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
     setFollowUpLoading(true);
 
     try {
-      // Build contextual query in a natural, conversational way
-      const contextualQuery = `Based on this intelligence about "${payload.query}", ${currentInput}`;
+      // Build system prompt with full brief context
+      const sourcesText = payload.signals && payload.signals.length > 0
+        ? payload.signals.map((s, i) => `[${i + 1}] ${s.sourceName || 'Source'} - ${s.sourceUrl || '#'}`).join('\n')
+        : 'No sources available';
 
-      // Use chatIntel endpoint for structured, consistent responses (same as ExecutiveStrategyChat)
+      const signalsText = payload.keySignals && payload.keySignals.length > 0
+        ? payload.keySignals.map((s, i) => `${i + 1}. ${s}`).join('\n')
+        : '';
+
+      const movesText = payload.movesForLeaders && payload.movesForLeaders.length > 0
+        ? payload.movesForLeaders.map((m, i) => `${i + 1}. ${m}`).join('\n')
+        : '';
+
+      const systemPrompt = `You are a brief assistant helping users understand this intelligence brief.
+
+BRIEF CONTEXT:
+Title: ${payload.query}
+Summary: ${payload.summary}
+
+SOURCES USED:
+${sourcesText}
+
+KEY SIGNALS:
+${signalsText}
+
+STRATEGIC MOVES:
+${movesText}
+
+INSTRUCTIONS:
+- When user asks "what sources did you use?" or similar, list the actual sources from SOURCES USED section above
+- When user asks about specific claims or signals, reference the KEY SIGNALS section
+- When user asks about actions or recommendations, reference STRATEGIC MOVES section
+- Always answer based on THIS brief's content, not generic knowledge
+- Be specific and cite the relevant source numbers when appropriate`;
+
+      // Build conversation messages for Claude API
+      const conversationMessages = [
+        ...newMessages.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }))
+      ];
+
+      // Use chatIntel endpoint but with enhanced context
       const response = await fetchWithTimeout(ENDPOINTS.chatIntel, {
-        timeout: 40000, // Increased timeout for real-time data
+        timeout: 40000,
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          query: contextualQuery,
-          audience: 'CMO' // Default audience for consistency
+          query: currentInput,
+          audience: 'CMO',
+          context: {
+            briefTitle: payload.query,
+            briefSummary: payload.summary,
+            sources: payload.signals || [],
+            keySignals: payload.keySignals || [],
+            moves: payload.movesForLeaders || [],
+            systemPrompt: systemPrompt
+          }
         }),
       });
 
@@ -421,36 +469,59 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
       const data = await response.json();
       console.log('[Follow-up] Raw response data:', data);
 
-      // chatIntel returns structured data: { signals, implications, actions, citations }
-      // Format it consistently with other modules
+      // Check if user is asking about sources specifically
+      const isAskingAboutSources = currentInput.toLowerCase().includes('source') ||
+                                   currentInput.toLowerCase().includes('citation') ||
+                                   currentInput.toLowerCase().includes('reference');
+
       let formattedResponse = '';
 
-      // IMPLICATIONS Section
-      if (data.implications && data.implications.length > 0) {
-        formattedResponse += '**Implications:**\n\n';
-        data.implications.forEach((impl: string) => {
-          formattedResponse += `• ${impl}\n`;
-        });
-        formattedResponse += '\n';
-      }
-
-      // MOVES FOR LEADERS Section
-      if (data.actions && data.actions.length > 0) {
-        formattedResponse += '**Moves for Leaders:**\n\n';
-        data.actions.forEach((action: string) => {
-          formattedResponse += `• ${action}\n`;
-        });
-        formattedResponse += '\n';
-      }
-
-      // SOURCES Section
-      if (data.signals && data.signals.length > 0) {
-        formattedResponse += '**Sources:**\n\n';
-        data.signals.forEach((signal: any, index: number) => {
-          if (signal.sourceUrl && signal.sourceUrl !== '#') {
-            formattedResponse += `[${index + 1}] ${signal.sourceName || signal.title || 'Source'}\n`;
+      // If asking about sources, prioritize showing them
+      if (isAskingAboutSources && payload.signals && payload.signals.length > 0) {
+        formattedResponse += `This brief analyzed ${payload.signals.length} sources:\n\n`;
+        payload.signals.forEach((signal: any, index: number) => {
+          const sourceName = signal.sourceName || signal.title || `Source ${index + 1}`;
+          const sourceUrl = signal.sourceUrl && signal.sourceUrl !== '#' ? signal.sourceUrl : '';
+          formattedResponse += `**[${index + 1}] ${sourceName}**\n`;
+          if (sourceUrl) {
+            formattedResponse += `${sourceUrl}\n`;
           }
+          if (signal.snippet) {
+            formattedResponse += `_"${signal.snippet}"_\n`;
+          }
+          formattedResponse += '\n';
         });
+      } else {
+        // chatIntel returns structured data: { signals, implications, actions, citations }
+        // Format it consistently with other modules
+
+        // IMPLICATIONS Section
+        if (data.implications && data.implications.length > 0) {
+          formattedResponse += '**Implications:**\n\n';
+          data.implications.forEach((impl: string) => {
+            formattedResponse += `• ${impl}\n`;
+          });
+          formattedResponse += '\n';
+        }
+
+        // MOVES FOR LEADERS Section
+        if (data.actions && data.actions.length > 0) {
+          formattedResponse += '**Moves for Leaders:**\n\n';
+          data.actions.forEach((action: string) => {
+            formattedResponse += `• ${action}\n`;
+          });
+          formattedResponse += '\n';
+        }
+
+        // SOURCES Section
+        if (data.signals && data.signals.length > 0) {
+          formattedResponse += '**Related Sources:**\n\n';
+          data.signals.forEach((signal: any, index: number) => {
+            if (signal.sourceUrl && signal.sourceUrl !== '#') {
+              formattedResponse += `[${index + 1}] ${signal.sourceName || signal.title || 'Source'}\n`;
+            }
+          });
+        }
       }
 
       // Fallback to plain text if structured format fails
