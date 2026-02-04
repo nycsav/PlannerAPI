@@ -62,18 +62,18 @@ export const ValueProposition: React.FC = () => {
       <div className="text-center mb-xl">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-lg mb-sm">
           <div className="w-1.5 h-1.5 rounded-full bg-gray-500" />
-          <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">
-            WHAT YOU'LL GET
+          <span className="text-[10px] font-bold text-gray-700 dark:text-gray-300 tracking-widest">
+            What You'll Get
           </span>
         </div>
 
-        <h2 className="font-display text-3xl md:text-5xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight mb-sm" style={{ fontStyle: 'italic', fontWeight: 900 }}>
-          INTELLIGENCE BUILT FOR
+        <h2 className="font-display text-3xl md:text-5xl font-black text-gray-900 dark:text-gray-100 tracking-tight leading-[1.1] mb-sm" style={{ fontStyle: 'italic', fontWeight: 900 }}>
+          Intelligence Built for
           <br />
-          <span className="text-bureau-signal dark:text-planner-orange">MARKETING LEADERS</span>
+          <span className="text-bureau-signal dark:text-planner-orange">Marketing Leaders</span>
         </h2>
 
-        <p className="text-base text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+        <p className="text-base text-gray-700 dark:text-gray-300 max-w-2xl mx-auto leading-relaxed">
           Perplexity's live data + AI analysis = instant answers with actionable insights. Built for brand marketers and advertising strategists.
         </p>
       </div>
@@ -96,7 +96,7 @@ export const ValueProposition: React.FC = () => {
 
                 {/* Content */}
                 <div className="flex-1">
-                  <h3 className={`text-base font-bold ${colors.text} uppercase tracking-wide mb-2`}>
+                  <h3 className={`text-base font-bold ${colors.text} tracking-wide mb-2`}>
                     {feature.title}
                   </h3>
                   <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
@@ -109,31 +109,6 @@ export const ValueProposition: React.FC = () => {
         })}
       </div>
 
-      {/* Use Case Examples */}
-      <div className="mt-xl pt-lg border-t border-gray-200 dark:border-slate-700">
-        <div className="text-center mb-md">
-          <span className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-medium">Search in real-time for:</span>
-        </div>
-        <div className="flex flex-wrap justify-center gap-3">
-          {[
-            'Agency News',
-            'Brand Campaigns',
-            'Platform Updates',
-            'Media Trends',
-            'Creative Strategy',
-            'Ad Tech Changes',
-            'Pitch Prep',
-            'Client Briefings'
-          ].map((useCase, index) => (
-            <div
-              key={index}
-              className="px-4 py-2 bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-700 dark:text-gray-300 font-medium uppercase tracking-wide hover:border-bureau-signal dark:hover:border-planner-orange hover:bg-bureau-signal/5 dark:hover:bg-planner-orange/5 transition-all cursor-default"
-            >
-              {useCase}
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 };

@@ -196,6 +196,41 @@ function generateContextualFrameworks(query: string, summary: string, keySignals
   return frameworks;
 }
 
+const MetricsGrid = ({
+  metrics
+}: {
+  metrics: Array<{ value: string; label?: string; context?: string }>;
+}) => {
+  // Only show metrics that have a clear value and enough context to be read in full (no incomplete boxes)
+  const completeMetrics = (metrics || [])
+    .filter((m) => {
+      const val = (m.value || '').trim();
+      const ctx = (m.context ?? '').trim();
+      return val.length > 0 && ctx.length > 10;
+    })
+    .slice(0, 4);
+
+  if (completeMetrics.length === 0) return null;
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      {completeMetrics.map((metric, i) => (
+        <div
+          key={i}
+          className="bg-gradient-to-br from-planner-orange/10 to-planner-orange/5 border border-planner-orange/20 rounded-xl p-5 backdrop-blur-sm"
+        >
+          <div className="text-3xl font-bold text-planner-navy dark:text-white mb-2 break-words">
+            {metric.value}
+          </div>
+          <div className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed break-words">
+            {metric.context ?? ''}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
   open,
   payload,
@@ -261,6 +296,18 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
       });
     }
   }, [payload]);
+
+  // Handle escape key to close modal
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && open) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => document.removeEventListener('keydown', handleEscapeKey);
+  }, [open, onClose]);
 
   // Early return AFTER all hooks are called
   if (!open) {
@@ -600,6 +647,12 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
           <div className="flex flex-col lg:flex-row gap-16">
             {/* Main content (left side) */}
             <div className="flex-1 space-y-10">
+              {/* Metrics Grid - Show key data points at top */}
+              {metrics.length > 0 && (
+                <div className="mb-8">
+                  <MetricsGrid metrics={metrics} />
+                </div>
+              )}
               {/* Section 1: SUMMARY - Premium Design */}
               <section className="space-y-6">
                 <div className="flex items-center gap-4 mb-6">

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Cpu, Users, BarChart, ChevronRight } from 'lucide-react';
+import { Cpu, Users, BarChart } from 'lucide-react';
 
 export const EngineInstructions: React.FC = () => {
   const workflows = [
@@ -24,10 +24,10 @@ export const EngineInstructions: React.FC = () => {
   return (
     <div className="bg-white dark:bg-slate-900 border border-gray-200/60 dark:border-slate-700/50 rounded-2xl p-8 md:p-12 space-y-8">
       <div className="max-w-3xl space-y-4">
-        <h2 className="font-display text-3xl md:text-4xl font-black text-gray-900 dark:text-gray-100 italic tracking-tight">
-          HOW IT WORKS
+        <h2 className="font-display text-3xl md:text-4xl font-black text-gray-900 dark:text-gray-100 italic tracking-tight leading-[1.1]">
+          How It Works
         </h2>
-        <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
+        <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
           Three core capabilities that transform how marketing leaders access and act on strategic intelligence.
         </p>
       </div>
@@ -49,10 +49,6 @@ export const EngineInstructions: React.FC = () => {
               <p className="text-base text-gray-600 dark:text-gray-300 leading-relaxed">
                 {workflow.desc}
               </p>
-            </div>
-
-            <div className="flex items-center text-bureau-signal dark:text-blue-400 font-semibold text-sm group-hover:gap-2 transition-all">
-              Learn more <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
         ))}

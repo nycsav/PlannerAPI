@@ -11,7 +11,6 @@ type NavbarProps = {
 };
 
 export const Navbar: React.FC<NavbarProps> = ({ onSignupClick }) => {
-  const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
   const { user, loading } = useAuth();
@@ -24,13 +23,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onSignupClick }) => {
       console.error('Logout error:', error);
     }
   };
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   return (
     <nav className="nav-base app-padding-x">
@@ -45,11 +37,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onSignupClick }) => {
             </span>
           </div>
 
-          <div className="hidden lg:flex items-center gap-md border-l border-slate-200/60 dark:border-slate-700/50 pl-md">
-            <span className="text-xs font-medium text-slate-500 dark:text-gray-400 font-mono">
-              {currentTime} UTC
-            </span>
-          </div>
         </div>
 
         <div className="flex items-center gap-3">

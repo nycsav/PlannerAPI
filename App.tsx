@@ -4,7 +4,6 @@ import { Layout } from './components/Layout';
 import { IntelligenceCard } from './components/IntelligenceCard';
 import { ConversationalBrief } from './components/ConversationalBrief';
 import { IntelligenceModal, IntelligencePayload } from './components/IntelligenceModal';
-import { EngineInstructions } from './components/EngineInstructions';
 import { HeroSearch } from './components/HeroSearch';
 import { ValueProposition } from './components/ValueProposition';
 import { ExecutiveStrategyChat } from './components/ExecutiveStrategyChat';
@@ -45,11 +44,11 @@ type IntelligenceBriefing = {
 const SectionHeader: React.FC<{ id: string; title: string; subtitle?: string; badge?: React.ReactNode }> = ({ id, title, subtitle, badge }) => (
   <div id={id} className="mb-xl border-b border-gray-200 dark:border-slate-700 pb-md">
     <div className="flex items-center gap-md">
-      <h2 className="font-display text-3xl md:text-4xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight" style={{ fontStyle: 'italic', fontWeight: 900 }}>{title}</h2>
+      <h2 className="font-display text-3xl md:text-4xl font-black text-gray-900 dark:text-gray-100 tracking-tight leading-[1.1]" style={{ fontStyle: 'italic', fontWeight: 900 }}>{title}</h2>
       {badge}
     </div>
     {subtitle && (
-      <p className="text-base text-gray-600 dark:text-gray-300 mt-2">{subtitle}</p>
+      <p className="text-base text-gray-700 dark:text-gray-300 mt-2 leading-relaxed">{subtitle}</p>
     )}
   </div>
 );
@@ -722,17 +721,6 @@ const App: React.FC = () => {
               </section>
             </div>
 
-            {/* STRATEGIC FRAMEWORKS - Decision Support Tools */}
-            <div className="section-zebra py-2xl border-t border-bureau-border dark:border-slate-700 bg-white dark:bg-slate-900">
-              <section className="max-w-wide mx-auto w-full app-padding-x">
-                <SectionHeader
-                  id="02"
-                  title="Strategic Decision Frameworks"
-                  subtitle="Tools and methodologies for marketing leadership teams"
-                />
-                <EngineInstructions />
-              </section>
-            </div>
           </main>
 
           <ConversationalBrief

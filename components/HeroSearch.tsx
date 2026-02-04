@@ -318,7 +318,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
     <div className="w-full flex flex-col items-center space-y-lg">
       
       <div className="text-center space-y-sm">
-        <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-black text-gray-900 dark:text-gray-100 leading-tight tracking-tight" style={{ fontStyle: 'italic', fontWeight: 900 }}>
+        <h1 className="font-display text-3xl md:text-6xl lg:text-7xl font-black text-gray-900 dark:text-gray-100 leading-[1.1] md:leading-tight tracking-tight" style={{ fontStyle: 'italic', fontWeight: 900 }}>
           REAL-TIME INTELLIGENCE FOR<br />
           <TypewriterText
             phrases={[
@@ -336,7 +336,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
           />
         </h1>
 
-        <p className="text-gray-700 dark:text-gray-300 text-lg md:text-xl font-normal max-w-3xl mx-auto pt-sm leading-relaxed">
+        <p className="text-gray-700 dark:text-gray-300 text-base md:text-xl font-normal max-w-3xl mx-auto pt-sm leading-relaxed">
           Search the marketing and advertising industry in real-time. Powered by Perplexity AI with live data from 1,000+ sources.
         </p>
       </div>
@@ -392,7 +392,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
                   }
                 }}
                 placeholder={searchPlaceholders[placeholderIndex]}
-                className="w-full bg-transparent border-none focus:ring-0 text-lg md:text-xl font-bold px-md py-4 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-300 outline-none font-mono tracking-tight cursor-text selection:bg-bureau-signal/20 dark:selection:bg-planner-orange/20"
+                className="w-full bg-transparent border-none focus:ring-0 text-base md:text-xl font-bold px-md py-4 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 placeholder:text-sm md:placeholder:text-base dark:placeholder:text-gray-300 outline-none font-mono tracking-tight cursor-text selection:bg-bureau-signal/20 dark:selection:bg-planner-orange/20"
                 autoComplete="off"
                 aria-label="Search for intelligence insights"
                 aria-describedby="search-hint"
@@ -479,12 +479,13 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
                 e.preventDefault();
                 handleSubmit(e);
               }}
-              className="bg-gradient-to-r from-gray-900 to-gray-800 dark:from-planner-orange dark:to-planner-navy text-white px-6 py-3 rounded-lg flex items-center gap-2 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-2"
+              className="bg-gradient-to-r from-gray-900 to-gray-800 dark:from-planner-orange dark:to-planner-navy text-white px-4 md:px-6 min-h-[44px] rounded-lg flex items-center gap-2 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-2"
               disabled={loading}
               aria-label={loading ? 'Searching...' : 'Search for intelligence'}
             >
-              <span>{loading ? 'Analyzing...' : 'SEARCH'}</span>
-              <ArrowRight className="w-5 h-5" />
+              <span className="hidden md:inline">{loading ? 'Analyzing...' : 'SEARCH'}</span>
+              <span className="md:hidden">{loading ? '...' : 'Search'}</span>
+              <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
             </button>
           </div>
           <p id="search-hint" className="sr-only">
@@ -670,7 +671,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
           </p>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-3 pt-md">
+        <div className="flex flex-wrap justify-center gap-2 md:gap-3 pt-md px-2 md:px-0">
           {categories.map((item) => (
             <button
               key={item.label}
@@ -689,7 +690,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
                 console.log('[HeroSearch] Category clicked:', item.label);
                 onSearch(item.label);
               }}
-              className="group px-4 py-2.5 border border-gray-200/60 dark:border-slate-700/50 bg-white dark:bg-slate-800/50 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-200 hover:border-bureau-signal/60 dark:hover:border-planner-orange/60 hover:bg-bureau-signal dark:hover:bg-planner-orange hover:text-white hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-sm dark:hover:shadow-planner-orange/10 hover:shadow-md flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-2"
+              className="group px-4 min-h-[44px] border border-gray-200/60 dark:border-slate-700/50 bg-white dark:bg-slate-800/50 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-200 hover:border-bureau-signal/60 dark:hover:border-planner-orange/60 hover:bg-bureau-signal dark:hover:bg-planner-orange hover:text-white hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-sm dark:hover:shadow-planner-orange/10 hover:shadow-md flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-2"
             >
               {item.trending && <TrendingUp className="w-3.5 h-3.5 text-bureau-signal dark:text-planner-orange group-hover:text-white" />}
               {item.label}
