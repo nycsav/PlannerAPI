@@ -1,6 +1,11 @@
 /**
  * Unified Typography System for PlannerAPI
  *
+ * Version: 1.0
+ * Created: February 4, 2026
+ * Last Updated: February 4, 2026
+ * Related: PHASE-4A-COMPLETION-SUMMARY.md (Issue 4)
+ *
  * Usage:
  * import { getTypographyClasses } from '@/styles/typography';
  * <h1 className={getTypographyClasses('display')}>Heading</h1>

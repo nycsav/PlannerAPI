@@ -1,8 +1,14 @@
 # PlannerAPI Design System
 
-**Last Updated:** January 25, 2026  
-**Product:** AI-powered strategic intelligence platform for C-suite marketing executives  
+**Version**: 2.0
+**Last Updated:** January 25, 2026
+**Status**: Active - Core Design Reference
+**Product:** AI-powered strategic intelligence platform for C-suite marketing executives
 **Dark Mode:** ✅ Fully Implemented & Production Ready
+**Related Files**:
+- `src/styles/typography.ts` (Feb 4, 2026)
+- `DARK-MODE-DESIGN-SYSTEM.md`
+- `DESIGN-TOKENS.md`
 
 ---
 

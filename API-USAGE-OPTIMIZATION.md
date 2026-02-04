@@ -1,6 +1,8 @@
 # API Usage Optimization Guide
 
+**Version**: 1.2
 **Last Updated:** January 20, 2026
+**Status**: Active - Critical Cost Management
 **Purpose:** Minimize API costs while maintaining fresh, valuable content
 
 ---

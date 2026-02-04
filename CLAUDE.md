@@ -1,5 +1,12 @@
 # CLAUDE.md – Project Instructions for PlannerAPI
 
+**Version**: 1.5
+**Last Updated**: January 21, 2026
+**Status**: Active - Primary Instructions for Claude Code
+**Maintained By**: Project Owner
+
+---
+
 ## 0. Purpose
 
 This document tells Claude Code how to work on the PlannerAPI project.
