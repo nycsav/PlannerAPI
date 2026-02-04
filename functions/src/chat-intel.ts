@@ -72,7 +72,7 @@ export const chatIntel = functions.https.onRequest(async (req, res) => {
 
   try {
     // Validate request body
-    const { query } = req.body;
+    const { query, messages, context } = req.body;
 
     if (!query || typeof query !== 'string') {
       res.status(400).json({
@@ -97,8 +97,12 @@ export const chatIntel = functions.https.onRequest(async (req, res) => {
       return;
     }
 
-    // Call Perplexity API
-    const response = await fetchFastIntel({ query });
+    // Call Perplexity API with conversation history if provided
+    const response = await fetchFastIntel({
+      query,
+      messages: messages || [],
+      context: context || {}
+    });
 
     // Return successful response
     res.status(200).json(response);
@@ -117,10 +121,23 @@ export const chatIntel = functions.https.onRequest(async (req, res) => {
 /**
  * Fetch fast intelligence using Perplexity Sonar
  */
-async function fetchFastIntel(args: { query: string }): Promise<PlannerChatResponse> {
-  const { query } = args;
+async function fetchFastIntel(args: {
+  query: string;
+  messages?: Array<{ role: string; content: string }>;
+  context?: {
+    briefTitle?: string;
+    briefSummary?: string;
+    sources?: any[];
+    keySignals?: string[];
+    moves?: string[];
+    systemPrompt?: string;
+  };
+}): Promise<PlannerChatResponse> {
+  const { query, messages = [], context = {} } = args;
 
-  const systemPrompt = `You are a strategic intelligence analyst for C-suite marketing executives (CMOs, VPs of Marketing, Brand Directors, Growth Leaders).
+  // Use custom system prompt if provided in context (for follow-up questions)
+  // Otherwise use default analyst prompt
+  const systemPrompt = context.systemPrompt || `You are a strategic intelligence analyst for C-suite marketing executives (CMOs, VPs of Marketing, Brand Directors, Growth Leaders).
 
 Provide direct, confident analysis with current data and specific examples. Never mention lack of access to information or include disclaimers - always respond positively using your knowledge and research capabilities.
 
@@ -150,6 +167,18 @@ Source: [Source Name] | [URL]
 
 Keep it concise, data-driven, and business-focused.`;
 
+  // Build messages array for Perplexity
+  // If conversation history provided, use it; otherwise single-shot query
+  const apiMessages = messages.length > 0
+    ? [
+        { role: 'system', content: systemPrompt },
+        ...messages // Full conversation history
+      ]
+    : [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: query }
+      ];
+
   const response = await fetch(PERPLEXITY_API_URL, {
     method: 'POST',
     headers: {
@@ -158,10 +187,7 @@ Keep it concise, data-driven, and business-focused.`;
     },
     body: JSON.stringify({
       model: PPLX_MODEL_FAST,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: query }
-      ],
+      messages: apiMessages,
       temperature: 0.2,
       max_tokens: 1500,
       return_citations: true, // Request citations from Perplexity

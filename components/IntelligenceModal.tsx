@@ -431,15 +431,13 @@ INSTRUCTIONS:
 - Always answer based on THIS brief's content, not generic knowledge
 - Be specific and cite the relevant source numbers when appropriate`;
 
-      // Build conversation messages for Claude API
-      const conversationMessages = [
-        ...newMessages.map(msg => ({
-          role: msg.role,
-          content: msg.content
-        }))
-      ];
+      // Build conversation messages with full history
+      const conversationMessages = newMessages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
 
-      // Use chatIntel endpoint but with enhanced context
+      // Use chatIntel endpoint with enhanced context and full conversation history
       const response = await fetchWithTimeout(ENDPOINTS.chatIntel, {
         timeout: 40000,
         method: 'POST',
@@ -448,6 +446,7 @@ INSTRUCTIONS:
         },
         body: JSON.stringify({
           query: currentInput,
+          messages: conversationMessages, // Full conversation history for context
           audience: 'CMO',
           context: {
             briefTitle: payload.query,
