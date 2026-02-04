@@ -107,9 +107,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onSignupClick }) => {
               onClick={onSignupClick}
               disabled={loading}
               className="btn-primary"
-              aria-label="Create free account"
+              aria-label="Save intelligence brief"
             >
-              Create Free Account
+              <span className="hidden md:inline">Save Brief</span>
+              <span className="md:hidden">Save</span>
             </button>
           )}
         </div>

@@ -675,7 +675,7 @@ const App: React.FC = () => {
           <main className="w-full">
 
             {/* HERO SECTION */}
-            <div className="section-zebra py-2xl border-b border-bureau-border dark:border-slate-700 bg-white dark:bg-slate-900">
+            <div className="section-zebra min-h-[60vh] sm:min-h-[65vh] lg:min-h-[75vh] flex items-center py-2xl border-b border-bureau-border dark:border-slate-700 bg-white dark:bg-slate-900">
               <section className="max-w-hero mx-auto w-full app-padding-x">
                 <HeroSearch
                   onSearch={(q, data) => openSearch(q, 'Perplexity', data)}

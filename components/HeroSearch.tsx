@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, ArrowRight, TrendingUp, Pencil, X, Plus, Trash2, Sparkles } from 'lucide-react';
 import { TrustStrip } from './TrustStrip';
-import { TypewriterText } from './TypewriterText';
 import { useAudience } from '../contexts/AudienceContext';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { ENDPOINTS, fetchWithTimeout } from '../src/config/api';
@@ -318,22 +317,8 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
     <div className="w-full flex flex-col items-center space-y-lg">
       
       <div className="text-center space-y-sm">
-        <h1 className="font-display text-3xl md:text-6xl lg:text-7xl font-black text-gray-900 dark:text-gray-100 leading-[1.1] md:leading-tight tracking-tight" style={{ fontStyle: 'italic', fontWeight: 900 }}>
-          REAL-TIME INTELLIGENCE FOR<br />
-          <TypewriterText
-            phrases={[
-              'MARKETING LEADERS',
-              'BRAND STRATEGISTS',
-              'AGENCY TEAMS',
-              'GROWTH EXECUTIVES',
-              'CMO OFFICES',
-            ]}
-            typingSpeed={50}
-            deletingSpeed={30}
-            pauseDuration={2000}
-            className="text-bureau-signal dark:text-planner-orange"
-            style={{ fontStyle: 'italic', fontWeight: 900 }}
-          />
+        <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-gray-900 dark:text-gray-100 leading-tight tracking-tight" style={{ fontStyle: 'italic', fontWeight: 900 }}>
+          REAL-TIME INTELLIGENCE FOR <span className="text-bureau-signal dark:text-planner-orange">MARKETING LEADERS</span>
         </h1>
 
         <p className="text-gray-700 dark:text-gray-300 text-base md:text-xl font-normal max-w-3xl mx-auto pt-sm leading-relaxed">
@@ -492,6 +477,11 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
             Type your search query or click a category below. Press Escape to clear. You can edit any pre-filled text.
           </p>
         </form>
+
+        {/* Micro-copy explaining output */}
+        <p className="mt-3 text-sm text-gray-600 dark:text-gray-400 text-center max-w-2xl mx-auto">
+          Ask any marketing question → Get a structured intelligence brief with signals, strategic moves, and sources
+        </p>
 
         {/* Edit queries button and indicator */}
         <div className="flex items-center justify-center gap-2">
@@ -671,8 +661,18 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
           </p>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-2 md:gap-3 pt-md px-2 md:px-0">
-          {categories.map((item) => (
+        <div className="space-y-4 pt-md">
+          <div className="text-center">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+              Generate a brief about:
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Click any topic to instantly search and get a structured intelligence brief
+            </p>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-2 md:gap-3 px-2 md:px-0">
+            {categories.map((item) => (
             <button
               key={item.label}
               onClick={() => {
@@ -696,6 +696,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
               {item.label}
             </button>
           ))}
+          </div>
         </div>
       </div>
 
