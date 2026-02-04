@@ -673,29 +673,29 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
 
           <div className="flex flex-wrap justify-center gap-2 md:gap-3 px-2 md:px-0">
             {categories.map((item) => (
-            <button
-              key={item.label}
-              onClick={() => {
-                // Track category click
-                trackCategoryClick(item.label, 'hero');
-                // Populate input with category label so user can edit it
-                setQuery(item.label);
-                // Focus input so user can immediately edit
-                setTimeout(() => {
-                  inputRef.current?.focus();
-                  // Select all text so user can easily replace it
-                  inputRef.current?.select();
-                }, 0);
-                // Also trigger search immediately
-                console.log('[HeroSearch] Category clicked:', item.label);
-                onSearch(item.label);
-              }}
-              className="group px-4 min-h-[44px] border border-gray-200/60 dark:border-slate-700/50 bg-white dark:bg-slate-800/50 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-200 hover:border-bureau-signal/60 dark:hover:border-planner-orange/60 hover:bg-bureau-signal dark:hover:bg-planner-orange hover:text-white hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-sm dark:hover:shadow-planner-orange/10 hover:shadow-md flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-2"
-            >
-              {item.trending && <TrendingUp className="w-3.5 h-3.5 text-bureau-signal dark:text-planner-orange group-hover:text-white" />}
-              {item.label}
-            </button>
-          ))}
+              <button
+                key={item.label}
+                onClick={() => {
+                  // Track category click
+                  trackCategoryClick(item.label, 'hero');
+                  // Populate input with category label so user can edit it
+                  setQuery(item.label);
+                  // Focus input so user can immediately edit
+                  setTimeout(() => {
+                    inputRef.current?.focus();
+                    // Select all text so user can easily replace it
+                    inputRef.current?.select();
+                  }, 0);
+                  // Also trigger search immediately
+                  console.log('[HeroSearch] Category clicked:', item.label);
+                  onSearch(item.label);
+                }}
+                className="group px-4 min-h-[44px] border border-gray-200/60 dark:border-slate-700/50 bg-white dark:bg-slate-800/50 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-200 hover:border-bureau-signal/60 dark:hover:border-planner-orange/60 hover:bg-bureau-signal dark:hover:bg-planner-orange hover:text-white hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-sm dark:hover:shadow-planner-orange/10 hover:shadow-md flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-2"
+              >
+                {item.trending && <TrendingUp className="w-3.5 h-3.5 text-bureau-signal dark:text-planner-orange group-hover:text-white" />}
+                {item.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>

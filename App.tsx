@@ -5,7 +5,7 @@ import { IntelligenceCard } from './components/IntelligenceCard';
 import { ConversationalBrief } from './components/ConversationalBrief';
 import { IntelligenceModal, IntelligencePayload } from './components/IntelligenceModal';
 import { HeroSearch } from './components/HeroSearch';
-import { ValueProposition } from './components/ValueProposition';
+import { DailyBriefPreview } from './components/DailyBriefPreview';
 import { ExecutiveStrategyChat } from './components/ExecutiveStrategyChat';
 import { SignupModal } from './components/SignupModal';
 import { DailyIntelligence } from './components/DailyIntelligence';
@@ -622,6 +622,29 @@ const App: React.FC = () => {
     fetchBriefings();
   }, [audience]);
 
+  // Listen for daily brief modal open event
+  useEffect(() => {
+    const handleOpenBriefModal = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const briefData = customEvent.detail.brief;
+
+      // Map brief data to IntelligencePayload format
+      const payload: IntelligencePayload = {
+        query: briefData.title || 'Today\'s Intelligence Brief',
+        summary: briefData.summary || '',
+        keySignals: [],
+        movesForLeaders: [],
+        signals: briefData.sources || [],
+      };
+
+      setIntelligencePayload(payload);
+      setIntelligenceOpen(true);
+    };
+
+    window.addEventListener('openBriefModal', handleOpenBriefModal);
+    return () => window.removeEventListener('openBriefModal', handleOpenBriefModal);
+  }, []);
+
   // Onboarding logic
   useEffect(() => {
     // Track visit
@@ -684,10 +707,10 @@ const App: React.FC = () => {
               </section>
             </div>
 
-            {/* VALUE PROPOSITION SECTION */}
+            {/* TODAY'S DAILY BRIEF PREVIEW */}
             <div className="section-zebra py-2xl border-b border-bureau-border dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
               <section className="max-w-content mx-auto w-full app-padding-x">
-                <ValueProposition />
+                <DailyBriefPreview />
               </section>
             </div>
 
