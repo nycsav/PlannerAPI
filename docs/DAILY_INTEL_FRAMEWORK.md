@@ -159,6 +159,27 @@ Required fields: title, summary, signals, moves, pillar, source, sourceTier, pri
 
 Optional but preferred: macroAnchor, microSignal, tension, sourceUrl, contentHash
 
+### 6.1 Notion Property Mapping
+
+The Notion database "PlannerAPI Research Inbox" stores research sources that feed into Daily Intelligence cards. Below is how Notion properties map to the `IntelligenceCard` schema and editorial workflow.
+
+| Notion Property | Type | Maps to `IntelligenceCard` field | Notes |
+|-----------------|------|----------------------------------|-------|
+| Name | title | `title` (input reference) | Research source title, not the card title |
+| Source | select | `source` | 26 publisher-level options (McKinsey, Gartner, etc.) |
+| Pillar | select | `pillar` | `ai_strategy`, `brand_performance`, `competitive_intel`, `media_trends` |
+| Source Tier | select | `sourceTier` | 1: Premier Research through 5: Emerging Signal |
+| Audience Segment | select | — (editorial metadata) | CMO_Mid-Market, Agency_Strategy, CX_Leader, Independent_Consultant, Cross-Segment |
+| Key Stat | rich_text | — (editorial input) | Primary statistic or finding extracted from source |
+| Pain Points | multi_select | — (editorial metadata) | 9 options: budget_pressure, AI_integration_chaos, measurement_collapse, headcount_reduction, client_fee_erosion, martech_sprawl, competitive_disintermediation, skills_gap, attribution_breakdown |
+| Used In Card | checkbox | — (tracking) | Set to true once source has been used in a published intelligence card |
+| Status | select | — (workflow) | Archived, Used, Ready for AI, Triaged, Inbox |
+| URL | url | `sourceUrl` | Direct link to the source |
+| Excerpts / Notes | rich_text | — (editorial input) | Raw excerpts or analyst notes |
+| Date Added | created_time | — (auto) | Notion auto-timestamp |
+
+> Schema last updated: 2026-02-07. See `docs/CHANGELOG.md` for history.
+
 7. Title Framing Patterns
 Titles should use tension framing when possible:
 

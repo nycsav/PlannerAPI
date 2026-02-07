@@ -1,7 +1,7 @@
 # CLAUDE.md – Project Instructions for PlannerAPI
 
-**Version**: 1.5
-**Last Updated**: January 21, 2026
+**Version**: 1.7
+**Last Updated**: February 7, 2026
 **Status**: Active - Primary Instructions for Claude Code
 **Maintained By**: Project Owner
 
@@ -42,6 +42,28 @@ Always prioritize correctness, editorial quality, and cost efficiency over cleve
 - `briefs` – Future: saved Strategy Chat briefs
 - `linked_briefs` – Future: briefs published to LinkedIn with backlinks
 
+### Notion Database: PlannerAPI Research Inbox
+
+- **Data Source ID:** `2fa0bdff-e59e-8075-a696-000b88058c9e`
+- **Last schema update:** 2026-02-07 (see `docs/CHANGELOG.md`)
+
+| Property | Type | Options / Notes |
+|----------|------|-----------------|
+| Name | title | — |
+| Source | select | McKinsey, Gartner, Forrester, BCG, Bain, Deloitte, Google, OpenAI, Anthropic, Meta, Microsoft, Amazon Ads, Ad Age, AdWeek, Digiday, Marketing Week, eMarketer, WARC, Kantar, Nielsen, VentureBeat, TechCrunch, The Rundown, LinkedIn Post, Whitepaper, PDF Report |
+| Pillar | select | `ai_strategy`, `brand_performance`, `competitive_intel`, `media_trends` |
+| Source Tier | select | 1: Premier Research, 2: Platform Research, 3: Trade Publication, 4: Data Provider, 5: Emerging Signal |
+| Audience Segment | select | CMO_Mid-Market, Agency_Strategy, CX_Leader, Independent_Consultant, Cross-Segment |
+| Key Stat | rich_text | — |
+| Pain Points | multi_select | budget_pressure, AI_integration_chaos, measurement_collapse, headcount_reduction, client_fee_erosion, martech_sprawl, competitive_disintermediation, skills_gap, attribution_breakdown |
+| Used In Card | checkbox | — |
+| Status | select | Archived, Used, Ready for AI, Triaged, Inbox |
+| URL | url | — |
+| Excerpts / Notes | rich_text | — |
+| Date Added | created_time | — |
+
+> **Deleted property:** `Content Pillars` (multi_select) was removed 2026-02-07 — redundant with `Pillar`.
+
 ### Documentation You MUST Respect
 - `API-USAGE-OPTIMIZATION.md` – API cost constraints and schedules
 - `DAILY-INTELLIGENCE-FINAL-SUMMARY.md` – Current implementation shape
@@ -54,6 +76,8 @@ Always prioritize correctness, editorial quality, and cost efficiency over cleve
 - `docs/FEED_LAYOUT_INSPIRATION.md` – UI/UX patterns for future feeds
 - `docs/FUTURE_IDEAS.md` – Parking lot for experiments
 - `DESIGN-SYSTEM.md` – Visual design, typography, colors, accessibility, UX principles
+- `docs/CHANGELOG.md` – Schema and infrastructure change log
+- `docs/AUDIENCE-STRATEGY.md` – Validated audience strategy: #1 target is Brand-side CMOs/VP Marketing at $50–500M companies. Contains Notion DB extensions, front-end prompt tiles, and intelligence card metadata specs. Homepage copy is PLACEHOLDER only.
 
 Never propose hourly or high-frequency polling that contradicts `API-USAGE-OPTIMIZATION.md`.
 
