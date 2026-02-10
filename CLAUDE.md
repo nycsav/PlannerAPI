@@ -1,7 +1,7 @@
 # CLAUDE.md – Project Instructions for PlannerAPI
 
-**Version**: 1.7
-**Last Updated**: February 7, 2026
+**Version**: 1.8
+**Last Updated**: February 9, 2026
 **Status**: Active - Primary Instructions for Claude Code
 **Maintained By**: Project Owner
 
@@ -50,9 +50,16 @@ Always prioritize correctness, editorial quality, and cost efficiency over cleve
 | Property | Type | Options / Notes |
 |----------|------|-----------------|
 | Name | title | — |
-| Source | select | McKinsey, Gartner, Forrester, BCG, Bain, Deloitte, Google, OpenAI, Anthropic, Meta, Microsoft, Amazon Ads, Ad Age, AdWeek, Digiday, Marketing Week, eMarketer, WARC, Kantar, Nielsen, VentureBeat, TechCrunch, The Rundown, LinkedIn Post, Whitepaper, PDF Report |
+| Source | select | McKinsey, Gartner, Forrester, BCG, Bain, Deloitte, Google, OpenAI, Anthropic, Meta, Microsoft, Amazon Ads, Perplexity, Ad Age, AdWeek, Digiday, Marketing Week, Webflow, The Verge, eMarketer, WARC, Kantar, Nielsen, VentureBeat, TechCrunch, The Rundown, LinkedIn Post, Whitepaper, PDF Report |
 | Pillar | select | `ai_strategy`, `brand_performance`, `competitive_intel`, `media_trends` |
 | Source Tier | select | 1: Premier Research, 2: Platform Research, 3: Trade Publication, 4: Data Provider, 5: Emerging Signal |
+
+> **Source Tier Decision Logic:**
+> - **Tier 1 – Premier Research:** Strategy/consulting firms (McKinsey, Gartner, Forrester, BCG, Bain, Deloitte)
+> - **Tier 2 – Platform Research:** Core AI/tech platforms building foundational models (Google, OpenAI, Anthropic, Meta, Microsoft, Amazon Ads, Perplexity)
+> - **Tier 3 – Trade Publication:** SaaS vendors + industry media (Ad Age, AdWeek, Digiday, Marketing Week, Webflow, The Verge)
+> - **Tier 4 – Data Provider:** Data/research providers (eMarketer, WARC, Kantar, Nielsen)
+> - **Tier 5 – Emerging Signal:** Emerging signals (VentureBeat, TechCrunch, The Rundown, LinkedIn Post, Whitepaper, PDF Report)
 | Audience Segment | select | CMO_Mid-Market, Agency_Strategy, CX_Leader, Independent_Consultant, Cross-Segment |
 | Key Stat | rich_text | — |
 | Pain Points | multi_select | budget_pressure, AI_integration_chaos, measurement_collapse, headcount_reduction, client_fee_erosion, martech_sprawl, competitive_disintermediation, skills_gap, attribution_breakdown |
