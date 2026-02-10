@@ -231,6 +231,83 @@ const MetricsGrid = ({
   );
 };
 
+/**
+ * Derive Budget Impact from content text.
+ * Extracts first dollar figure/range from summary and signals; falls back to default.
+ */
+function deriveBudgetImpact(summary: string, keySignals: string[]): string {
+  const text = `${summary} ${keySignals.join(' ')}`;
+
+  // Range: "$150K–$400K", "$2.1B-$4B"
+  const rangeMatch = text.match(/\$[\d.,]+\s*[KMBkmb]?\s*[-–—to]+\s*\$?[\d.,]+\s*[KMBkmb]/i);
+  if (rangeMatch) return rangeMatch[0];
+
+  // Single: "$2.1B", "$480M", "$8 million"
+  const singleMatch = text.match(/\$[\d.,]+\s*(?:[KMBkmb]|billion|million|thousand)/i);
+  if (singleMatch) return singleMatch[0];
+
+  return '$25K–$100K est.';
+}
+
+/**
+ * Derive Decision Deadline from urgency signals in content.
+ */
+function deriveDecisionDeadline(
+  summary: string,
+  keySignals: string[]
+): 'This Week' | 'This Quarter' | 'Next Planning Cycle' {
+  const text = `${summary} ${keySignals.join(' ')}`.toLowerCase();
+
+  if (/\b(breaking|immediate|urgent|this week|today|right now|act now|24.hour|48.hour)\b/.test(text)) {
+    return 'This Week';
+  }
+  if (/\b(this quarter|q[1-4]\s*20|next quarter|90.day|this month|next month|quarterly)\b/.test(text)) {
+    return 'This Quarter';
+  }
+  return 'Next Planning Cycle';
+}
+
+/**
+ * Derive Source Authority tier from signal source names.
+ * 5-tier system matching docs/DAILY_INTEL_FRAMEWORK.md.
+ */
+function deriveSourceAuthority(
+  signals?: IntelligenceSignal[]
+): { tier: number; label: string } {
+  const TIERS: Array<{ tier: number; label: string; keys: string[] }> = [
+    { tier: 1, label: 'Tier 1: Premier Research',   keys: ['mckinsey', 'gartner', 'forrester', 'bcg', 'bain', 'deloitte'] },
+    { tier: 2, label: 'Tier 2: Platform Research',   keys: ['google', 'think with google', 'openai', 'anthropic', 'meta', 'microsoft', 'amazon ads'] },
+    { tier: 3, label: 'Tier 3: Trade Publication',   keys: ['ad age', 'adage', 'adweek', 'digiday', 'marketing week', 'the drum', 'campaign', 'adexchanger'] },
+    { tier: 4, label: 'Tier 4: Data Provider',       keys: ['emarketer', 'insider intelligence', 'warc', 'kantar', 'nielsen', 'comscore'] },
+    { tier: 5, label: 'Tier 5: Emerging Signal',     keys: ['venturebeat', 'the rundown', "ben's bites", 'bens bites', 'techcrunch'] },
+  ];
+
+  if (!signals || signals.length === 0) {
+    return { tier: 3, label: 'Tier 3: Trade Publication' };
+  }
+
+  let best = { tier: 5, label: 'Tier 5: Emerging Signal' };
+
+  for (const signal of signals) {
+    const src = (signal.sourceName || '').toLowerCase();
+    const url = (signal.sourceUrl || '').toLowerCase();
+
+    for (const t of TIERS) {
+      if (t.tier >= best.tier) continue; // only improve
+      for (const key of t.keys) {
+        if (src.includes(key) || url.includes(key.replace(/\s/g, ''))) {
+          best = { tier: t.tier, label: t.label };
+          break;
+        }
+      }
+      if (best.tier === 1) break;
+    }
+    if (best.tier === 1) break;
+  }
+
+  return best;
+}
+
 export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
   open,
   payload,
@@ -283,6 +360,20 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
     if (!payload?.summary) return [];
     return extractMetrics(payload.summary);
   }, [payload?.summary]);
+
+  // Audience metadata badges (derived from content)
+  const budgetImpact = useMemo(
+    () => deriveBudgetImpact(payload?.summary || '', payload?.keySignals || []),
+    [payload?.summary, payload?.keySignals]
+  );
+  const decisionDeadline = useMemo(
+    () => deriveDecisionDeadline(payload?.summary || '', payload?.keySignals || []),
+    [payload?.summary, payload?.keySignals]
+  );
+  const sourceAuthority = useMemo(
+    () => deriveSourceAuthority(payload?.signals),
+    [payload?.signals]
+  );
 
   // Log when payload changes (must be before early return)
   useEffect(() => {
@@ -712,6 +803,57 @@ INSTRUCTIONS:
               <h1 className="font-display text-5xl md:text-6xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight leading-tight">
                 Intelligence Brief
               </h1>
+
+              {/* Audience metadata badges (AUDIENCE-STRATEGY.md Section C.3) */}
+              <div className="flex flex-wrap items-center gap-3 mt-6">
+                {/* Budget Impact */}
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-planner-orange/10 dark:bg-orange-900/20 border border-planner-orange/20 dark:border-orange-700/30 rounded-full">
+                  <span className="text-[10px] font-bold text-planner-orange/70 dark:text-orange-400/70 uppercase tracking-wider">Budget Impact</span>
+                  <span className="text-xs font-semibold text-planner-orange dark:text-orange-300">{budgetImpact}</span>
+                </div>
+
+                {/* Decision Deadline */}
+                <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 border rounded-full ${
+                  decisionDeadline === 'This Week'
+                    ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700/30'
+                    : decisionDeadline === 'This Quarter'
+                      ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700/30'
+                      : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700/50'
+                }`}>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                    decisionDeadline === 'This Week'
+                      ? 'text-amber-600/70 dark:text-amber-400/70'
+                      : decisionDeadline === 'This Quarter'
+                        ? 'text-blue-600/70 dark:text-blue-400/70'
+                        : 'text-slate-500 dark:text-slate-400'
+                  }`}>Decide</span>
+                  <span className={`text-xs font-semibold ${
+                    decisionDeadline === 'This Week'
+                      ? 'text-amber-700 dark:text-amber-300'
+                      : decisionDeadline === 'This Quarter'
+                        ? 'text-blue-700 dark:text-blue-300'
+                        : 'text-slate-600 dark:text-slate-300'
+                  }`}>{decisionDeadline}</span>
+                </div>
+
+                {/* Source Authority */}
+                <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 border rounded-full ${
+                  sourceAuthority.tier <= 2
+                    ? 'bg-violet-50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-700/30'
+                    : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700/50'
+                }`}>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                    sourceAuthority.tier <= 2
+                      ? 'text-violet-600/70 dark:text-violet-400/70'
+                      : 'text-slate-500 dark:text-slate-400'
+                  }`}>Source</span>
+                  <span className={`text-xs font-semibold ${
+                    sourceAuthority.tier <= 2
+                      ? 'text-violet-700 dark:text-violet-300'
+                      : 'text-slate-600 dark:text-slate-300'
+                  }`}>{sourceAuthority.label}</span>
+                </div>
+              </div>
             </div>
 
           <div className="flex flex-col lg:flex-row gap-16">

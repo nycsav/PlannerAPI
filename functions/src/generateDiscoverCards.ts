@@ -87,6 +87,17 @@ const PILLARS: PillarConfig[] = [
 ];
 
 /**
+ * Pillar-to-painPoint mapping for audience strategy metadata
+ * See docs/AUDIENCE-STRATEGY.md Section B
+ */
+const PILLAR_PAIN_POINTS: Record<string, DiscoverCard['painPoint']> = {
+  ai_strategy: ['AI_integration_chaos', 'budget_pressure'],
+  brand_performance: ['measurement_collapse', 'attribution_breakdown'],
+  competitive_intel: ['competitive_disintermediation', 'client_fee_erosion'],
+  media_trends: ['martech_sprawl', 'budget_pressure'],
+};
+
+/**
  * Track generated topics to avoid duplicates within a single run
  */
 const generatedTopics: Set<string> = new Set();
@@ -253,6 +264,44 @@ function calculatePriority(
 
   // Ensure score stays within 1-100 range
   return Math.min(100, Math.max(1, score));
+}
+
+/**
+ * Calculate audience priority score (1-10) per AUDIENCE-STRATEGY.md Section B formula:
+ * (Source Tier × 0.3) + (Relevance × 0.3) + (Budget Authority rank × 0.2) + (Pain Point match count × 0.2)
+ * Each component is mapped to a 1-10 scale; result is rounded to nearest integer.
+ */
+function calculateAudiencePriorityScore(sourceCount: number, pillar: string): number {
+  // Source Tier proxy: derive from sourceCount (higher = better sourced)
+  let sourceTierScore: number;
+  if (sourceCount >= 15) sourceTierScore = 10;
+  else if (sourceCount >= 10) sourceTierScore = 8;
+  else if (sourceCount >= 5) sourceTierScore = 6;
+  else sourceTierScore = 4;
+
+  // Relevance: pillar importance for #1 target (mid-market CMOs)
+  const pillarRelevance: Record<string, number> = {
+    ai_strategy: 10,
+    competitive_intel: 8,
+    brand_performance: 7,
+    media_trends: 6,
+  };
+  const relevanceScore = pillarRelevance[pillar] ?? 5;
+
+  // Budget Authority rank: default Direct_$25-100K = 7
+  const budgetAuthorityScore = 7;
+
+  // Pain Point match count: each pillar maps to 2 pain points, scaled to 1-10
+  const painPointCount = PILLAR_PAIN_POINTS[pillar]?.length ?? 0;
+  const painPointScore = Math.min(10, painPointCount * 2.5);
+
+  const raw =
+    sourceTierScore * 0.3 +
+    relevanceScore * 0.3 +
+    budgetAuthorityScore * 0.2 +
+    painPointScore * 0.2;
+
+  return Math.min(10, Math.max(1, Math.round(raw)));
 }
 
 /**
@@ -447,7 +496,12 @@ Return ONLY the JSON object, no markdown code blocks.`;
       type,
       priority,
       publishedAt: admin.firestore.Timestamp.now(),
-      createdAt: admin.firestore.Timestamp.now()
+      createdAt: admin.firestore.Timestamp.now(),
+      // Audience Strategy metadata (docs/AUDIENCE-STRATEGY.md Section B)
+      audienceSegment: 'CMO_Mid-Market',
+      painPoint: PILLAR_PAIN_POINTS[pillar as keyof typeof PILLAR_PAIN_POINTS],
+      budgetAuthority: 'Direct_$25-100K',
+      priorityScore: calculateAudiencePriorityScore(parsed.sourceCount as number, pillar),
       // Visual fields (imageUrl, chartData) omitted - will be added in future phase
     };
 
