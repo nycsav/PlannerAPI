@@ -28,3 +28,5 @@ functions/.env
 *.njsproj
 *.sln
 *.sw?
+plannerapi-firebase-adminsdk.json
+.claude.json

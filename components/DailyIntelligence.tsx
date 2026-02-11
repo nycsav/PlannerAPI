@@ -15,6 +15,12 @@ type IntelligenceCard = {
   sourceCount: number;
   publishedAt: Timestamp;
   type: 'brief' | 'hot_take';
+  source?: string;
+  sourceTier?: number;
+  macroAnchor?: string;   // Tier 1-2 research context (e.g., "McKinsey's 2026 survey finds...")
+  microSignal?: string;   // Last 24h development (e.g., "Today, Google expanded AI Overviews...")
+  tension?: string;       // The conflict/gap (e.g., "The gap between AI-mature and laggard teams...")
+  sourceUrl?: string;     // Full URL to the source article
 };
 
 // Brand-aligned pillar colors
@@ -30,6 +36,17 @@ const PILLAR_LABELS: Record<string, string> = {
   'brand_performance': 'BRAND PERFORMANCE',
   'competitive_intel': 'COMPETITIVE INTEL',
   'media_trends': 'MEDIA TRENDS',
+};
+
+const getSourceBadge = (tier?: number) => {
+  switch (tier) {
+    case 1: return { label: 'Premier Research', color: 'bg-purple-100 text-purple-800 border border-purple-200' };
+    case 2: return { label: 'Tech Platform', color: 'bg-blue-100 text-blue-800 border border-blue-200' };
+    case 3: return { label: 'Trade Publication', color: 'bg-amber-100 text-amber-800 border border-amber-200' };
+    case 4: return { label: 'Data Provider', color: 'bg-green-100 text-green-800 border border-green-200' };
+    case 5: return { label: 'AI-Native', color: 'bg-gray-100 text-gray-800 border border-gray-200' };
+    default: return { label: 'Industry', color: 'bg-gray-100 text-gray-800 border border-gray-200' };
+  }
 };
 
 // Static fallback cards - used if Firestore is empty or fails
@@ -52,7 +69,9 @@ const FALLBACK_INTELLIGENCE_CARDS = [
     priority: 95,
     sourceCount: 12,
     publishedAt: Timestamp.now(),
-    type: 'brief' as const
+    type: 'brief' as const,
+    source: 'McKinsey & Company',
+    sourceTier: 1
   },
   {
     id: 'fallback-2',
@@ -72,7 +91,9 @@ const FALLBACK_INTELLIGENCE_CARDS = [
     priority: 88,
     sourceCount: 8,
     publishedAt: Timestamp.now(),
-    type: 'brief' as const
+    type: 'brief' as const,
+    source: 'Google AI',
+    sourceTier: 2
   },
   {
     id: 'fallback-3',
@@ -92,7 +113,9 @@ const FALLBACK_INTELLIGENCE_CARDS = [
     priority: 86,
     sourceCount: 15,
     publishedAt: Timestamp.now(),
-    type: 'brief' as const
+    type: 'brief' as const,
+    source: 'Ad Age',
+    sourceTier: 3
   },
   {
     id: 'fallback-4',
@@ -314,6 +337,12 @@ export const DailyIntelligence: React.FC = () => {
                 </span>
               </div>
 
+              {featuredCard.source && (
+                <span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full ${getSourceBadge(featuredCard.sourceTier).color} mb-2`}>
+                  {featuredCard.source} · {getSourceBadge(featuredCard.sourceTier).label}
+                </span>
+              )}
+
               <h3 className="font-display text-3xl font-black text-bureau-ink mb-4 leading-tight tracking-tight group-hover:text-planner-orange transition-colors">
                 {featuredCard.title}
               </h3>
@@ -352,6 +381,12 @@ export const DailyIntelligence: React.FC = () => {
                 {getTimeAgo(card.publishedAt)}
               </span>
             </div>
+
+            {card.source && (
+              <span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full ${getSourceBadge(card.sourceTier).color} mb-2`}>
+                {card.source} · {getSourceBadge(card.sourceTier).label}
+              </span>
+            )}
 
             <h4 className="font-display text-xl font-black text-bureau-ink mb-3 leading-tight tracking-tight group-hover:text-planner-orange transition-colors">
               {card.title}
