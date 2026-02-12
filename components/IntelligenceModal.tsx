@@ -1033,7 +1033,7 @@ INSTRUCTIONS:
                 </h3>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                Ask questions about this research and get real-time answers powered by <span className="font-semibold text-bureau-signal dark:text-planner-orange">Perplexity AI</span>.
+                Ask questions about this research and get real-time answers powered by <span className="font-semibold text-bureau-signal dark:text-planner-orange">Perplexity</span>.
                 Your questions will search the latest sources and provide contextualized insights based on this brief's findings.
               </p>
             </div>

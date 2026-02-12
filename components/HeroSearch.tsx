@@ -485,7 +485,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
         <div className="flex items-center justify-center gap-2.5 pt-1">
           <img
             src="https://logo.clearbit.com/perplexity.ai"
-            alt="Perplexity AI"
+            alt="Perplexity"
             className="h-5 w-5 object-contain"
             onError={(e) => {
               // Fallback to SVG if logo fails
@@ -493,7 +493,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
             }}
           />
           <span className={`${getTypographyClasses('bodySmall')} font-medium text-gray-600 dark:text-gray-400`}>
-            Powered by Perplexity AI
+            Powered by Perplexity
           </span>
           <span className="text-gray-300 dark:text-slate-600">•</span>
           <span className={`${getTypographyClasses('bodySmall')} text-gray-500 dark:text-gray-400`}>

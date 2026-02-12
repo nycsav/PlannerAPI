@@ -35,18 +35,20 @@ const NOTION_DATABASE_ID = '2fa0bdff-e59e-8004-9d52-c6171ae1630d';
 
 // Tier 1, 2, and 3 sources for content diversity
 const TIER_1_SOURCES = ['McKinsey', 'Gartner', 'Forrester', 'BCG', 'Bain', 'Deloitte'];
+// Note: Include both "Perplexity AI" and "Perplexity AI + Harvard" for Notion queries, but they'll be normalized to "Perplexity" in output
 const TIER_2_SOURCES = ['Google', 'Google Cloud', 'OpenAI', 'Anthropic', 'Meta', 'Microsoft', 'Amazon Ads', 'Perplexity', 'Perplexity AI', 'Perplexity AI + Harvard'];
 const TIER_3_SOURCES = ['Ad Age', 'AdWeek', 'Digiday', 'Marketing Week', 'Webflow', 'The Verge'];
 
 // Combine all sources for querying
 const ALL_PREMIUM_SOURCES = [...TIER_1_SOURCES, ...TIER_2_SOURCES, ...TIER_3_SOURCES];
 
-// Map sources to their tiers
+// Map sources to their tiers (includes variants for Notion querying)
 const SOURCE_TO_TIER = {
   // Tier 1
   'McKinsey': 1, 'Gartner': 1, 'Forrester': 1, 'BCG': 1, 'Bain': 1, 'Deloitte': 1,
-  // Tier 2
-  'Google': 2, 'Google Cloud': 2, 'OpenAI': 2, 'Anthropic': 2, 'Meta': 2, 'Microsoft': 2, 'Amazon Ads': 2, 'Perplexity': 2, 'Perplexity AI': 2, 'Perplexity AI + Harvard': 2,
+  // Tier 2 - Note: All Perplexity variants map to tier 2 but normalize to "Perplexity" in output
+  'Google': 2, 'Google Cloud': 2, 'OpenAI': 2, 'Anthropic': 2, 'Meta': 2, 'Microsoft': 2, 'Amazon Ads': 2,
+  'Perplexity': 2, 'Perplexity AI': 2, 'Perplexity AI + Harvard': 2,
   // Tier 3
   'Ad Age': 3, 'AdWeek': 3, 'Digiday': 3, 'Marketing Week': 3, 'Webflow': 3, 'The Verge': 3,
 };
@@ -80,24 +82,54 @@ function inferPillar(title, excerpt, notes) {
 }
 
 /**
- * Generate actionable Monday moves from signals
+ * Generate strategic, actionable moves for leadership teams
+ * Provides 4-6 specific, tactical bullets with concrete next steps
  */
-function generateMoves(signals, source) {
+function generateMoves(signals, source, pillar) {
   const moves = [];
 
-  if (signals.length > 0) {
-    // Create 2-3 moves based on first few signals
-    moves.push(`Your Monday move: Review this ${source} research with your leadership team and identify 1-2 areas where these insights challenge your current strategy.`);
-
-    if (signals.length > 1) {
-      moves.push(`Audit your current approach against the key findings and create a 30/60/90 day action plan for any gaps identified.`);
-    }
-
-    if (signals.length > 2) {
-      moves.push(`Share these insights with your CMO peer network and benchmark how other organizations are responding to these trends.`);
-    }
+  // Generate pillar-specific strategic moves
+  if (pillar === 'ai_strategy') {
+    moves.push(
+      `Convene your leadership team within 48 hours to review this ${source} research. Identify 2-3 specific findings that challenge your current AI roadmap or budget assumptions.`,
+      `Audit your existing AI tools and workflows against the benchmarks in this research. Document gaps in capability, governance, or ROI measurement that require immediate attention.`,
+      `Create a 30/60/90 day action plan that addresses the top 2 strategic risks or opportunities identified. Assign ownership and success metrics for each initiative.`,
+      `Share this research with your board or executive committee as a briefing document. Use it to frame upcoming budget requests or organizational restructuring proposals.`,
+      `Schedule peer benchmark calls with 2-3 other CMOs in your network. Compare how they're interpreting these findings and what actions they're taking in response.`
+    );
+  } else if (pillar === 'brand_performance') {
+    moves.push(
+      `Your Monday move: Review this ${source} research with your brand and performance leads. Map the findings to your current attribution model and identify measurement blind spots.`,
+      `Conduct a 90-minute working session with finance and analytics to stress-test your current brand investment thesis against these findings. Quantify potential risk exposure.`,
+      `Build a scenario model showing how the trends in this research could impact your brand equity or performance metrics over the next 2-4 quarters.`,
+      `Draft a one-page POV for your CEO or CFO explaining how this research validates or challenges your current brand-performance allocation strategy.`,
+      `Identify 1-2 quick-win tests you can run in Q1/Q2 to validate the key hypotheses from this research in your own business context.`
+    );
+  } else if (pillar === 'competitive_intel') {
+    moves.push(
+      `Immediately brief your executive team on competitive positioning implications from this ${source} research. Highlight any share shifts or strategic moves that could threaten your market position.`,
+      `Update your competitive battle cards with new data points and strategic positioning insights from this research. Share updated cards with sales and customer success teams.`,
+      `Launch a competitive deep-dive with your strategy team to map how competitors are likely responding to the trends in this research. Identify defensive and offensive plays.`,
+      `Schedule quarterly competitive reviews where you systematically evaluate new research like this against your competitive strategy. Make this a standing operating rhythm.`,
+      `Create an internal brief synthesizing the top 3 competitive threats and top 2 offensive opportunities from this research. Circulate to leadership and request feedback within 5 business days.`
+    );
+  } else if (pillar === 'media_trends') {
+    moves.push(
+      `Convene your media planning and buying teams to review this ${source} research against your current media mix and channel allocation strategy.`,
+      `Audit your media budget allocation for the next 2 quarters. Identify any channels or tactics that this research suggests are becoming over- or under-weighted relative to performance.`,
+      `Request a revised media plan scenario from your agency or internal team that incorporates the trends and benchmarks from this research. Compare projected ROI and risk profiles.`,
+      `Share this research with your agency partners and demand a written POV on how it impacts your joint strategy. Use their response to evaluate strategic alignment.`,
+      `Create a watchlist of emerging media channels or tactics flagged in this research. Assign someone to monitor these monthly and report back on when to pilot or scale.`
+    );
   } else {
-    moves.push(`Your Monday move: Review this ${source} research and identify actionable insights for your marketing strategy.`);
+    // Generic strategic moves for other pillars
+    moves.push(
+      `Your Monday move: Review this ${source} research with your leadership team and identify 1-2 areas where these insights challenge your current strategy.`,
+      `Audit your current approach against the key findings and create a 30/60/90 day action plan for any gaps identified.`,
+      `Create an internal brief synthesizing the top 3 strategic implications from this research. Circulate to leadership with specific recommendations.`,
+      `Share these insights with your CMO peer network and benchmark how other organizations are responding to these trends.`,
+      `Schedule a follow-up working session in 2 weeks to review progress on actions taken in response to this research.`
+    );
   }
 
   return moves;
@@ -112,19 +144,50 @@ function extractPlainText(richTextArray) {
 }
 
 /**
+ * Clean text from Notion artifacts (metadata, status fields, etc.)
+ */
+function cleanNotionText(text) {
+  if (!text) return '';
+
+  let cleaned = text;
+
+  // Remove status/assignment artifacts
+  cleaned = cleaned.replace(/✅\s*ASSIGNED:\s*[A-Za-z_]+/gi, '');
+  cleaned = cleaned.replace(/REASONING:\s*/gi, '');
+  cleaned = cleaned.replace(/\bASSIGNED:\s*[A-Za-z_]+/gi, '');
+
+  // Remove checkbox symbols
+  cleaned = cleaned.replace(/[✅✓☑]/g, '');
+
+  // Clean up multiple spaces and line breaks
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+  // Remove leading/trailing whitespace and punctuation artifacts
+  cleaned = cleaned.replace(/^[:\-\s]+/, '').replace(/[:\-\s]+$/, '');
+
+  return cleaned;
+}
+
+/**
  * Normalize source names to use only the primary platform
  * Removes compound attributions like "+ Harvard", "+ Stanford", etc.
+ * Also standardizes "Perplexity AI" to "Perplexity"
  */
 function normalizeSourceName(sourceName) {
   if (!sourceName) return '';
 
   // Remove compound attributions (e.g., "Perplexity AI + Harvard" → "Perplexity AI")
-  const cleanedSource = sourceName
+  let cleanedSource = sourceName
     .replace(/\s*\+\s*Harvard/gi, '')
     .replace(/\s*\+\s*Stanford/gi, '')
     .replace(/\s*\+\s*MIT/gi, '')
     .replace(/\s*\+\s*[A-Z][a-z]+\s+University/gi, '')
     .trim();
+
+  // Standardize "Perplexity AI" to "Perplexity"
+  if (cleanedSource === 'Perplexity AI') {
+    cleanedSource = 'Perplexity';
+  }
 
   return cleanedSource;
 }
@@ -247,8 +310,12 @@ function transformNotionToFirestore(notionPage) {
   }
 
   const sourceUrl = props.URL?.url || '';
-  const notesText = extractPlainText(props['Excerpts / Notes']?.rich_text);
-  const keyStat = extractPlainText(props['Key Stat']?.rich_text);
+  const rawNotesText = extractPlainText(props['Excerpts / Notes']?.rich_text);
+  const rawKeyStat = extractPlainText(props['Key Stat']?.rich_text);
+
+  // Clean Notion artifacts from extracted text
+  const notesText = cleanNotionText(rawNotesText);
+  const keyStat = cleanNotionText(rawKeyStat);
 
   // Create excerpt (use Key Stat if available, otherwise first sentence of notes)
   let excerpt = keyStat || '';
@@ -258,7 +325,9 @@ function transformNotionToFirestore(notionPage) {
   }
 
   // Extract signals (pass keyStat for richer content)
-  const signals = extractSignals(notesText, keyStat, source);
+  const rawSignals = extractSignals(notesText, keyStat, source);
+  // Clean signals to remove any remaining artifacts
+  const signals = rawSignals.map(s => cleanNotionText(s)).filter(s => s.length > 10);
 
   // Create comprehensive summary (minimum 3 paragraphs)
   let summary = '';
@@ -281,16 +350,19 @@ function transformNotionToFirestore(notionPage) {
     summary = contextIntro + keyFindingsIntro + implicationsPara + actionsPara;
   }
 
+  // Clean summary text
+  summary = cleanNotionText(summary);
+
   // Ensure summary is substantial (at least 400 characters)
   if (summary.length < 400) {
     summary += `\n\nThis ${source} analysis represents primary research and data synthesis relevant to senior marketing decision-makers navigating AI adoption, attribution challenges, competitive positioning, and media strategy in 2026. The findings are grounded in industry data and provide actionable frameworks for immediate application.`;
   }
 
-  // Generate moves
-  const moves = generateMoves(signals, source);
-
-  // Infer pillar
+  // Infer pillar first (needed for generating moves)
   const pillar = inferPillar(title, excerpt, notesText);
+
+  // Generate strategic moves based on pillar
+  const moves = generateMoves(signals, source, pillar);
 
   // Extract published date (from page created time or use current)
   const publishedDate = notionPage.created_time ?

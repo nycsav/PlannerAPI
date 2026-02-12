@@ -135,7 +135,7 @@ export const DailyBriefPreview: React.FC = () => {
         {brief.content.citations && brief.content.citations.length > 0 && (
           <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Analyzed {brief.content.citations.length}+ sources from Perplexity AI
+              Analyzed {brief.content.citations.length}+ sources from Perplexity
             </p>
           </div>
         )}
