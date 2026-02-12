@@ -1,13 +1,14 @@
 # PlannerAPI - Strategic Intelligence Platform
 
-> AI-powered daily intelligence for CMOs, VP Marketing, Brand Directors, and Growth Leaders
+> 🚧 **Alpha - Active Development** | AI-powered daily intelligence for CMOs, VP Marketing, Brand Directors, and Growth Leaders
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Firebase](https://img.shields.io/badge/Firebase-Hosting-orange)](https://firebase.google.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-blue)](https://react.dev/)
+[![Status](https://img.shields.io/badge/Status-Alpha-orange)](https://github.com/nycsav/PlannerAPI)
 
-[Live Demo](https://plannerapi-prod.web.app) | [Documentation](docs/) | [API Reference](docs/API_ENDPOINTS.md) | [Contributing](CONTRIBUTING.md)
+[🚀 Live Demo](https://plannerapi-prod.web.app) | [📚 Documentation](docs/) | [🏗️ Architecture](ARCHITECTURE.md) | [🤝 Contributing](CONTRIBUTING.md)
 
 ---
 
@@ -22,16 +23,32 @@ PlannerAPI surfaces **daily strategic intelligence** across four critical pillar
 
 Every day at 6 AM ET, the platform automatically generates 10 intelligence cards synthesizing research from Perplexity AI and refined with Claude's analytical capabilities.
 
-### Key Features
+### ✅ Completed Features
 
-✅ **Daily Intelligence Cards** - Automatic generation at 6 AM ET via Cloud Scheduler
-✅ **Real-Time Search** - Powered by Perplexity AI for instant research
-✅ **Strategy Chat** - Conversational intelligence briefings
-✅ **Intelligence Modals** - Structured signals, implications, and actionable next steps
-✅ **Analytics Tracking** - User engagement metrics (Firestore + Google Analytics 4)
-✅ **Authentication** - Google OAuth and email/password signup
-✅ **Responsive Design** - Mobile-first interface with accessibility standards
-✅ **Prompt Caching** - 95%+ cost reduction for API calls (~$0.31/day vs $15/day)
+- **📊 Premium Intelligence Library** - Tier 1-3 research from McKinsey, Gartner, Google, Anthropic
+- **🔄 Notion Automation** - Research Inbox → Claude API → Firestore pipeline
+- **🤖 Daily Intelligence Cards** - Auto-generated at 6 AM ET via Cloud Scheduler
+- **🔍 Real-Time Search** - Powered by Perplexity AI for instant research
+- **💬 Strategy Chat** - Conversational intelligence briefings with context
+- **📈 Follow-Up Questions** - AI-powered "Ask Follow-Up" in intelligence modals
+- **🔐 Authentication** - Google OAuth and email/password signup
+- **📱 Responsive Design** - Mobile-first with accessibility standards
+- **💰 Cost Optimization** - Prompt caching reduces API costs by 95%+
+
+### 🚧 In Development
+
+- **🎨 Bloomberg Terminal Design System** - Professional financial UI/UX
+- **📧 Email Newsletter Delivery** - Automated weekly intelligence digest
+- **🔎 Advanced Search & Filtering** - Multi-pillar, source tier, and date range filtering
+- **📊 Analytics Dashboard** - User engagement metrics and content performance
+
+### 💡 Planned Features
+
+- **🔗 LinkedIn Publishing Automation** - n8n workflow → Claude → LinkedIn with backlinks
+- **🤝 CRM Integration** - Sync intelligence briefs with HubSpot/Salesforce
+- **👥 Team Workspaces** - Shared intelligence feeds for marketing teams
+- **📚 Playbook Library** - Downloadable strategic frameworks (AEO/GEO, AI Workflows, etc.)
+- **🎯 Personalized Feeds** - AI-curated content based on user role and interests
 
 ---
 
@@ -60,32 +77,45 @@ Every day at 6 AM ET, the platform automatically generates 10 intelligence cards
 
 ### System Diagram
 
+```mermaid
+graph TB
+    Browser[🌐 Browser/Frontend]
+    Hosting[Firebase Hosting - React SPA]
+    Firestore[(🗄️ Firestore)]
+    Functions[☁️ Cloud Functions]
+    Scheduler[⏰ Cloud Scheduler]
+    Notion[📓 Notion Research Inbox]
+    N8N[🔄 n8n Automation]
+    Perplexity[🔍 Perplexity API]
+    Claude[🤖 Claude API]
+
+    Browser --> Hosting
+    Hosting --> Firestore
+    Hosting --> Functions
+
+    Notion -->|New entries| N8N
+    N8N -->|Enrich content| Claude
+    N8N -->|Store briefs| Firestore
+
+    Scheduler -->|6 AM ET daily| Functions
+    Functions -->|Research| Perplexity
+    Functions -->|Synthesize| Claude
+    Functions -->|Store cards| Firestore
+
+    style Hosting fill:#4285f4
+    style Firestore fill:#ffca28
+    style Functions fill:#00bfa5
+    style Claude fill:#d4a373
+    style Perplexity fill:#20808d
 ```
-┌──────────────┐
-│   Browser    │
-└──────┬───────┘
-       │
-       ├──> Firebase Hosting (React SPA)
-       │    - Daily Intelligence Feed
-       │    - Strategy Chat Interface
-       │    - Intelligence Modals
-       │
-       ├──> Firestore Collections
-       │    - discover_cards (10 daily intelligence cards)
-       │    - analytics_events (user engagement)
-       │    - users (profiles, preferences)
-       │
-       └──> Cloud Functions (Backend API)
-            ├── chat-intel (real-time intelligence)
-            ├── chatSimple (follow-up questions)
-            └── generateDiscoverCards (scheduled daily at 6 AM ET)
-                 │
-                 ├──> Perplexity API (sonar-pro)
-                 │     - Real-time news research
-                 │
-                 └──> Claude API (with prompt caching)
-                      - Content synthesis & formatting
-```
+
+**Key Data Flow:**
+1. **Notion Research Inbox** → Tier 1-3 sources (McKinsey, Gartner, Google)
+2. **n8n Workflow** → Triggers on new Notion entries
+3. **Claude API** → Enriches with summary/signals/moves
+4. **Firestore** → Stores as `premium_briefs` collection
+5. **React Frontend** → Queries and displays intelligence
+6. **Perplexity AI** → Enables follow-up questions in modals
 
 ---
 

@@ -30,3 +30,15 @@ functions/.env
 *.sw?
 plannerapi-firebase-adminsdk.json
 .claude.json
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Sensitive files
+*.pem
+*.key
+serviceAccount.json
+*-adminsdk*.json
