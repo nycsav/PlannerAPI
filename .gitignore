@@ -31,6 +31,15 @@ functions/.env
 plannerapi-firebase-adminsdk.json
 .claude.json
 
+# IDE directories (Cursor, Claude Code)
+.cursor/
+.claude/
+
+# Backup files
+*.backup
+*.copilot-backup
+*~
+
 # Firebase
 .firebase/
 firebase-debug.log

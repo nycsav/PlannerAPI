@@ -12,6 +12,14 @@
 
 ---
 
+## 📸 Preview
+
+![PlannerAPI Dashboard](docs/images/screenshot.png)
+
+*AI-powered daily intelligence platform delivering McKinsey-level insights to marketing leaders*
+
+---
+
 ## 🎯 What is PlannerAPI?
 
 PlannerAPI surfaces **daily strategic intelligence** across four critical pillars for C-suite marketing leaders:
