@@ -338,14 +338,14 @@ export const PremiumLibrary: React.FC = () => {
           </div>
 
           {/* Premium Briefs Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-md">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-md auto-rows-fr">
             {briefs.map((brief) => {
               const tierBadge = getTierBadge(brief.sourceTier);
 
               return (
                 <div
                   key={brief.id}
-                  className="bg-gradient-to-br from-gray-900 to-gray-950 rounded-xl border border-gray-800 hover:border-planner-orange/50 overflow-hidden cursor-pointer group focus:outline-none focus:ring-2 focus:ring-planner-orange focus:ring-offset-2 focus:ring-offset-[#0A0E27] transition-all duration-200 hover:shadow-2xl hover:shadow-planner-orange/10 hover:-translate-y-1"
+                  className="bg-gradient-to-br from-gray-900 to-gray-950 rounded-xl border border-gray-800 hover:border-planner-orange/50 overflow-hidden cursor-pointer group focus:outline-none focus:ring-2 focus:ring-planner-orange focus:ring-offset-2 focus:ring-offset-[#0A0E27] transition-all duration-200 hover:shadow-2xl hover:shadow-planner-orange/10 hover:-translate-y-1 flex flex-col h-full"
                   onClick={() => handleBriefClick(brief)}
                   onKeyDown={(e) => handleKeyDown(e, brief)}
                   role="button"
@@ -353,7 +353,7 @@ export const PremiumLibrary: React.FC = () => {
                   aria-label={`Read premium brief: ${brief.title}`}
                 >
                   {/* Brand Logo Header */}
-                  <div className={`${tierBadge.bg} ${tierBadge.text} px-4 py-3 flex items-center justify-between`}>
+                  <div className={`${tierBadge.bg} ${tierBadge.text} px-4 py-3 flex items-center justify-between flex-shrink-0`}>
                     <div className="flex items-center gap-3">
                       {BRAND_LOGOS[brief.source] && (
                         <img
@@ -371,9 +371,9 @@ export const PremiumLibrary: React.FC = () => {
                     <ExternalLink className="w-3 h-3 opacity-75" />
                   </div>
 
-                  <div className="p-lg">
-                    {/* Source Name */}
-                    <div className="flex items-center gap-2 mb-3">
+                  <div className="p-5 flex flex-col flex-grow">
+                    {/* Source Name & Date */}
+                    <div className="flex items-center gap-2 mb-3 flex-shrink-0">
                       <span className="text-sm font-bold text-gray-400 uppercase tracking-wide">
                         {brief.source}
                       </span>
@@ -389,17 +389,17 @@ export const PremiumLibrary: React.FC = () => {
                     </div>
 
                     {/* Title */}
-                    <h3 className="font-display text-xl font-black text-white mb-3 leading-tight tracking-tight group-hover:text-planner-orange transition-colors line-clamp-2">
+                    <h3 className="font-display text-xl font-black text-white mb-3 leading-tight tracking-tight group-hover:text-planner-orange transition-colors line-clamp-2 flex-shrink-0">
                       {brief.title}
                     </h3>
 
-                    {/* Excerpt */}
-                    <p className="text-sm text-gray-400 leading-relaxed line-clamp-3 mb-4">
+                    {/* Excerpt - grows to fill space */}
+                    <p className="text-sm text-gray-400 leading-relaxed line-clamp-3 mb-4 flex-grow">
                       {brief.excerpt}
                     </p>
 
-                    {/* Read More CTA */}
-                    <div className="flex items-center text-xs text-planner-orange font-medium group-hover:text-orange-400 transition-colors">
+                    {/* Read More CTA - always at bottom */}
+                    <div className="flex items-center text-xs text-planner-orange font-medium group-hover:text-orange-400 transition-colors mt-auto pt-2 flex-shrink-0">
                       <span>Read Full Brief</span>
                       <ExternalLink className="w-3 h-3 ml-1 group-hover:translate-x-0.5 transition-transform" />
                     </div>

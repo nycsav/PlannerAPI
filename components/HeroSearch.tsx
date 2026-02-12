@@ -320,11 +320,11 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
       {/* 1. HEADLINE - Clear focus */}
       <div className="text-center space-y-6 mb-8">
         <h1 className={`${getTypographyClasses('display')} text-gray-900 dark:text-gray-100 italic`}>
-          REAL-TIME INTELLIGENCE FOR <span className="text-bureau-signal dark:text-planner-orange">MARKETING LEADERS</span>
+          INTELLIGENCE THAT <span className="text-bureau-signal dark:text-planner-orange">INFORMS DECISIONS</span>
         </h1>
 
         <p className={`${getTypographyClasses('bodyLarge')} text-gray-600 dark:text-gray-300 max-w-3xl mx-auto`}>
-          Search the marketing and advertising industry in real-time. Powered by Perplexity AI with live data from 1,000+ sources.
+          Real-time marketing intelligence for CMOs and agency leaders. Get AI-powered research briefs, daily insights from premier sources, and instant answers to strategic questions—all in one platform.
         </p>
       </div>
 
@@ -481,27 +481,24 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
           </p>
         </form>
 
-        {/* Micro-copy explaining output - subtle and readable */}
-        <p className={`${getTypographyClasses('bodySmall')} text-gray-500 dark:text-gray-400 text-center max-w-2xl mx-auto`}>
-          Ask any marketing question → Get a structured intelligence brief with signals, moves, and sources
-        </p>
-
-        {/* Edit queries button and indicator */}
-        <div className="flex items-center justify-center gap-2">
-          <button
-            type="button"
-            onClick={() => setShowEditModal(true)}
-            className={`${getTypographyClasses('caption')} flex items-center gap-1.5 px-3 py-1.5 text-gray-500 dark:text-gray-400 hover:text-bureau-signal dark:hover:text-planner-orange hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-all duration-200`}
-            aria-label="Customize search suggestions"
-          >
-            <Pencil className="w-3 h-3" />
-            <span>Customize suggestions</span>
-            {customQueries.length > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 bg-bureau-signal/10 dark:bg-planner-orange/10 text-bureau-signal dark:text-planner-orange rounded-full text-[10px] font-bold">
-                {customQueries.length}
-              </span>
-            )}
-          </button>
+        {/* Powered by Perplexity - with real logo */}
+        <div className="flex items-center justify-center gap-2.5 pt-1">
+          <img
+            src="https://logo.clearbit.com/perplexity.ai"
+            alt="Perplexity AI"
+            className="h-5 w-5 object-contain"
+            onError={(e) => {
+              // Fallback to SVG if logo fails
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+          <span className={`${getTypographyClasses('bodySmall')} font-medium text-gray-600 dark:text-gray-400`}>
+            Powered by Perplexity AI
+          </span>
+          <span className="text-gray-300 dark:text-slate-600">•</span>
+          <span className={`${getTypographyClasses('bodySmall')} text-gray-500 dark:text-gray-400`}>
+            Real-time data from 1,000+ marketing sources
+          </span>
         </div>
 
         {/* Edit Modal */}
@@ -650,29 +647,14 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
           </div>
         )}
 
-        {/* 4. TRUST INDICATORS - Tertiary */}
-        <div className="flex flex-col md:flex-row items-center justify-center gap-3 px-4 text-center pt-2 pb-4">
-          <div className="flex items-center gap-2">
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#1FB6FF" />
-              <path d="M2 17L12 22L22 17M2 12L12 17L22 12" stroke="#1FB6FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span className={`${getTypographyClasses('bodySmall')} font-semibold text-gray-700 dark:text-gray-300`}>Powered by Perplexity AI</span>
-          </div>
-          <span className="hidden md:inline text-gray-300 dark:text-slate-500">•</span>
-          <p className={`${getTypographyClasses('bodySmall')} text-gray-600 dark:text-gray-300`}>
-            Real-time data from 1,000+ marketing sources
-          </p>
-        </div>
-
         {/* 3. CATEGORY BUTTONS - Secondary action */}
-        <div className="space-y-4 pt-6">
+        <div className="space-y-4 pt-8">
           <div className="text-center space-y-2">
-            <h3 className={`${getTypographyClasses('h4')} text-gray-900 dark:text-gray-100`}>
-              Or generate a brief about:
+            <h3 className={`${getTypographyClasses('h3')} text-gray-900 dark:text-gray-100`}>
+              Start with a strategic question:
             </h3>
             <p className={`${getTypographyClasses('bodySmall')} text-gray-600 dark:text-gray-400`}>
-              Click any topic to instantly search and get a structured intelligence brief
+              Get instant research briefs with data, implications, and Monday moves
             </p>
           </div>
 

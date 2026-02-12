@@ -35,7 +35,7 @@ const NOTION_DATABASE_ID = '2fa0bdff-e59e-8004-9d52-c6171ae1630d';
 
 // Tier 1, 2, and 3 sources for content diversity
 const TIER_1_SOURCES = ['McKinsey', 'Gartner', 'Forrester', 'BCG', 'Bain', 'Deloitte'];
-const TIER_2_SOURCES = ['Google', 'Google Cloud', 'OpenAI', 'Anthropic', 'Meta', 'Microsoft', 'Amazon Ads', 'Perplexity', 'Perplexity AI'];
+const TIER_2_SOURCES = ['Google', 'Google Cloud', 'OpenAI', 'Anthropic', 'Meta', 'Microsoft', 'Amazon Ads', 'Perplexity', 'Perplexity AI', 'Perplexity AI + Harvard'];
 const TIER_3_SOURCES = ['Ad Age', 'AdWeek', 'Digiday', 'Marketing Week', 'Webflow', 'The Verge'];
 
 // Combine all sources for querying
@@ -46,7 +46,7 @@ const SOURCE_TO_TIER = {
   // Tier 1
   'McKinsey': 1, 'Gartner': 1, 'Forrester': 1, 'BCG': 1, 'Bain': 1, 'Deloitte': 1,
   // Tier 2
-  'Google': 2, 'Google Cloud': 2, 'OpenAI': 2, 'Anthropic': 2, 'Meta': 2, 'Microsoft': 2, 'Amazon Ads': 2, 'Perplexity': 2, 'Perplexity AI': 2,
+  'Google': 2, 'Google Cloud': 2, 'OpenAI': 2, 'Anthropic': 2, 'Meta': 2, 'Microsoft': 2, 'Amazon Ads': 2, 'Perplexity': 2, 'Perplexity AI': 2, 'Perplexity AI + Harvard': 2,
   // Tier 3
   'Ad Age': 3, 'AdWeek': 3, 'Digiday': 3, 'Marketing Week': 3, 'Webflow': 3, 'The Verge': 3,
 };
@@ -109,6 +109,24 @@ function generateMoves(signals, source) {
 function extractPlainText(richTextArray) {
   if (!richTextArray || !Array.isArray(richTextArray)) return '';
   return richTextArray.map(rt => rt.plain_text || '').join('');
+}
+
+/**
+ * Normalize source names to use only the primary platform
+ * Removes compound attributions like "+ Harvard", "+ Stanford", etc.
+ */
+function normalizeSourceName(sourceName) {
+  if (!sourceName) return '';
+
+  // Remove compound attributions (e.g., "Perplexity AI + Harvard" → "Perplexity AI")
+  const cleanedSource = sourceName
+    .replace(/\s*\+\s*Harvard/gi, '')
+    .replace(/\s*\+\s*Stanford/gi, '')
+    .replace(/\s*\+\s*MIT/gi, '')
+    .replace(/\s*\+\s*[A-Z][a-z]+\s+University/gi, '')
+    .trim();
+
+  return cleanedSource;
 }
 
 /**
@@ -220,7 +238,14 @@ function transformNotionToFirestore(notionPage) {
 
   // Extract fields
   const title = extractPlainText(props.Name?.title);
-  const source = props.Source?.select?.name || '';
+  const rawSource = props.Source?.select?.name || '';
+  const source = normalizeSourceName(rawSource); // Clean up compound source names
+
+  // Log normalization for debugging
+  if (rawSource !== source) {
+    console.log(`    🔧 Normalized: "${rawSource}" → "${source}"`);
+  }
+
   const sourceUrl = props.URL?.url || '';
   const notesText = extractPlainText(props['Excerpts / Notes']?.rich_text);
   const keyStat = extractPlainText(props['Key Stat']?.rich_text);
