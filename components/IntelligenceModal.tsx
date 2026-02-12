@@ -1025,11 +1025,17 @@ INSTRUCTIONS:
 
           {/* Follow-up Chat Section */}
           <section data-section="follow-up" className="mt-12 pt-8 border-t-2 border-gray-200/60 dark:border-slate-700/50">
-            <div className="flex items-center gap-3 mb-6">
-              <MessageCircle className="w-6 h-6 text-bureau-signal dark:text-planner-orange" />
-              <h3 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
-                Ask a Follow-Up
-              </h3>
+            <div className="mb-6">
+              <div className="flex items-center gap-3 mb-3">
+                <MessageCircle className="w-6 h-6 text-bureau-signal dark:text-planner-orange" />
+                <h3 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
+                  Ask a Follow-Up
+                </h3>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                Ask questions about this research and get real-time answers powered by <span className="font-semibold text-bureau-signal dark:text-planner-orange">Perplexity AI</span>.
+                Your questions will search the latest sources and provide contextualized insights based on this brief's findings.
+              </p>
             </div>
 
             {/* Conversation thread */}
@@ -1082,7 +1088,7 @@ INSTRUCTIONS:
                 value={followUpInput}
                 onChange={(e) => setFollowUpInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && !followUpLoading && handleFollowUpSubmit()}
-                placeholder="Ask a follow-up..."
+                placeholder="e.g., What are the budget implications? How does this compare to competitors?"
                 disabled={followUpLoading}
                 className="flex-1 px-4 py-3 border-2 border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-300 focus:outline-none focus:border-bureau-signal dark:focus:border-planner-orange focus:ring-2 focus:ring-bureau-signal/20 dark:focus:ring-planner-orange/20 disabled:bg-gray-100 dark:disabled:bg-slate-900 disabled:cursor-not-allowed font-sans text-base transition-all duration-200"
               />

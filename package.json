@@ -13,6 +13,7 @@
   "dependencies": {
     "@copilotkit/react-core": "^1.51.2",
     "@copilotkit/react-ui": "^1.51.2",
+    "@notionhq/client": "^2.2.15",
     "date-fns": "^4.1.0",
     "firebase": "^12.7.0",
     "firebase-admin": "^13.6.1",

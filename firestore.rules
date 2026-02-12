@@ -14,6 +14,27 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Premium Briefs Collection
+    // Premium content for the Premium Library feature
+    match /premium_briefs/{briefId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Briefs Collection (future)
+    // Saved Strategy Chat briefs
+    match /briefs/{briefId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // LinkedIn Briefs Collection (future)
+    // Briefs published to LinkedIn with backlinks
+    match /linked_briefs/{briefId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // User Preferences Collection (future enhancement - Phase 2)
     // Store user-specific pillar preferences and settings
     match /users/{userId}/preferences/{document=**} {

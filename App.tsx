@@ -11,6 +11,7 @@ import { SignupModal } from './components/SignupModal';
 import { DailyIntelligence } from './components/DailyIntelligence';
 import { DashboardSection } from './components/DashboardSection';
 import { PostSignupWelcome } from './components/PostSignupWelcome';
+import { PremiumLibrary } from './components/PremiumLibrary';
 import { FeatureTour } from './components/FeatureTour';
 import { WelcomeTooltip } from './components/WelcomeTooltip';
 import { NewContentBadge } from './components/NewContentBadge';
@@ -706,7 +707,7 @@ const App: React.FC = () => {
           <main className="w-full">
 
             {/* HERO SECTION */}
-            <div className="section-zebra min-h-[60vh] sm:min-h-[65vh] lg:min-h-[75vh] flex items-center py-2xl border-b border-bureau-border dark:border-slate-700 bg-white dark:bg-slate-900">
+            <div className="section-zebra min-h-[45vh] sm:min-h-[50vh] flex items-center py-xl border-b border-bureau-border dark:border-slate-700 bg-white dark:bg-slate-900">
               <section className="max-w-hero mx-auto w-full app-padding-x">
                 <HeroSearch
                   onSearch={(q, data) => openSearch(q, 'Perplexity', data)}
@@ -715,16 +716,12 @@ const App: React.FC = () => {
               </section>
             </div>
 
-            {/* TODAY'S DAILY BRIEF PREVIEW */}
-            <div className="section-zebra py-2xl border-b border-bureau-border dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
-              <section className="max-w-content mx-auto w-full app-padding-x">
-                <DailyBriefPreview />
-              </section>
-            </div>
+            {/* TODAY'S DAILY BRIEF PREVIEW - Only render if there's content */}
+            <DailyBriefPreview />
 
             {/* EXECUTIVE STRATEGY CHAT - Primary Interactive Feature (only shown after activation) */}
             {isChatActive && (
-              <div className="section-zebra py-2xl border-b border-bureau-border dark:border-slate-700 bg-white dark:bg-slate-900">
+              <div className="section-zebra py-xl border-b border-bureau-border dark:border-slate-700 bg-white dark:bg-slate-900">
                 <ExecutiveStrategyChat
                   externalQuery={chatQuery}
                   onExternalQueryProcessed={handleChatQueryProcessed}
@@ -732,8 +729,11 @@ const App: React.FC = () => {
               </div>
             )}
 
+            {/* PREMIUM INTELLIGENCE LIBRARY - Featured Deep-Dive Research */}
+            <PremiumLibrary />
+
             {/* DAILY INTELLIGENCE - AI-Generated Market Analysis with Visual Slider */}
-            <div className="section-zebra py-2xl bg-white dark:bg-slate-900">
+            <div className="section-zebra py-xl bg-white dark:bg-slate-900">
               <section className="max-w-content mx-auto w-full app-padding-x">
                 <SectionHeader
                   id="01"

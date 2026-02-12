@@ -67,16 +67,9 @@ export const DailyBriefPreview: React.FC = () => {
     );
   }
 
+  // Don't render if no brief - just return null to hide the component
   if (!brief) {
-    return (
-      <div className="w-full max-w-4xl mx-auto px-4">
-        <div className="bg-gray-100 dark:bg-slate-800/50 rounded-xl p-8 text-center border border-gray-200 dark:border-slate-700">
-          <p className="text-gray-600 dark:text-gray-400">
-            Today's intelligence brief is being prepared. Check back soon.
-          </p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   // Extract first 2-3 sentences from LinkedIn post as preview
@@ -86,8 +79,9 @@ export const DailyBriefPreview: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 my-12">
-      <div className="bg-gradient-to-br from-white to-gray-50 dark:from-slate-800 dark:to-slate-900 rounded-xl p-8 border-2 border-bureau-signal/20 dark:border-planner-orange/20 hover:border-bureau-signal/40 dark:hover:border-planner-orange/40 transition-all shadow-lg">
+    <div className="section-zebra py-xl border-b border-bureau-border dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
+      <section className="max-w-content mx-auto w-full app-padding-x">
+        <div className="bg-gradient-to-br from-white to-gray-50 dark:from-slate-800 dark:to-slate-900 rounded-xl p-8 border-2 border-bureau-signal/20 dark:border-planner-orange/20 hover:border-bureau-signal/40 dark:hover:border-planner-orange/40 transition-all shadow-lg">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -145,7 +139,8 @@ export const DailyBriefPreview: React.FC = () => {
             </p>
           </div>
         )}
-      </div>
+        </div>
+      </section>
     </div>
   );
 };
