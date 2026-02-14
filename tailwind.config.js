@@ -5,6 +5,7 @@ export default {
     "./index.html",
     "./index.tsx",
     "./App.tsx",
+    "./TestNewHomepage.tsx",
     "./components/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {

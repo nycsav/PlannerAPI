@@ -1,8 +1,16 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Magic Patterns - Editorial dark navy theme */
+:root {
+  --navy: #0d1321;
+  --cream: #f8f6f0;
+  --accent: #e8b86d;
+  --accent-muted: rgba(232, 184, 109, 0.15);
+}
 
 @layer base {
   :root {
