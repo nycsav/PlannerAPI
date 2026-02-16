@@ -239,18 +239,28 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
   isLoading = false
 }) => {
   console.log('[IntelligenceModal] Rendered with open:', open, 'isLoading:', isLoading, 'hasPayload:', !!payload, 'payload:', payload);
+  console.log('[IntelligenceModal] Perplexity endpoint:', ENDPOINTS.perplexitySearch);
+
+  // Display payload: synced from props, updated by follow-up API responses (must be declared first)
+  const [displayPayload, setDisplayPayload] = useState<IntelligencePayload | null>(payload);
+
+  // Sync displayPayload when payload prop changes (e.g. new card opened, initial load)
+  useEffect(() => {
+    setDisplayPayload(payload);
+  }, [payload]);
 
   // Generate contextual frameworks based on the query and content
   // Use provided frameworks from API if available, otherwise generate dynamically
   const frameworks = useMemo(() => {
-    if (payload?.frameworks && payload.frameworks.length > 0) {
-      return payload.frameworks;
+    const p = displayPayload ?? payload;
+    if (p?.frameworks && p.frameworks.length > 0) {
+      return p.frameworks;
     }
-    if (payload?.query && payload?.summary) {
+    if (p?.query && p?.summary) {
       return generateContextualFrameworks(
-        payload.query,
-        payload.summary,
-        payload.keySignals || []
+        p.query,
+        p.summary,
+        p.keySignals || []
       );
     }
     // Fallback for loading state
@@ -259,7 +269,7 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
       { id: 'loading-2', label: 'Measurement', actions: ['Loading...'] },
       { id: 'loading-3', label: 'Operations', actions: ['Loading...'] }
     ];
-  }, [payload?.query, payload?.summary, payload?.keySignals, payload?.frameworks]);
+  }, [displayPayload?.query, displayPayload?.summary, displayPayload?.keySignals, displayPayload?.frameworks, payload?.query, payload?.summary, payload?.keySignals, payload?.frameworks]);
 
   const [activeFrameworkTab, setActiveFrameworkTab] = useState<string | null>(
     frameworks[0]?.id || null
@@ -280,9 +290,10 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
 
   // Extract metrics from summary for visualization
   const metrics = useMemo(() => {
-    if (!payload?.summary) return [];
-    return extractMetrics(payload.summary);
-  }, [payload?.summary]);
+    const p = displayPayload ?? payload;
+    if (!p?.summary) return [];
+    return extractMetrics(p.summary);
+  }, [displayPayload?.summary, payload?.summary]);
 
   // Log when payload changes (must be before early return)
   useEffect(() => {
@@ -316,20 +327,21 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
   }
 
   const activeFramework = frameworks.find(f => f.id === activeFrameworkTab);
+  const effectivePayload = displayPayload ?? payload;
 
   // Export functions
   const handleDownloadPDF = () => {
-    if (!payload) return; // Guard against null payload
+    if (!effectivePayload) return;
     try {
       exportIntelligenceBriefToPDF({
-        query: payload.query,
-        summary: payload.summary,
-        keySignals: payload.keySignals,
-        movesForLeaders: payload.movesForLeaders,
-        signals: payload.signals,
+        query: effectivePayload.query,
+        summary: effectivePayload.summary,
+        keySignals: effectivePayload.keySignals,
+        movesForLeaders: effectivePayload.movesForLeaders,
+        signals: effectivePayload.signals,
         frameworks: frameworks,
         metrics: metrics.length > 0 ? metrics : undefined,
-        comparisons: payload.graphData?.comparisons,
+        comparisons: effectivePayload.graphData?.comparisons,
         followUpMessages: followUpMessages.length > 0 ? followUpMessages : undefined
       });
       // Optional: Show success notification
@@ -341,22 +353,21 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
   };
 
   const handleCopyToClipboard = () => {
-    if (!payload) return; // Guard against null payload
-    // Format as markdown for clipboard
-    let markdown = `# Intelligence Brief\n\n**Query:** ${payload.query}\n\n`;
-    markdown += `## Summary\n${payload.summary}\n\n`;
+    if (!effectivePayload) return;
+    let markdown = `# Intelligence Brief\n\n**Query:** ${effectivePayload.query}\n\n`;
+    markdown += `## Summary\n${effectivePayload.summary}\n\n`;
 
-    if (payload.keySignals.length > 0) {
+    if (effectivePayload.keySignals.length > 0) {
       markdown += `## Key Signals\n`;
-      payload.keySignals.forEach(signal => {
+      effectivePayload.keySignals.forEach(signal => {
         markdown += `- ${signal}\n`;
       });
       markdown += `\n`;
     }
 
-    if (payload.movesForLeaders.length > 0) {
+    if (effectivePayload.movesForLeaders.length > 0) {
       markdown += `## Moves for Leaders\n`;
-      payload.movesForLeaders.forEach(move => {
+      effectivePayload.movesForLeaders.forEach(move => {
         markdown += `- ${move}\n`;
       });
     }
@@ -375,165 +386,110 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
   };
 
   const handleEmail = () => {
-    if (!payload) return; // Guard against null payload
-    // Format for email
-    const subject = encodeURIComponent(`Intelligence Brief: ${payload.query}`);
+    if (!effectivePayload) return;
+    const subject = encodeURIComponent(`Intelligence Brief: ${effectivePayload.query}`);
     const body = encodeURIComponent(
-      `Intelligence Brief\n\nQuery: ${payload.query}\n\nSummary:\n${payload.summary}\n\n---\nGenerated by PlannerAPI`
+      `Intelligence Brief\n\nQuery: ${effectivePayload.query}\n\nSummary:\n${effectivePayload.summary}\n\n---\nGenerated by PlannerAPI`
     );
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
   };
 
   const handleFollowUpSubmit = async () => {
-    if (!followUpInput.trim() || !payload || followUpLoading) return;
+    const question = followUpInput.trim();
+    if (!question) return;
+    if (followUpLoading) return;
 
-    // Ensure user input is definitely a string
-    const userContent = String(followUpInput).trim();
-    const newMessages = [...followUpMessages, { role: 'user' as const, content: userContent }];
-    setFollowUpMessages(newMessages);
-    const currentInput = userContent;
+    // Need current payload for context (displayPayload or payload)
+    const currentPayload = displayPayload ?? payload;
+    if (!currentPayload) return;
+
     setFollowUpInput('');
     setFollowUpLoading(true);
 
     try {
-      // Build system prompt with full brief context
-      const sourcesText = payload.signals && payload.signals.length > 0
-        ? payload.signals.map((s, i) => `[${i + 1}] ${s.sourceName || 'Source'} - ${s.sourceUrl || '#'}`).join('\n')
-        : 'No sources available';
+      const resp = await fetchWithTimeout(
+        ENDPOINTS.perplexitySearch,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: question }),
+          timeout: 40000,
+        }
+      );
 
-      const signalsText = payload.keySignals && payload.keySignals.length > 0
-        ? payload.keySignals.map((s, i) => `${i + 1}. ${s}`).join('\n')
-        : '';
+      if (!resp.ok) throw new Error(`Backend error: ${resp.status}`);
+      const data = await resp.json();
 
-      const movesText = payload.movesForLeaders && payload.movesForLeaders.length > 0
-        ? payload.movesForLeaders.map((m, i) => `${i + 1}. ${m}`).join('\n')
-        : '';
+      // Support both content (Cloud Run/Cloud Functions) and answer (legacy) formats
+      const rawText = data.content ?? data.answer ?? '';
+      const sections = rawText.split('##') || [];
 
-      const systemPrompt = `You are a brief assistant helping users understand this intelligence brief.
-
-BRIEF CONTEXT:
-Title: ${payload.query}
-Summary: ${payload.summary}
-
-SOURCES USED:
-${sourcesText}
-
-KEY SIGNALS:
-${signalsText}
-
-STRATEGIC MOVES:
-${movesText}
-
-INSTRUCTIONS:
-- When user asks "what sources did you use?" or similar, list the actual sources from SOURCES USED section above
-- When user asks about specific claims or signals, reference the KEY SIGNALS section
-- When user asks about actions or recommendations, reference STRATEGIC MOVES section
-- Always answer based on THIS brief's content, not generic knowledge
-- Be specific and cite the relevant source numbers when appropriate`;
-
-      // Build conversation messages with full history
-      const conversationMessages = newMessages.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      }));
-
-      // Use chatIntel endpoint with enhanced context and full conversation history
-      const response = await fetchWithTimeout(ENDPOINTS.chatIntel, {
-        timeout: 40000,
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          query: currentInput,
-          messages: conversationMessages, // Full conversation history for context
-          audience: 'CMO',
-          context: {
-            briefTitle: payload.query,
-            briefSummary: payload.summary,
-            sources: payload.signals || [],
-            keySignals: payload.keySignals || [],
-            moves: payload.movesForLeaders || [],
-            systemPrompt: systemPrompt
-          }
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[Follow-up] API error:', response.status, errorText);
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('[Follow-up] Raw response data:', data);
-
-      // Check if user is asking about sources specifically
-      const isAskingAboutSources = currentInput.toLowerCase().includes('source') ||
-                                   currentInput.toLowerCase().includes('citation') ||
-                                   currentInput.toLowerCase().includes('reference');
-
-      let formattedResponse = '';
-
-      // If asking about sources, prioritize showing them
-      if (isAskingAboutSources && payload.signals && payload.signals.length > 0) {
-        formattedResponse += `This brief analyzed ${payload.signals.length} sources:\n\n`;
-        payload.signals.forEach((signal: any, index: number) => {
-          const sourceName = signal.sourceName || signal.title || `Source ${index + 1}`;
-          const sourceUrl = signal.sourceUrl && signal.sourceUrl !== '#' ? signal.sourceUrl : '';
-          formattedResponse += `**[${index + 1}] ${sourceName}**\n`;
-          if (sourceUrl) {
-            formattedResponse += `${sourceUrl}\n`;
-          }
-          if (signal.snippet) {
-            formattedResponse += `_"${signal.snippet}"_\n`;
-          }
-          formattedResponse += '\n';
-        });
+      let summary = '';
+      if (sections.length > 1) {
+        summary = sections[1].split('\n').filter((l: string) => l.trim() && !l.includes('##')).join(' ').trim();
       } else {
-        // chatIntel returns structured data: { signals, implications, actions, citations }
-        // Format it consistently with other modules
+        summary = rawText;
+      }
 
-        // IMPLICATIONS Section
-        if (data.implications && data.implications.length > 0) {
-          formattedResponse += '**Implications:**\n\n';
-          data.implications.forEach((impl: string) => {
-            formattedResponse += `• ${impl}\n`;
-          });
-          formattedResponse += '\n';
-        }
-
-        // MOVES FOR LEADERS Section
-        if (data.actions && data.actions.length > 0) {
-          formattedResponse += '**Moves for Leaders:**\n\n';
-          data.actions.forEach((action: string) => {
-            formattedResponse += `• ${action}\n`;
-          });
-          formattedResponse += '\n';
-        }
-
-        // SOURCES Section
-        if (data.signals && data.signals.length > 0) {
-          formattedResponse += '**Related Sources:**\n\n';
-          data.signals.forEach((signal: any, index: number) => {
-            if (signal.sourceUrl && signal.sourceUrl !== '#') {
-              formattedResponse += `[${index + 1}] ${signal.sourceName || signal.title || 'Source'}\n`;
-            }
-          });
+      const movesForLeaders: string[] = [];
+      const movesSection = sections.find((s: string) =>
+        s.toLowerCase().includes('action') ||
+        s.toLowerCase().includes('move') ||
+        s.toLowerCase().includes('recommend')
+      );
+      if (movesSection) {
+        const moveRegex = /^[-*•]\s+(.+)$/gm;
+        let moveMatch;
+        while ((moveMatch = moveRegex.exec(movesSection)) !== null) {
+          movesForLeaders.push(moveMatch[1].trim());
         }
       }
 
-      // Fallback to plain text if structured format fails
-      const finalText = formattedResponse.trim() || JSON.stringify(data, null, 2);
-      console.log('[Follow-up] Formatted response:', finalText.substring(0, 150));
+      const keySignals: string[] = [];
+      const nonMovesSections = sections.filter((s: string) => s !== movesSection);
+      const nonMovesText = nonMovesSections.join('\n');
+      const bulletRegex = /^[-*•]\s+(.+)$/gm;
+      let match;
+      while ((match = bulletRegex.exec(nonMovesText)) !== null) {
+        const signal = match[1].trim();
+        if (!keySignals.includes(signal) && !movesForLeaders.includes(signal)) {
+          keySignals.push(signal);
+        }
+      }
 
-      setFollowUpMessages([...newMessages, { role: 'assistant' as const, content: finalText }]);
+      const citations = data.search_results ?? data.raw?.citations ?? [];
+      const signals: IntelligenceSignal[] = Array.isArray(citations)
+        ? citations.map((c: any, i: number) => ({
+            id: `source-${i}`,
+            title: c.title || c.source || `Source ${i + 1}`,
+            summary: c.snippet || c.summary || '',
+            sourceName: c.source ?? c.title ?? `Source ${i + 1}`,
+            sourceUrl: c.url ?? c.sourceUrl ?? '#',
+          }))
+        : [];
+
+      const newPayload: IntelligencePayload = {
+        query: question,
+        summary: summary.substring(0, 800),
+        keySignals: keySignals.slice(0, 5),
+        signals,
+        movesForLeaders: movesForLeaders.length > 0 ? movesForLeaders.slice(0, 3) : [
+          'Review the key signals and assess impact on your current strategy',
+          'Identify quick-win opportunities to implement within 30 days',
+          'Establish measurement framework to track progress',
+        ],
+      };
+
+      setDisplayPayload(newPayload);
+      if (onFollowUp) onFollowUp(question);
     } catch (error) {
-      console.error('Follow-up error:', error);
-      setFollowUpMessages([...newMessages, {
-        role: 'assistant' as const,
-        content: 'I had trouble processing that question. Could you try rephrasing it?'
-      }]);
+      console.error('[Follow-up] API error:', error);
+      setDisplayPayload({
+        query: question,
+        summary: 'Unable to get intelligence for that question. Please try again.',
+        keySignals: [],
+        movesForLeaders: [],
+      });
     } finally {
       setFollowUpLoading(false);
     }
@@ -653,8 +609,8 @@ INSTRUCTIONS:
 
         {/* Top right actions */}
         <div className="absolute top-6 right-6 flex items-center gap-2 z-10">
-          {/* Export buttons - only show when payload exists */}
-          {payload && (
+          {/* Export buttons - only show when we have content to export */}
+          {effectivePayload && (
             <>
               <button
                 onClick={handleDownloadPDF}
@@ -693,8 +649,8 @@ INSTRUCTIONS:
           </button>
         </div>
 
-        {/* Main content - only show when we have payload */}
-        {payload && !isLoading && (
+        {/* Main content - only show when we have payload (from props or follow-up response) */}
+        {effectivePayload && !isLoading && (
           <div className="p-8 md:p-12 lg:p-16">
             {/* Premium Header Section */}
             <div className="mb-12 pb-8 border-b border-slate-200/60 dark:border-slate-700/50">
@@ -705,7 +661,7 @@ INSTRUCTIONS:
                 </span>
               </div>
               <p className="font-sans text-lg text-gray-900 dark:text-gray-100 font-medium leading-relaxed mb-6">
-                {payload.query}
+                {effectivePayload.query}
               </p>
 
               {/* Big heading with premium spacing */}
@@ -734,14 +690,14 @@ INSTRUCTIONS:
                   </h2>
                 </div>
                 <div className="font-sans text-lg text-gray-900 dark:text-gray-100 leading-relaxed prose prose-slate dark:prose-invert max-w-none">
-                  {parseMarkdown(payload.summary)}
+                  {parseMarkdown(effectivePayload.summary)}
                 </div>
               </section>
 
               {/* Section 2: KEY SIGNALS - Premium Design */}
-              {payload.keySignals.length > 0 && (
-                <section className="space-y-6">
-                  <div className="flex items-center justify-between mb-6">
+                {effectivePayload.keySignals.length > 0 && (
+              <section className="space-y-6">
+                <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-4">
                       <div className="p-2.5 bg-gradient-to-br from-planner-orange to-orange-600 rounded-xl shadow-sm">
                         <Zap className="w-5 h-5 text-white" />
@@ -751,7 +707,7 @@ INSTRUCTIONS:
                       </h2>
                     </div>
                     {/* Visualize Trends Button - Premium Style */}
-                    {(metrics.length > 0 || payload.graphData?.comparisons?.length) && (
+                    {(metrics.length > 0 || effectivePayload.graphData?.comparisons?.length) && (
                       <button
                         onClick={() => setShowDashboard(!showDashboard)}
                         className={`flex items-center gap-2 px-4 py-2.5 text-sm font-bold rounded-xl transition-all duration-200 shadow-sm ${
@@ -775,9 +731,9 @@ INSTRUCTIONS:
                         trend: m.trend,
                         context: m.context
                       }))}
-                      comparisons={payload.graphData?.comparisons}
-                      query={payload.query}
-                      signals={payload.signals || []}
+                      comparisons={effectivePayload.graphData?.comparisons}
+                      query={effectivePayload.query}
+                      signals={effectivePayload.signals || []}
                       onMetricClick={(metric) => {
                         console.log('[InteractiveDashboard] Metric clicked:', metric);
                         // Could open drill-down modal or expand section
@@ -795,7 +751,7 @@ INSTRUCTIONS:
                   
                   {/* Signal Cards - Premium Expandable Design */}
                   <div className="space-y-3">
-                    {payload.keySignals.map((signal, index) => (
+                    {effectivePayload.keySignals.map((signal, index) => (
                       <div
                         key={index}
                         className="group p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-md bg-white dark:bg-slate-800/50 transition-all duration-200 cursor-pointer"
@@ -813,7 +769,7 @@ INSTRUCTIONS:
               )}
 
               {/* Section 3: MOVES FOR LEADERS - Premium Design */}
-              {payload.movesForLeaders.length > 0 && (
+              {effectivePayload.movesForLeaders.length > 0 && (
                 <section className="space-y-6">
                   <div className="flex items-center gap-4 mb-6">
                     <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-sm">
@@ -824,7 +780,7 @@ INSTRUCTIONS:
                     </h2>
                   </div>
                   <div className="space-y-3">
-                    {payload.movesForLeaders.map((move, index) => (
+                    {effectivePayload.movesForLeaders.map((move, index) => (
                       <div
                         key={index}
                         className="group p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-600 hover:shadow-md bg-white dark:bg-slate-800/50 transition-all duration-200"
@@ -909,7 +865,7 @@ INSTRUCTIONS:
                 <div className="space-y-3">
                   {(() => {
                     // Always show sources section - extract from signals or show placeholder
-                    const validSignals = payload.signals?.filter(signal => signal.sourceUrl && signal.sourceUrl !== '#') || [];
+                    const validSignals = effectivePayload.signals?.filter(signal => signal.sourceUrl && signal.sourceUrl !== '#') || [];
                     
                     if (validSignals.length === 0) {
                       // No valid sources - show helpful message
@@ -1001,13 +957,13 @@ INSTRUCTIONS:
           </div>
 
           {/* Related section - Perplexity-style follow-up questions */}
-          {payload.followUps && payload.followUps.length > 0 && (
+          {effectivePayload.followUps && effectivePayload.followUps.length > 0 && (
             <div className="mt-12 pt-8 border-t-2 border-gray-200/60 dark:border-slate-700/50">
               <h3 className="font-display text-lg font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight mb-6">
                 Related
               </h3>
               <div className="space-y-3">
-                {payload.followUps.map((followUp, index) => (
+                {effectivePayload.followUps.map((followUp, index) => (
                   <button
                     key={followUp.question || index}
                     onClick={() => onFollowUp && onFollowUp(followUp.question, followUp.displayQuery)}
@@ -1033,69 +989,40 @@ INSTRUCTIONS:
                 </h3>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                Ask questions about this research and get real-time answers powered by <span className="font-semibold text-bureau-signal dark:text-planner-orange">Perplexity</span>.
-                Your questions will search the latest sources and provide contextualized insights based on this brief's findings.
+                Ask a follow-up question to get a new intelligence brief with updated insights powered by <span className="font-semibold text-bureau-signal dark:text-planner-orange">Perplexity</span>.
+                The modal will refresh with new summary, signals, and recommendations.
               </p>
             </div>
 
-            {/* Conversation thread */}
-            {followUpMessages.length > 0 && (
-              <div className="space-y-6 mb-8 max-h-[600px] overflow-y-auto pr-2">
-                {followUpMessages.map((msg, i) => {
-                  // Safety check: ensure content is always a string
-                  let safeContent = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content, null, 2);
-
-                  // For assistant messages, add line breaks before bold section headers for better readability
-                  if (msg.role === 'assistant') {
-                    // Add line break before **Header**: patterns (common in Perplexity responses)
-                    safeContent = safeContent.replace(/\. (\*\*[^*]+\*\*:?)/g, '.\n\n$1');
-                    // Also handle cases where bold headers start sentences
-                    safeContent = safeContent.replace(/([.!?])\s+(\*\*[^*]+\*\*:?)/g, '$1\n\n$2');
-                  }
-
-                  return (
-                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[85%] ${
-                        msg.role === 'user'
-                          ? 'bg-gray-900 dark:bg-planner-orange text-white px-5 py-3 rounded-lg'
-                          : 'bg-white dark:bg-slate-800 px-0 py-0'
-                      }`}>
-                        {msg.role === 'assistant' ? (
-                          <div className="font-sans text-base text-gray-900 dark:text-gray-100 leading-relaxed space-y-3">
-                            {parseMarkdown(safeContent)}
-                          </div>
-                        ) : (
-                          <p className="font-sans text-base leading-relaxed">{safeContent}</p>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-                {followUpLoading && (
-                  <div className="flex justify-center py-8">
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-200/60 dark:border-slate-700/50 shadow-sm">
-                      <LoadingSpinner size="sm" text="Finding the latest insights..." />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* Input */}
-            <div className="flex gap-3">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (followUpInput.trim() && !followUpLoading) {
+                  handleFollowUpSubmit();
+                }
+              }}
+              className="flex gap-3"
+            >
               <input
                 type="text"
                 value={followUpInput}
                 onChange={(e) => setFollowUpInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && !followUpLoading && handleFollowUpSubmit()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey && followUpInput.trim() && !followUpLoading) {
+                    e.preventDefault();
+                    handleFollowUpSubmit();
+                  }
+                }}
                 placeholder="e.g., What are the budget implications? How does this compare to competitors?"
                 disabled={followUpLoading}
                 className="flex-1 px-4 py-3 border-2 border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-300 focus:outline-none focus:border-bureau-signal dark:focus:border-planner-orange focus:ring-2 focus:ring-bureau-signal/20 dark:focus:ring-planner-orange/20 disabled:bg-gray-100 dark:disabled:bg-slate-900 disabled:cursor-not-allowed font-sans text-base transition-all duration-200"
               />
               <button
-                onClick={handleFollowUpSubmit}
-                disabled={!followUpInput.trim() || followUpLoading}
-                className="px-6 py-3 bg-planner-orange text-white rounded-lg hover:bg-orange-600 hover:shadow-md active:scale-[0.98] transition-all duration-200 disabled:bg-gray-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed flex items-center gap-2 font-display text-xs font-bold uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-planner-orange focus:ring-offset-2"
+                type="submit"
+                style={{ cursor: 'pointer' }}
+                className="px-6 py-3 bg-planner-orange text-white rounded-lg hover:bg-orange-600 hover:shadow-md active:scale-[0.98] transition-all duration-200 flex items-center gap-2 font-display text-xs font-bold uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-planner-orange focus:ring-offset-2"
               >
                 {followUpLoading ? (
                   <>
@@ -1109,13 +1036,13 @@ INSTRUCTIONS:
                   </>
                 )}
               </button>
-            </div>
+            </form>
           </section>
           </div>
         )}
 
         {/* Quick Chat Modal - Powered by existing follow-up system */}
-        {showQuickChat && payload && (
+        {showQuickChat && effectivePayload && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
               {/* Header */}
@@ -1223,8 +1150,8 @@ INSTRUCTIONS:
                   />
                   <button
                     onClick={handleFollowUpSubmit}
-                    disabled={!followUpInput.trim() || followUpLoading}
-                    className="px-6 py-3 bg-violet-500 text-white rounded-lg hover:bg-violet-600 hover:shadow-md active:scale-95 transition-all duration-200 disabled:bg-gray-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed flex items-center gap-2"
+                    style={{ cursor: 'pointer' }}
+                    className="px-6 py-3 bg-violet-500 text-white rounded-lg hover:bg-violet-600 hover:shadow-md active:scale-95 transition-all duration-200 flex items-center gap-2"
                   >
                     {followUpLoading ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
