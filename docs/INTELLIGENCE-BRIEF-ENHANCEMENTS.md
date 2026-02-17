@@ -1,8 +1,153 @@
-# Intelligence Brief Enhancements - January 2026
+# Intelligence Brief Enhancements
 
 This document summarizes the comprehensive enhancements made to the PlannerAPI Intelligence Brief system, search functionality, and visualization features.
 
 ---
+
+## February 2026 Updates
+
+### 10. Conversational Follow-Up Interface
+
+**Date:** February 17, 2026
+**File Modified:** `components/IntelligenceModal.tsx`
+
+#### Features
+- **Chat-style conversation**: User questions appear on right (orange bubbles), AI responses on left (white cards)
+- **Persistent history**: All Q&A pairs remain visible within modal session
+- **Auto-scroll**: Automatically scrolls to latest message
+- **No modal refresh**: Content stacks conversationally instead of replacing payload
+- **Input clearing**: Input field clears after submission, ready for next question
+
+#### Implementation
+```typescript
+const [followUpMessages, setFollowUpMessages] = useState<Array<{
+  role: 'user' | 'assistant',
+  content: string
+}>>([]);
+
+// Add user message → call API → add assistant response
+const handleFollowUpSubmit = async () => {
+  setFollowUpMessages(prev => [...prev, { role: 'user', content: question }]);
+  // ... API call ...
+  setFollowUpMessages(prev => [...prev, { role: 'assistant', content: formattedResponse }]);
+};
+```
+
+#### Benefits
+- Eliminates confusion from modal refresh
+- Natural conversation flow
+- Context visible for better follow-ups
+- Matches ChatGPT/Perplexity UX patterns
+
+---
+
+### 11. Smart Contextual Question Suggestions
+
+**Date:** February 17, 2026
+**File Modified:** `components/IntelligenceModal.tsx`
+
+#### Features
+- **Auto-generated suggestions**: 3 contextual follow-up questions per brief
+- **Theme-aware**: Detects AI, retail media, attribution, competitive, budget topics
+- **Clickable chips**: Click → populates input field
+- **Conditional display**: Only shown before conversation starts
+
+#### Example Generation Logic
+```typescript
+if (isAI) {
+  suggestions.push(`What are the implementation costs for ${topic}?`);
+  suggestions.push(`Which vendors or platforms should we evaluate?`);
+  suggestions.push(`What ROI can we expect in the first 6 months?`);
+}
+```
+
+#### Sample Suggestions
+- AI topics: "What are the implementation costs?", "Which platforms to evaluate?", "ROI in first 6 months?"
+- Retail media: "How does this compare to display?", "Attribution challenges?", "Best networks?"
+- Budget: "Reallocate budget?", "Opportunity costs?", "Quick wins in 30 days?"
+
+---
+
+### 12. Sources Always Visible (3 Visibility Features)
+
+**Date:** February 17, 2026
+**File Modified:** `components/IntelligenceModal.tsx`
+
+#### Problem
+Sources were hidden in sidebar, requiring scroll. Users couldn't see Perplexity research citations immediately.
+
+#### Solution: Triple Visibility
+
+**1. Header Banner**
+```tsx
+<div className="bg-gradient-to-r from-blue-50 to-violet-50">
+  <BookOpen /> Powered by Perplexity Research
+  {sourceCount} sources analyzed  [View Sources →]
+</div>
+```
+- Appears immediately after "Intelligence Brief" heading
+- Gradient blue/violet background
+- Shows source count + research provider
+- Click → scrolls to detailed sources
+
+**2. Floating Badge (Top-Right)**
+```tsx
+<button className="bg-blue-500 text-white">
+  <BookOpen /> {sourceCount}
+</button>
+```
+- Always visible in viewport (doesn't scroll away)
+- Positioned with Download/Share/Close buttons
+- Click → jumps to sources section
+
+**3. Enhanced Detail Section**
+- Gradient background (blue/violet theme)
+- Website favicons for quick recognition
+- Numbered badges (1, 2, 3...)
+- Larger, more prominent cards
+- "Research Sources - Verified by Perplexity AI" header
+
+#### Impact
+- Sources now hero feature, not hidden content
+- Immediate visibility without scrolling
+- Professional Perplexity branding
+- Better trust and transparency
+
+---
+
+### 13. Backend Signal Validation
+
+**Date:** February 17, 2026
+**File Modified:** `functions/src/generateDiscoverCards.ts`
+
+#### Problem
+4th signal bullet was cut off mid-word ("Martech/AI bu") due to token limit.
+
+#### Solution
+1. **Increased token limit**: 2048 → 3072 (+50%)
+2. **Completeness validation**:
+   ```typescript
+   for (let i = 0; i < card.signals.length; i++) {
+     if (signal.length < 10) return false;
+     const looksIncomplete = /[a-z]$/i.test(lastChar) && signal.length < 30;
+     if (looksIncomplete) return false;
+   }
+   ```
+3. **Truncation detection**:
+   ```typescript
+   if (response.stop_reason === 'max_tokens') {
+     throw new Error('Response truncated');
+   }
+   ```
+
+#### Result
+- All signals guaranteed complete
+- Invalid cards rejected → trigger regeneration
+- Tomorrow's 6 AM run will use new validation
+
+---
+
+## January 2026 Updates
 
 ## Overview
 

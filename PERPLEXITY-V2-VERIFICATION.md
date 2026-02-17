@@ -15,7 +15,7 @@ Successfully migrated PlannerAPI from raw Perplexity API fetch calls to the offi
 
 **Features Implemented:**
 - ✅ Three API modes:
-  - **Sonar Chat Completions** (`sonar-pro`) - Structured briefs with citations
+  - **Sonar Chat Completions** (`sonar`) - Structured briefs with citations (updated 2026-02-17)
   - **Agentic Research** (`sonar-reasoning-pro`) - Multi-step research
   - **Raw Search** (`search.create`) - Ranked results for RAG
 
@@ -70,7 +70,8 @@ rawSearch(params) → { results, search_query, count }
 #### 3. Model Updates
 
 - ✅ Replaced deprecated `sonar-reasoning` with `sonar-reasoning-pro`
-- ✅ Default model: `sonar-pro` (most cost-effective for structured briefs)
+- ✅ Default model: `sonar` (fastest, most cost-effective) - updated 2026-02-17
+- ⚠️ Previous: `sonar-pro-fast` (deprecated, removed)
 
 ---
 

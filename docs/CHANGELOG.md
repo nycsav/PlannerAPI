@@ -9,6 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - 2026-02-17
+- **Conversational follow-up interface** in IntelligenceModal
+  - User questions appear on right (orange bubbles)
+  - AI responses stack on left (structured cards)
+  - Auto-scroll to latest message
+  - Conversation persists within modal session
+- **Smart contextual question suggestions** (auto-generated, 3 per brief)
+  - Theme-aware (AI, retail media, budget, competitive, etc.)
+  - Clickable chips populate input field
+  - Only shown before conversation starts
+- **Sources always visible** (3 visibility features)
+  - Header banner: "Powered by Perplexity Research" + source count
+  - Floating badge: Top-right corner with click-to-scroll
+  - Enhanced detail section: Favicons, numbering, prominent styling
+
+### Changed - 2026-02-17
+- **Perplexity model:** `sonar-pro-fast` → `sonar` (faster, lower latency)
+- **Backend signal validation:** Added completeness checks to prevent truncated bullets
+- **Token limit:** Increased from 2048 → 3072 for complete responses
+- **Response parsing:** Fixed follow-up question format (Summary → Signals → Actions)
+- **Source display:** Blue/violet theme, larger cards, better hover effects
+
+### Fixed - 2026-02-17
+- Incomplete signal text (4th bullet cut off mid-word)
+- Follow-up questions not appearing in conversation
+- Modal refreshing instead of stacking responses
+- Truncation detection (stop_reason === 'max_tokens')
+
 ### Planned
 - Bloomberg Terminal-inspired design system
 - Email newsletter delivery automation (SendGrid/Mailgun)
@@ -117,7 +145,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 2026-02-01 — Initial API Integrations
 
 **Perplexity API:**
-- Model: `sonar-pro` (real-time web search)
+- Model: `sonar` (fast, real-time web search) - updated 2026-02-17
+- Previous: `sonar-pro-fast` (deprecated)
 - Use cases: Daily intelligence, HeroSearch, follow-up questions
 - Cost: ~$1-2/month
 
