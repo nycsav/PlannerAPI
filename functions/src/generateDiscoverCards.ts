@@ -23,6 +23,7 @@ import * as admin from 'firebase-admin';
 import * as dotenv from 'dotenv';
 import { Anthropic } from '@anthropic-ai/sdk';
 import { DiscoverCard, PillarConfig } from './types';
+import { sonarChatCompletion } from './perplexityClient';
 
 // Load environment variables
 dotenv.config();
@@ -32,9 +33,7 @@ if (admin.apps.length === 0) {
   admin.initializeApp();
 }
 
-const PPLX_API_KEY = process.env.PPLX_API_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions';
 
 // Initialize Anthropic client
 const anthropic = new Anthropic({
@@ -204,9 +203,34 @@ function validateCard(card: any): card is Partial<DiscoverCard> {
     return false;
   }
 
+  // Validate each signal is complete (not cut off)
+  for (let i = 0; i < card.signals.length; i++) {
+    const signal = card.signals[i];
+    if (typeof signal !== 'string' || signal.length < 10) {
+      console.error(`❌ Signal ${i + 1} is too short or invalid: "${signal}"`);
+      return false;
+    }
+    // Check if signal ends abruptly (no punctuation or looks incomplete)
+    const lastChar = signal.trim().slice(-1);
+    const looksIncomplete = /[a-z]$/i.test(lastChar) && signal.trim().length < 30;
+    if (looksIncomplete) {
+      console.error(`❌ Signal ${i + 1} appears incomplete: "${signal}"`);
+      return false;
+    }
+  }
+
   if (!Array.isArray(card.moves) || card.moves.length !== 3) {
     console.error(`❌ Invalid moves array: expected 3, got ${card.moves?.length || 0}`);
     return false;
+  }
+
+  // Validate each move is complete
+  for (let i = 0; i < card.moves.length; i++) {
+    const move = card.moves[i];
+    if (typeof move !== 'string' || move.length < 10) {
+      console.error(`❌ Move ${i + 1} is too short or invalid: "${move}"`);
+      return false;
+    }
   }
 
   if (typeof card.sourceCount !== 'number' || card.sourceCount < 1) {
@@ -261,10 +285,6 @@ function calculatePriority(
  * Returns content and citations from Perplexity
  */
 async function fetchPillarNews(pillar: PillarConfig, cardIndexInPillar: number): Promise<{content: string; citations: string[]}> {
-  if (!PPLX_API_KEY) {
-    throw new Error('PPLX_API_KEY environment variable is not set');
-  }
-
   // Use diverse query if available, otherwise fall back to default query
   const queryToUse = pillar.diverseQueries?.[cardIndexInPillar] || pillar.query;
 
@@ -274,38 +294,29 @@ async function fetchPillarNews(pillar: PillarConfig, cardIndexInPillar: number):
     ? `\n\nIMPORTANT: Do NOT include news about these topics (already covered): ${excludeTopics}`
     : '';
 
-  const response = await fetch(PERPLEXITY_API_URL, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${PPLX_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: 'sonar-pro',
-      messages: [{
-        role: 'user',
-        content: `Find the most important recent news about: ${queryToUse}.
-                  Focus on stories from the last 24-48 hours with specific data/metrics.
-                  Return 3-5 DISTINCT news items with sources - each about a DIFFERENT company/topic.${exclusionNote}`
-      }],
-      search_domain_filter: ['adweek.com', 'marketingdive.com', 'adage.com', 'techcrunch.com', 'digiday.com', 'wsj.com', 'bloomberg.com'],
-      search_recency_filter: 'day',
-      return_citations: true, // CRITICAL: Request citations to get real source URLs
-      return_related_questions: false
-    })
+  // Use new Perplexity SDK with retry logic and search_results
+  const response = await sonarChatCompletion({
+    messages: [{
+      role: 'user',
+      content: `Find the most important recent news about: ${queryToUse}.
+                Focus on stories from the last 24-48 hours with specific data/metrics.
+                Return 3-5 DISTINCT news items with sources - each about a DIFFERENT company/topic.${exclusionNote}`
+    }],
+    model: 'sonar-pro',
+    search_domain_filter: ['adweek.com', 'marketingdive.com', 'adage.com', 'techcrunch.com', 'digiday.com', 'wsj.com', 'bloomberg.com'],
+    search_recency_filter: 'day',
+    return_related_questions: false,
+    timeout: 45000, // 45 second timeout for news fetching
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Perplexity API error (${response.status}): ${errorText}`);
-  }
-
-  const data = await response.json();
+  // Extract citations from search_results (v2 format)
+  const searchResults = response.search_results || [];
+  const citations = searchResults.map((sr: any) => sr.url).filter((url: any) => url);
 
   // Return both content and citations
   return {
-    content: data.choices[0]?.message?.content || '',
-    citations: data.citations || []
+    content: response.content,
+    citations
   };
 }
 
@@ -365,7 +376,7 @@ Return ONLY the JSON object, no markdown code blocks.`;
     const startTime = Date.now();
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 2048,
+      max_tokens: 3072, // Increased from 2048 to ensure complete responses
       system: [CACHED_SYSTEM_PROMPT],
       messages: [
         {
@@ -389,6 +400,12 @@ Return ONLY the JSON object, no markdown code blocks.`;
 
     console.log(`[Card ${cardIndex}] ⚡ Cache: ${cacheMetrics.cached} | Time: ${elapsedMs}ms`);
     console.log(`[Card ${cardIndex}] 📊 Tokens: input=${usage.input_tokens}, output=${usage.output_tokens}, cache_read=${cacheMetrics.cache_read_input_tokens}`);
+
+    // Check if response was truncated due to token limit
+    if (response.stop_reason === 'max_tokens') {
+      console.error(`[Card ${cardIndex}] ⚠️  Response hit max_tokens limit - likely incomplete`);
+      throw new Error('Response truncated: hit max_tokens limit');
+    }
 
     // Extract JSON from response
     const content = response.content[0];

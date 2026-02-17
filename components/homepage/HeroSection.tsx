@@ -53,7 +53,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
           color: 'var(--accent)',
           marginBottom: '1.5rem',
         }}>
-          Intelligence Brief
+          Vol. 01 — 2026
         </div>
 
         <h1 style={{
@@ -63,9 +63,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
           color: 'var(--cream)',
           lineHeight: 1.1,
           letterSpacing: '-0.03em',
-          marginBottom: '1.5rem',
+          marginBottom: '1rem',
         }}>
-          Intelligence, Decoded
+          Daily intelligence. Zero noise.
         </h1>
 
         <p style={{
@@ -76,10 +76,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
           marginBottom: '2.5rem',
           maxWidth: '560px',
         }}>
-          Strategic insights from McKinsey, Gartner, and BCG. Delivered daily. 90 seconds.
+          3 signals from tier-1 sources. Real-time AI synthesis. Every morning.
         </p>
 
-        <form onSubmit={handleSubmit} style={{ maxWidth: '520px' }}>
+        <form onSubmit={handleSubmit} style={{ maxWidth: '600px' }}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -95,7 +95,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
               placeholder="What do you need to know?"
               style={{
                 flex: 1,
-                padding: '1rem 1.25rem',
+                padding: '1.25rem 1.5rem',
                 backgroundColor: 'transparent',
                 border: 'none',
                 color: 'var(--cream)',
@@ -110,7 +110,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
-                padding: '1rem 1.5rem',
+                padding: '1.25rem 1.5rem',
                 backgroundColor: 'var(--accent)',
                 color: 'var(--navy)',
                 border: 'none',

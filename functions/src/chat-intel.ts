@@ -10,13 +10,12 @@
 
 import * as functions from 'firebase-functions';
 import * as dotenv from 'dotenv';
+import { sonarChatCompletion } from './perplexityClient';
 
 // Load environment variables
 dotenv.config();
 
-const PPLX_API_KEY = process.env.PPLX_API_KEY;
-const PPLX_MODEL_FAST = process.env.PPLX_MODEL_FAST || 'sonar';
-const PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions';
+const PPLX_MODEL_FAST = process.env.PPLX_MODEL_FAST || 'sonar-pro';
 
 type PlannerChatResponse = {
   signals: Array<{
@@ -31,23 +30,7 @@ type PlannerChatResponse = {
   citations?: string[]; // Perplexity source citations
 };
 
-interface PerplexityResponse {
-  id: string;
-  model: string;
-  choices: Array<{
-    message: {
-      role: string;
-      content: string;
-    };
-    finish_reason: string;
-  }>;
-  usage?: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
-  citations?: string[];
-}
+// PerplexityResponse interface no longer needed - using SDK types
 
 /**
  * Cloud Function handler
@@ -88,14 +71,7 @@ export const chatIntel = functions.https.onRequest(async (req, res) => {
       return;
     }
 
-    // Check API key
-    if (!PPLX_API_KEY) {
-      console.error('Missing PPLX_API_KEY environment variable');
-      res.status(500).json({
-        error: 'Service configuration error. Please contact support.'
-      });
-      return;
-    }
+    // API key is checked in perplexityClient.ts
 
     // Call Perplexity API with conversation history if provided
     const response = await fetchFastIntel({
@@ -167,42 +143,33 @@ Source: [Source Name] | [URL]
 
 Keep it concise, data-driven, and business-focused.`;
 
-  // Build messages array for Perplexity
+  // Build messages array for Perplexity with proper types
   // If conversation history provided, use it; otherwise single-shot query
-  const apiMessages = messages.length > 0
+  const apiMessages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string }> = messages.length > 0
     ? [
-        { role: 'system', content: systemPrompt },
-        ...messages // Full conversation history
+        { role: 'system' as const, content: systemPrompt },
+        ...messages.map(m => ({ ...m, role: m.role as 'system' | 'user' | 'assistant' | 'tool' })) // Full conversation history
       ]
     : [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: query }
+        { role: 'system' as const, content: systemPrompt },
+        { role: 'user' as const, content: query }
       ];
 
-  const response = await fetch(PERPLEXITY_API_URL, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${PPLX_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: PPLX_MODEL_FAST,
-      messages: apiMessages,
-      temperature: 0.2,
-      max_tokens: 1500,
-      return_citations: true, // Request citations from Perplexity
-      search_recency_filter: 'week', // Get recent data
-    }),
+  // Use new Perplexity SDK with retry logic and search_results
+  const response = await sonarChatCompletion({
+    messages: apiMessages,
+    model: PPLX_MODEL_FAST,
+    temperature: 0.2,
+    max_tokens: 1500,
+    search_recency_filter: 'week', // Get recent data
+    timeout: 40000, // 40 second timeout
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Perplexity API error (${response.status}): ${errorText}`);
-  }
+  const content = response.content;
+  const searchResults = response.search_results || [];
 
-  const data: PerplexityResponse = await response.json();
-  const content = data.choices[0]?.message?.content || '';
-  const citations = data.citations || [];
+  // Convert search_results to old citations format for backwards compatibility
+  const citations = searchResults.map((sr: any) => sr.url).filter((url: any) => url);
 
   return parsePerplexityResponse(content, citations);
 }

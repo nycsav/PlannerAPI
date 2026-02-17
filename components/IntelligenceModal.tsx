@@ -57,6 +57,59 @@ type IntelligenceModalProps = {
 };
 
 /**
+ * Generate contextual follow-up questions based on the intelligence brief
+ * These appear as clickable chips to guide users toward deeper insights
+ */
+function generateContextualFollowUps(query: string, summary: string, keySignals: string[]): string[] {
+  const lowerQuery = query.toLowerCase();
+  const lowerSummary = summary.toLowerCase();
+  const combinedText = `${lowerQuery} ${lowerSummary}`;
+
+  const suggestions: string[] = [];
+
+  // Extract main topic from query
+  const topicMatch = query.match(/(?:about|for|on|regarding|with)\s+(.+?)(?:\?|$)/i);
+  const topic = topicMatch ? topicMatch[1].trim() : query.replace(/\?$/, '').trim();
+
+  // Detect themes and generate relevant questions
+  const isAI = /\b(ai|artificial intelligence|machine learning|ml|llm|gpt|claude|deepseek|automation)\b/i.test(combinedText);
+  const isRetailMedia = /\b(retail media|amazon ads|walmart connect|commerce media)\b/i.test(combinedText);
+  const isAttribution = /\b(attribution|measurement|mmm|media mix|incrementality)\b/i.test(combinedText);
+  const isCompetitive = /\b(compet|rival|market share|positioning)\b/i.test(combinedText);
+  const isBudget = /\b(budget|cost|spend|investment|roi|pricing)\b/i.test(combinedText);
+
+  // Generate 3-4 contextual questions
+  if (isAI) {
+    suggestions.push(`What are the implementation costs for ${topic}?`);
+    suggestions.push(`Which vendors or platforms should we evaluate?`);
+    suggestions.push(`What ROI can we expect in the first 6 months?`);
+  } else if (isRetailMedia) {
+    suggestions.push(`How does this compare to traditional display advertising?`);
+    suggestions.push(`What attribution challenges should we prepare for?`);
+    suggestions.push(`Which retail media networks have the best performance?`);
+  } else if (isAttribution) {
+    suggestions.push(`What measurement frameworks are recommended?`);
+    suggestions.push(`How do we get executive buy-in for this approach?`);
+    suggestions.push(`What are the implementation timelines?`);
+  } else if (isCompetitive) {
+    suggestions.push(`Who are the top 3 competitors in this space?`);
+    suggestions.push(`What differentiates the market leaders?`);
+    suggestions.push(`What moves should we make to defend our position?`);
+  } else if (isBudget) {
+    suggestions.push(`How should we reallocate budget based on this?`);
+    suggestions.push(`What are the opportunity costs if we don't act?`);
+    suggestions.push(`What quick wins can we achieve within 30 days?`);
+  } else {
+    // Generic but contextual fallbacks
+    suggestions.push(`What are the budget implications?`);
+    suggestions.push(`How does this compare to our competitors?`);
+    suggestions.push(`What should our first step be?`);
+  }
+
+  return suggestions.slice(0, 3); // Return top 3 suggestions
+}
+
+/**
  * Generate contextual strategic frameworks based on the query and summary
  * This creates tailored actions specific to each intelligence brief
  */
@@ -245,8 +298,13 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
   const [displayPayload, setDisplayPayload] = useState<IntelligencePayload | null>(payload);
 
   // Sync displayPayload when payload prop changes (e.g. new card opened, initial load)
+  // Also clear conversation history for new cards
   useEffect(() => {
     setDisplayPayload(payload);
+    // Clear conversation when opening a new card
+    if (payload) {
+      setFollowUpMessages([]);
+    }
   }, [payload]);
 
   // Generate contextual frameworks based on the query and content
@@ -279,12 +337,20 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
   const [followUpMessages, setFollowUpMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([]);
   const [followUpInput, setFollowUpInput] = useState('');
   const [followUpLoading, setFollowUpLoading] = useState(false);
+  const conversationEndRef = useRef<HTMLDivElement>(null);
 
   // Dashboard visualization state
   const [showDashboard, setShowDashboard] = useState(false);
-  
+
   // Quick chat modal state
   const [showQuickChat, setShowQuickChat] = useState(false);
+
+  // Auto-scroll to latest message in conversation
+  useEffect(() => {
+    if (followUpMessages.length > 0) {
+      conversationEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [followUpMessages]);
 
 
 
@@ -294,6 +360,13 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
     if (!p?.summary) return [];
     return extractMetrics(p.summary);
   }, [displayPayload?.summary, payload?.summary]);
+
+  // Generate contextual follow-up suggestions
+  const followUpSuggestions = useMemo(() => {
+    const p = displayPayload ?? payload;
+    if (!p?.query || !p?.summary) return [];
+    return generateContextualFollowUps(p.query, p.summary, p.keySignals || []);
+  }, [displayPayload?.query, displayPayload?.summary, displayPayload?.keySignals, payload?.query, payload?.summary, payload?.keySignals]);
 
   // Log when payload changes (must be before early return)
   useEffect(() => {
@@ -399,9 +472,9 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
     if (!question) return;
     if (followUpLoading) return;
 
-    // Need current payload for context (displayPayload or payload)
-    const currentPayload = displayPayload ?? payload;
-    if (!currentPayload) return;
+    // Add user message to conversation immediately
+    const userMessage = { role: 'user' as const, content: question };
+    setFollowUpMessages(prev => [...prev, userMessage]);
 
     setFollowUpInput('');
     setFollowUpLoading(true);
@@ -420,76 +493,48 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
       if (!resp.ok) throw new Error(`Backend error: ${resp.status}`);
       const data = await resp.json();
 
-      // Support both content (Cloud Run/Cloud Functions) and answer (legacy) formats
-      const rawText = data.content ?? data.answer ?? '';
-      const sections = rawText.split('##') || [];
+      // Backend returns { answer: "Summary: ...\n\nSignals:\n- ...\n\nMoves for leaders:\n- ..." }
+      // or { content: "..." } format
+      const rawText = data.answer ?? data.content ?? '';
 
-      let summary = '';
-      if (sections.length > 1) {
-        summary = sections[1].split('\n').filter((l: string) => l.trim() && !l.includes('##')).join(' ').trim();
-      } else {
-        summary = rawText;
+      // Format the response for conversational display
+      let formattedResponse = '';
+
+      // Parse sections: "Summary:", "Signals:", "Moves for leaders:"
+      const summaryMatch = rawText.match(/Summary:\s*\n\n(.+?)(?=\n\nSignals:|$)/s);
+      if (summaryMatch) {
+        formattedResponse += `**Summary**\n\n${summaryMatch[1].trim()}\n\n`;
       }
 
-      const movesForLeaders: string[] = [];
-      const movesSection = sections.find((s: string) =>
-        s.toLowerCase().includes('action') ||
-        s.toLowerCase().includes('move') ||
-        s.toLowerCase().includes('recommend')
-      );
-      if (movesSection) {
-        const moveRegex = /^[-*•]\s+(.+)$/gm;
-        let moveMatch;
-        while ((moveMatch = moveRegex.exec(movesSection)) !== null) {
-          movesForLeaders.push(moveMatch[1].trim());
-        }
+      // Extract Signals section (bullet points)
+      const signalsMatch = rawText.match(/Signals:\s*\n((?:[-*•]\s+.+\n?)+)/);
+      if (signalsMatch) {
+        formattedResponse += `**Key Signals**\n\n${signalsMatch[1].trim()}\n\n`;
       }
 
-      const keySignals: string[] = [];
-      const nonMovesSections = sections.filter((s: string) => s !== movesSection);
-      const nonMovesText = nonMovesSections.join('\n');
-      const bulletRegex = /^[-*•]\s+(.+)$/gm;
-      let match;
-      while ((match = bulletRegex.exec(nonMovesText)) !== null) {
-        const signal = match[1].trim();
-        if (!keySignals.includes(signal) && !movesForLeaders.includes(signal)) {
-          keySignals.push(signal);
-        }
+      // Extract Moves for leaders section (bullet points)
+      const movesMatch = rawText.match(/Moves for leaders:\s*\n((?:[-*•]\s+.+\n?)+)/);
+      if (movesMatch) {
+        formattedResponse += `**Actions**\n\n${movesMatch[1].trim()}`;
       }
 
-      const citations = data.search_results ?? data.raw?.citations ?? [];
-      const signals: IntelligenceSignal[] = Array.isArray(citations)
-        ? citations.map((c: any, i: number) => ({
-            id: `source-${i}`,
-            title: c.title || c.source || `Source ${i + 1}`,
-            summary: c.snippet || c.summary || '',
-            sourceName: c.source ?? c.title ?? `Source ${i + 1}`,
-            sourceUrl: c.url ?? c.sourceUrl ?? '#',
-          }))
-        : [];
+      // If no structured format found, use raw text
+      if (!formattedResponse) {
+        formattedResponse = rawText;
+      }
 
-      const newPayload: IntelligencePayload = {
-        query: question,
-        summary: summary.substring(0, 800),
-        keySignals: keySignals.slice(0, 5),
-        signals,
-        movesForLeaders: movesForLeaders.length > 0 ? movesForLeaders.slice(0, 3) : [
-          'Review the key signals and assess impact on your current strategy',
-          'Identify quick-win opportunities to implement within 30 days',
-          'Establish measurement framework to track progress',
-        ],
-      };
+      // Add assistant message to conversation
+      const assistantMessage = { role: 'assistant' as const, content: formattedResponse };
+      setFollowUpMessages(prev => [...prev, assistantMessage]);
 
-      setDisplayPayload(newPayload);
       if (onFollowUp) onFollowUp(question);
     } catch (error) {
       console.error('[Follow-up] API error:', error);
-      setDisplayPayload({
-        query: question,
-        summary: 'Unable to get intelligence for that question. Please try again.',
-        keySignals: [],
-        movesForLeaders: [],
-      });
+      const errorMessage = {
+        role: 'assistant' as const,
+        content: 'Unable to get intelligence for that question. Please try again.'
+      };
+      setFollowUpMessages(prev => [...prev, errorMessage]);
     } finally {
       setFollowUpLoading(false);
     }
@@ -609,6 +654,23 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
 
         {/* Top right actions */}
         <div className="absolute top-6 right-6 flex items-center gap-2 z-10">
+          {/* Sources badge - Always visible */}
+          {effectivePayload && (() => {
+            const validSignals = effectivePayload.signals?.filter(signal => signal.sourceUrl && signal.sourceUrl !== '#') || [];
+            const sourceCount = validSignals.length;
+
+            return (
+              <button
+                onClick={() => document.querySelector('[data-section="sources-detail"]')?.scrollIntoView({ behavior: 'smooth' })}
+                className="flex items-center gap-2 px-3 py-2 bg-blue-500 dark:bg-violet-500 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-violet-600 shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-violet-400 focus:ring-offset-2"
+                title="View research sources"
+              >
+                <BookOpen className="w-4 h-4" />
+                <span className="text-sm font-bold">{sourceCount}</span>
+              </button>
+            );
+          })()}
+
           {/* Export buttons - only show when we have content to export */}
           {effectivePayload && (
             <>
@@ -668,6 +730,37 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
               <h1 className="font-display text-5xl md:text-6xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight leading-tight">
                 Intelligence Brief
               </h1>
+
+              {/* Sources Banner - Always Visible */}
+              {(() => {
+                const validSignals = effectivePayload.signals?.filter(signal => signal.sourceUrl && signal.sourceUrl !== '#') || [];
+                const sourceCount = validSignals.length;
+
+                return (
+                  <div className="mt-8 flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-violet-50 dark:from-slate-800/60 dark:to-slate-700/60 rounded-xl border-2 border-blue-200/50 dark:border-violet-500/30">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-500 dark:bg-violet-500 rounded-lg shadow-sm">
+                        <BookOpen className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                          Powered by Perplexity Research
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          {sourceCount > 0 ? `${sourceCount} sources analyzed` : 'Real-time intelligence synthesis'}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => document.querySelector('[data-section="sources-detail"]')?.scrollIntoView({ behavior: 'smooth' })}
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-blue-600 dark:text-violet-400 hover:bg-blue-100 dark:hover:bg-slate-600/50 rounded-lg transition-all duration-200"
+                    >
+                      <span>View Sources</span>
+                      <ExternalLink className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
 
           <div className="flex flex-col lg:flex-row gap-16">
@@ -855,12 +948,19 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
               </div>
 
               {/* Sources section - ALWAYS shown below Strategic Frameworks */}
-              <div data-section="sources" className="mt-6 border-2 border-gray-200/60 dark:border-slate-700/50 rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-lg">
-                <div className="flex items-center gap-3 mb-4">
-                  <BookOpen className="w-5 h-5 text-bureau-signal dark:text-planner-orange" />
-                  <h3 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
-                    Sources
-                  </h3>
+              <div data-section="sources-detail" className="mt-6 border-2 border-blue-200/60 dark:border-violet-500/50 rounded-2xl bg-gradient-to-br from-blue-50/50 to-violet-50/30 dark:from-slate-800 dark:to-slate-700/80 p-6 shadow-lg">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="p-2 bg-blue-500 dark:bg-violet-500 rounded-lg shadow-sm">
+                    <BookOpen className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
+                      Research Sources
+                    </h3>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+                      Verified by Perplexity AI
+                    </p>
+                  </div>
                 </div>
                 <div className="space-y-3">
                   {(() => {
@@ -883,8 +983,11 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
                     
                     return validSignals.map((signal, index) => {
                       let hostname = '';
+                      let favicon = '';
                       try {
-                        hostname = new URL(signal.sourceUrl).hostname;
+                        const url = new URL(signal.sourceUrl);
+                        hostname = url.hostname.replace('www.', '');
+                        favicon = `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`;
                       } catch {
                         hostname = signal.sourceUrl;
                       }
@@ -895,20 +998,32 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
                           href={signal.sourceUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="group flex items-start gap-3 p-3 rounded-xl border border-gray-200/60 dark:border-slate-700/50 hover:border-bureau-signal/60 dark:hover:border-planner-orange/60 hover:bg-blue-50 dark:hover:bg-slate-700/80 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-1"
+                          className="group flex items-start gap-3 p-4 rounded-xl border-2 border-blue-100 dark:border-slate-600 hover:border-blue-400 dark:hover:border-violet-400 bg-white dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-slate-700/80 hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-violet-400 focus:ring-offset-2"
                         >
-                          <span className="font-mono text-xs font-bold text-bureau-signal dark:text-planner-orange shrink-0 mt-0.5">
-                            [{index + 1}]
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <p className="font-sans text-sm font-semibold text-gray-900 dark:text-gray-100 group-hover:text-bureau-signal dark:group-hover:text-planner-orange line-clamp-2 mb-1">
-                              {signal.sourceName || signal.title || signal.sourceUrl}
-                            </p>
-                            <p className="font-mono text-xs text-gray-700 dark:text-gray-300 truncate">
-                              {hostname}
-                            </p>
+                          <div className="flex items-center gap-3 shrink-0">
+                            <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500 dark:bg-violet-500 text-white text-xs font-bold shadow-sm">
+                              {index + 1}
+                            </span>
+                            {favicon && (
+                              <img
+                                src={favicon}
+                                alt=""
+                                className="w-6 h-6 rounded"
+                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                              />
+                            )}
                           </div>
-                          <ExternalLink className="w-4 h-4 text-gray-700 dark:text-gray-300 group-hover:text-bureau-signal dark:group-hover:text-planner-orange shrink-0 mt-1" />
+                          <div className="min-w-0 flex-1">
+                            <p className="font-sans text-sm font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-violet-400 mb-1.5 leading-snug">
+                              {signal.sourceName || signal.title || hostname}
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-mono text-xs text-gray-600 dark:text-gray-400">
+                                {hostname}
+                              </p>
+                              <ExternalLink className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-violet-400" />
+                            </div>
+                          </div>
                         </a>
                       );
                     });
@@ -979,21 +1094,99 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
             </div>
           )}
 
-          {/* Follow-up Chat Section */}
+          {/* Follow-up Chat Section - Conversational Interface */}
           <section data-section="follow-up" className="mt-12 pt-8 border-t-2 border-gray-200/60 dark:border-slate-700/50">
             <div className="mb-6">
               <div className="flex items-center gap-3 mb-3">
                 <MessageCircle className="w-6 h-6 text-bureau-signal dark:text-planner-orange" />
                 <h3 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
-                  Ask a Follow-Up
+                  Conversation
                 </h3>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                Ask a follow-up question to get a new intelligence brief with updated insights powered by <span className="font-semibold text-bureau-signal dark:text-planner-orange">Perplexity</span>.
-                The modal will refresh with new summary, signals, and recommendations.
+                Continue the conversation with <span className="font-semibold text-bureau-signal dark:text-planner-orange">Perplexity</span> to explore this topic deeper.
               </p>
             </div>
 
+            {/* Conversation History */}
+            {followUpMessages.length > 0 && (
+              <div className="mb-6 space-y-4 max-h-[500px] overflow-y-auto p-4 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-slate-700">
+                {followUpMessages.map((msg, index) => {
+                  const safeContent = typeof msg.content === 'string'
+                    ? msg.content
+                    : (msg.content as any)?.text || JSON.stringify(msg.content);
+
+                  return (
+                    <div
+                      key={index}
+                      className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      {msg.role === 'assistant' && (
+                        <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-violet-500 to-violet-600 rounded-full flex items-center justify-center shadow-sm">
+                          <Sparkles className="w-4 h-4 text-white" />
+                        </div>
+                      )}
+                      <div
+                        className={`max-w-[85%] ${
+                          msg.role === 'user'
+                            ? 'bg-planner-orange text-white rounded-2xl px-4 py-3 shadow-md'
+                            : 'bg-white dark:bg-slate-800 rounded-2xl border-2 border-slate-200 dark:border-slate-700 px-5 py-4 shadow-sm'
+                        }`}
+                      >
+                        {msg.role === 'user' ? (
+                          <p className="text-sm leading-relaxed font-sans">{safeContent}</p>
+                        ) : (
+                          <div className="text-sm leading-relaxed text-gray-900 dark:text-gray-100 prose prose-sm dark:prose-invert max-w-none">
+                            {parsePerplexityMarkdown(safeContent)}
+                          </div>
+                        )}
+                      </div>
+                      {msg.role === 'user' && (
+                        <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-planner-orange to-orange-600 rounded-full flex items-center justify-center shadow-sm">
+                          <span className="text-white text-xs font-bold">You</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {followUpLoading && (
+                  <div className="flex gap-3 justify-start">
+                    <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-violet-500 to-violet-600 rounded-full flex items-center justify-center">
+                      <Sparkles className="w-4 h-4 text-white animate-pulse" />
+                    </div>
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl border-2 border-slate-200 dark:border-slate-700 px-5 py-4">
+                      <LoadingSpinner size="sm" text="Analyzing..." />
+                    </div>
+                  </div>
+                )}
+                {/* Scroll anchor */}
+                <div ref={conversationEndRef} />
+              </div>
+            )}
+
+            {/* Contextual Follow-Up Suggestions - Only show if no conversation started */}
+            {followUpMessages.length === 0 && followUpSuggestions.length > 0 && (
+              <div className="mb-4">
+                <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-3">
+                  Suggested Questions
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {followUpSuggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setFollowUpInput(suggestion)}
+                      disabled={followUpLoading}
+                      className="group flex items-center gap-2 px-4 py-2.5 text-sm text-left bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-lg hover:border-planner-orange dark:hover:border-planner-orange hover:bg-orange-50 dark:hover:bg-slate-700/80 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+                    >
+                      <Sparkles className="w-4 h-4 text-violet-500 group-hover:text-planner-orange flex-shrink-0" />
+                      <span className="text-gray-900 dark:text-gray-100 leading-snug">
+                        {suggestion}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Input */}
             <form
@@ -1015,14 +1208,15 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
                     handleFollowUpSubmit();
                   }
                 }}
-                placeholder="e.g., What are the budget implications? How does this compare to competitors?"
+                placeholder={followUpMessages.length > 0 ? "Continue the conversation..." : "e.g., What are the budget implications? How does this compare to competitors?"}
                 disabled={followUpLoading}
                 className="flex-1 px-4 py-3 border-2 border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-300 focus:outline-none focus:border-bureau-signal dark:focus:border-planner-orange focus:ring-2 focus:ring-bureau-signal/20 dark:focus:ring-planner-orange/20 disabled:bg-gray-100 dark:disabled:bg-slate-900 disabled:cursor-not-allowed font-sans text-base transition-all duration-200"
               />
               <button
                 type="submit"
+                disabled={followUpLoading}
                 style={{ cursor: 'pointer' }}
-                className="px-6 py-3 bg-planner-orange text-white rounded-lg hover:bg-orange-600 hover:shadow-md active:scale-[0.98] transition-all duration-200 flex items-center gap-2 font-display text-xs font-bold uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-planner-orange focus:ring-offset-2"
+                className="px-6 py-3 bg-planner-orange text-white rounded-lg hover:bg-orange-600 hover:shadow-md active:scale-[0.98] transition-all duration-200 flex items-center gap-2 font-display text-xs font-bold uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-planner-orange focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {followUpLoading ? (
                   <>

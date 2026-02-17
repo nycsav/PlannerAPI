@@ -2,7 +2,7 @@ import './index.css';
 import './src/styles/unified-design-system.css';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
+import App from './TestNewHomepage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AudienceProvider } from './contexts/AudienceContext';
 import { AuthProvider } from './contexts/AuthContext';

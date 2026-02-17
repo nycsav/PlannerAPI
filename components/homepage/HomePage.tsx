@@ -3,6 +3,8 @@ import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../../utils/firebase';
 import { Navbar } from './Navbar';
 import { HeroSection } from './HeroSection';
+import { SourceLogos } from './SourceLogos';
+import { CTASection } from './CTASection';
 import { BriefCard, BriefCardProps } from './BriefCard';
 import { Footer } from './Footer';
 
@@ -58,13 +60,47 @@ export const HomePage: React.FC<HomePageProps> = ({ onBriefClick, onSignupClick,
 
   return (
     <div style={{ backgroundColor: 'var(--navy)', minHeight: '100vh' }}>
+      {/* 1. Navigation */}
       <Navbar onSignupClick={onSignupClick} />
+
+      {/* 2. Hero Section */}
       <HeroSection onSearch={onSearch} />
-      
-      <section style={{ backgroundColor: 'var(--navy)', padding: '4rem 1.5rem' }}>
+
+      {/* 3. Source Logos */}
+      <SourceLogos />
+
+      {/* 4. CTA Section */}
+      <div style={{ marginBottom: '4rem' }}>
+        <CTASection onQueryClick={onSearch} />
+      </div>
+
+      {/* 5. Brief Cards Grid */}
+      <section style={{ backgroundColor: 'var(--navy)', padding: '4rem 1.5rem', marginBottom: '4rem' }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-          <div style={{ 
-            display: 'grid', 
+          {/* Section Header */}
+          <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
+            <h2 style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: '2.5rem',
+              fontWeight: 700,
+              color: 'var(--cream)',
+              letterSpacing: '-0.02em',
+              marginBottom: '0.75rem',
+            }}>
+              Latest Intelligence
+            </h2>
+            <p style={{
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '1rem',
+              color: 'rgba(248, 246, 240, 0.6)',
+            }}>
+              Fresh insights delivered daily
+            </p>
+          </div>
+
+          {/* Cards Grid */}
+          <div style={{
+            display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
             gap: '2rem'
           }}>
@@ -88,6 +124,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onBriefClick, onSignupClick,
         </div>
       </section>
 
+      {/* 6. Footer */}
       <Footer />
     </div>
   );

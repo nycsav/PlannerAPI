@@ -12,5 +12,15 @@ export { storeDailyBrief } from './storeDailyBrief';
 export { markLinkedInPosted } from './markLinkedInPosted';
 export { getTopCardForPublishing } from './getTopCardForPublishing';
 
+// Premium content enrichment with Opus 4.6 (uses $50 API credit)
+export { enrichPremiumBriefFunction as enrichPremiumBrief } from './enrichPremiumBrief';
+
 // CopilotKit Runtime
 export { copilotRuntime, copilotHealth } from './copilot-runtime';
+
+// Perplexity API v2 Endpoints (three modes)
+export {
+  perplexitySearch,
+  perplexityResearch,
+  perplexityRawSearch
+} from './perplexity-endpoints';
