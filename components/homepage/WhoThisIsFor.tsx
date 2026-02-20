@@ -1,34 +1,27 @@
 import React from 'react';
-import { Target, Search, User, Building2 } from 'lucide-react';
+import { Target, Search, User } from 'lucide-react';
 
 const audiences = [
   {
     icon: Target,
-    title: 'Agency Strategy & Planning',
-    badge: 'Strategy',
-    description: 'Cross-reference OpenAI vs. Anthropic for client recommendations. Use McKinsey ROI benchmarks in pitch decks. Stay ahead of procurement questions.',
-    useCase: 'Client asks: "Should we build or buy AI agents?" You forward signal2noise's latest Operator vs. Computer Use comparison with cost analysis.',
+    title: 'CMO',
+    badge: 'CMO',
+    description: 'You\'re fielding board questions about AI ROI before your team has the data. signal2noise gives you the McKinsey and Gartner anchors to answer with confidence, not speculation.',
+    useCase: '',
   },
   {
     icon: Search,
-    title: 'Brand & Marketing Research',
-    badge: 'Research',
-    description: 'Track measurement methodology shifts (attribution post-AI Overviews), competitive intelligence tools, performance frameworks.',
-    useCase: 'CMO asks: "How do we measure brand lift when 40% of searches show AI summaries?" You cite Gartner\'s new attribution model from this week\'s intelligence.',
+    title: 'Agency Strategist',
+    badge: 'Strategy',
+    description: 'Your clients are asking which AI agents to buy. signal2noise tracks the competitive landscape daily so you\'re the one who already knows — before they ask.',
+    useCase: '',
   },
   {
     icon: User,
-    title: 'Independent Marketing Consultants',
-    badge: 'Consulting',
-    description: 'Productize your AI expertise. Forward intelligence cards to clients. Build thought leadership without research overhead.',
-    useCase: 'Retainer client asks: "What\'s new in marketing AI?" You forward this week\'s 3 signals—billed as "ongoing competitive intelligence."',
-  },
-  {
-    icon: Building2,
-    title: 'Agency Owners & VPs',
-    badge: 'Leadership',
-    description: 'Understand platform shifts before they disrupt your service mix. Track consolidation trends, pricing changes, enterprise adoption patterns.',
-    useCase: 'OpenAI drops Operator pricing 40%. You immediately audit which clients are overpaying for incumbent solutions and pitch cost-optimization projects.',
+    title: 'Head of Marketing Technology',
+    badge: 'Martech',
+    description: 'You\'re evaluating 40 vendors with overlapping claims. signal2noise cuts through with independent tier-1 benchmarks and real adoption data.',
+    useCase: '',
   },
 ];
 
@@ -40,26 +33,27 @@ export const WhoThisIsFor: React.FC = () => {
       borderTop: '1px solid var(--border-light)',
     }}>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+        <p style={{
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: '0.7rem',
+          letterSpacing: '0.1em',
+          color: 'var(--accent)',
+          textAlign: 'center',
+          marginBottom: '0.5rem',
+          textTransform: 'uppercase',
+        }}>
+          BUILT FOR
+        </p>
         <h2 style={{
           fontFamily: "'Playfair Display', serif",
           fontSize: '1.75rem',
           fontWeight: 700,
           color: 'var(--cream)',
-          marginBottom: '0.75rem',
-          textAlign: 'center',
-        }}>
-          Built for Strategists, Not Executives
-        </h2>
-        <p style={{
-          fontFamily: "'Inter', sans-serif",
-          fontSize: '1rem',
-          color: 'var(--text-muted-60)',
-          textAlign: 'center',
           marginBottom: '2rem',
-          lineHeight: 1.6,
+          textAlign: 'center',
         }}>
-          You&apos;re the one clients ask: &quot;Which AI agent should we buy?&quot; You&apos;re the one writing the RFP criteria. You&apos;re the one who needs data, not hype.
-        </p>
+          Intelligence for the people responsible for decisions
+        </h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {audiences.map((a, i) => {
             const IconComponent = a.icon;
@@ -104,15 +98,17 @@ export const WhoThisIsFor: React.FC = () => {
               }}>
                 {a.description}
               </p>
-              <p style={{
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '0.85rem',
-                color: 'var(--text-muted-60)',
-                fontStyle: 'italic',
-                lineHeight: 1.5,
-              }}>
-                Use case: {a.useCase}
-              </p>
+              {a.useCase ? (
+                <p style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '0.85rem',
+                  color: 'var(--text-muted-60)',
+                  fontStyle: 'italic',
+                  lineHeight: 1.5,
+                }}>
+                  Use case: {a.useCase}
+                </p>
+              ) : null}
             </div>
           );
           })}

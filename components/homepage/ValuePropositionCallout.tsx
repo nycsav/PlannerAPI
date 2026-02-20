@@ -15,6 +15,16 @@ export const ValuePropositionCallout: React.FC = () => {
         borderRadius: '4px',
         padding: '1.5rem 2rem',
       }}>
+        <p style={{
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: '0.7rem',
+          letterSpacing: '0.1em',
+          color: 'var(--accent)',
+          marginBottom: '0.5rem',
+          textTransform: 'uppercase',
+        }}>
+          WHY SIGNAL2NOISE
+        </p>
         <h3 style={{
           fontFamily: "'Playfair Display', serif",
           fontSize: '1.25rem',
@@ -22,45 +32,20 @@ export const ValuePropositionCallout: React.FC = () => {
           color: 'var(--cream)',
           marginBottom: '1rem',
         }}>
-          The Question You&apos;re Getting Asked
+          Three things your current stack doesn&apos;t do
         </h3>
-        <p style={{
-          fontFamily: "'Inter', sans-serif",
-          fontSize: '1.1rem',
-          color: 'var(--cream)',
-          fontStyle: 'italic',
-          marginBottom: '1rem',
-        }}>
-          &quot;Should we buy AI agents or build them?&quot;
-        </p>
-        <p style={{
-          fontFamily: "'Inter', sans-serif",
-          fontSize: '0.95rem',
-          color: 'var(--text-muted-60)',
-          marginBottom: '0.75rem',
-        }}>
-          The Answer Requires:
-        </p>
         <ul style={{
           fontFamily: "'Inter', sans-serif",
           fontSize: '0.95rem',
           color: 'var(--text-muted)',
           lineHeight: 1.7,
-          marginBottom: '1rem',
+          marginBottom: 0,
           paddingLeft: '1.25rem',
         }}>
-          <li><strong>What&apos;s shipping:</strong> OpenAI Operator vs. Anthropic Computer Use vs. Google Gemini</li>
-          <li><strong>What enterprises are buying:</strong> Gartner procurement data, implementation costs</li>
-          <li><strong>What actually works:</strong> McKinsey ROI studies, real-world performance benchmarks</li>
+          <li style={{ marginBottom: '1rem' }}><strong>Synthesis, not aggregation</strong> — Every other tool gives you more to read. signal2noise gives you three things to act on. McKinsey, Gartner, and Forrester synthesized into a single brief with one clear next move.</li>
+          <li style={{ marginBottom: '1rem' }}><strong>Operator speed, not analyst pace</strong> — The AI landscape moves daily. Your weekly newsletter is already three cycles behind. signal2noise runs Monday, Wednesday, Friday so your intelligence stays current.</li>
+          <li><strong>Client-ready by default</strong> — Every brief is formatted to drop into a presentation. No reformatting, no rewriting. Signal, implication, move — the exact structure a client room needs.</li>
         </ul>
-        <p style={{
-          fontFamily: "'Inter', sans-serif",
-          fontSize: '0.95rem',
-          color: 'var(--cream)',
-          fontWeight: 600,
-        }}>
-          signal2noise tracks all three. You get the synthesis, not the research.
-        </p>
       </div>
     </section>
   );

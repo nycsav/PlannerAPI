@@ -10,8 +10,8 @@ export interface StatCalloutProps {
 export const StatCallout: React.FC<StatCalloutProps> = ({
   stat = '78/6',
   label = 'The AI Maturity Gap',
-  context = '78% of marketing orgs adopted AI in 2025. Only 6% achieved AI maturity.',
-  source = 'McKINSEY Q1 2026 MARKETING SURVEY',
+  context = '78% of marketing orgs adopted AI in 2025. Only 6% achieved maturity. The gap creates compounding competitive disadvantage through Q4 2026.',
+  source = 'MCKINSEY Q1 2026 MARKETING SURVEY',
 }) => {
   return (
     <section

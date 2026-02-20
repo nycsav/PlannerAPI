@@ -53,7 +53,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onSearch, onSignupClic
             letterSpacing: '0.1em',
           }}
         >
-          Agentic Shift Intelligence
+          AGENTIC SHIFT INTELLIGENCE
         </span>
       </div>
 
@@ -69,7 +69,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onSearch, onSignupClic
           margin: 0,
         }}
       >
-        Track the agentic shift before your clients ask
+        The signal exists. Most teams are still reading noise.
       </h1>
 
       {/* Subheadline */}
@@ -83,8 +83,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onSearch, onSignupClic
           margin: 0,
         }}
       >
-        Marketing teams are buying AI agents, not point solutions. OpenAI Operator,
-        Anthropic Computer Use, Google Gemini — which one delivers ROI?
+        Marketing orgs adopted AI at 78% in 2025. Only 6% reached maturity. The gap isn&apos;t tools — it&apos;s intelligence. signal2noise delivers 3 daily briefs synthesized from McKinsey, Gartner, and Google so your team moves on signal, not speculation.
       </p>
 
       {/* Value prop */}
@@ -98,7 +97,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onSearch, onSignupClic
           margin: 0,
         }}
       >
-        3 Signals Daily. Client-Ready. Zero Research Time.
+        3 SIGNALS DAILY. TIER-1 SOURCES ONLY. ZERO RESEARCH TIME.
       </p>
 
       {/* CTA group */}
@@ -119,7 +118,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onSearch, onSignupClic
             letterSpacing: '0.05em',
           }}
         >
-          Get Daily Signals
+          GET DAILY SIGNALS
         </button>
         <button
           type="button"
@@ -136,7 +135,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onSearch, onSignupClic
             letterSpacing: '0.05em',
           }}
         >
-          See Example →
+          SEE EXAMPLE
         </button>
       </div>
 

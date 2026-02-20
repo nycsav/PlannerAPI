@@ -7,12 +7,12 @@ const MUTED = 'rgba(245, 245, 245, 0.65)';
 
 const items = [
   {
-    q: "How is this different from reading McKinsey's blog?",
-    a: "McKinsey publishes 50+ articles/week across industries. We filter for marketing/advertising-relevant research, cross-reference with OpenAI/Anthropic platform updates, and synthesize into 3 client-ready signals daily. You get the 0.1% that matters, not the 99.9% that doesn't.",
+    q: "How is signal2noise different from reading McKinsey's blog?",
+    a: "McKinsey publishes 50+ articles/week across industries. signal2noise filters for marketing/advertising-relevant research, cross-references with OpenAI/Anthropic platform updates, and synthesizes into 3 client-ready signals daily. Tier-1 synthesis: you get the 0.1% that matters, not the 99.9% that doesn't.",
   },
   {
     q: 'Why not just use ChatGPT or Perplexity for research?',
-    a: "Two problems: (1) Recency bias—LLMs return recent articles, not best sources. (2) No synthesis—you get links, not strategic implications. signal2noise uses tier-1 sources only and tells you 'what this means' + 'what to do about it.'",
+    a: "Two problems: (1) Recency bias—LLMs return recent articles, not best sources. (2) No synthesis—you get links, not strategic implications. signal2noise uses tier-1 sources only (McKinsey, Gartner, Forrester) and tells you 'what this means' + 'what to do about it.'",
   },
   {
     q: 'How do you choose which sources to track?',
