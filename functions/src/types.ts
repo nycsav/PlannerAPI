@@ -53,6 +53,16 @@ export type DiscoverCard = {
 };
 
 /**
+ * Hero Stat - Market Pulse stat for homepage (tier-1 enterprise AI research)
+ */
+export type HeroStat = {
+  stat: string; // e.g. "68% of enterprise CMOs lack AI budget authority — McKinsey Q1 2026"
+  source?: string;
+  publishedAt: Timestamp;
+  createdAt: Timestamp;
+};
+
+/**
  * Content Pillar configuration for discover card generation
  */
 export type PillarConfig = {

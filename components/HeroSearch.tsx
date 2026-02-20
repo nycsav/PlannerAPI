@@ -259,7 +259,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
       const sources = data.raw?.citations || ['Perplexity', 'PlannerAPI_Node'];
       
       const parsedData = {
-        summary: summary.substring(0, 500), // Limit summary length
+        summary,
         signals: signals.slice(0, 5), // Top 5 signals
         sources: sources,
         raw: data // Keep raw for debugging

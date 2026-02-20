@@ -51,7 +51,9 @@ export const perplexitySearch = functions.https.onRequest(async (req, res) => {
     // Build system prompt based on context
     const systemPrompt = context?.systemPrompt || `You are a strategic intelligence analyst for C-suite marketing executives.
 Provide direct, confident analysis with current data and specific examples.
-Format your response with clear sections: SIGNALS, IMPLICATIONS, and ACTIONS.`;
+Format your response with clear sections: SIGNALS, IMPLICATIONS, and ACTIONS.
+
+CRITICAL: Every bullet point must be a complete, finished sentence. Never truncate or cut off content mid-sentence. Ensure each signal, implication, and action is fully articulated.`;
 
     const response = await sonarChatCompletion({
       messages: [
@@ -60,7 +62,7 @@ Format your response with clear sections: SIGNALS, IMPLICATIONS, and ACTIONS.`;
       ],
       search_recency_filter,
       temperature: 0.2,
-      max_tokens: 1500,
+      max_tokens: 2500,
     });
 
     // Parse search_results into structured format

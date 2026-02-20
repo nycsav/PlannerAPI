@@ -64,6 +64,13 @@ service cloud.firestore {
       allow write: if false; // Only backend Cloud Functions can write
     }
 
+    // Hero Stats Collection (Market Pulse)
+    // Tier-1 enterprise AI research stat for homepage, generated daily
+    match /hero_stats/{statId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // Default deny all other collections
     match /{document=**} {
       allow read, write: if false;

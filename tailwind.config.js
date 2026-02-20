@@ -7,6 +7,7 @@ export default {
     "./App.tsx",
     "./TestNewHomepage.tsx",
     "./components/**/*.{js,ts,jsx,tsx}",
+    "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
@@ -25,6 +26,14 @@ export default {
         'wide': '1400px',
       },
       colors: {
+        // PlannerAPI v2 design system (from homepage-redesign.pen.pen)
+        'p-navy':      '#0A1128',
+        'p-navy-card': '#0D1631',
+        'p-orange':    '#E67E22',
+        'p-text':      '#F5F5F5',
+        'p-muted':     '#7A8BA0',
+        'p-border':    '#1E2A45',
+        // Legacy
         'planner-navy': '#1B365D',
         'planner-orange': '#FF6B35',
         'planner-offwhite': '#F8F6F0',

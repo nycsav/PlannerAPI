@@ -123,7 +123,7 @@ export async function sonarChatCompletion(params: {
     messages,
     model = 'sonar',
     temperature = 0.2,
-    max_tokens = 1500,
+    max_tokens = 2500,
     search_recency_filter = 'day', // Default to last 24 hours
     search_domain_filter,
     return_related_questions = false,

@@ -6,43 +6,62 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onSignupClick }) => {
   return (
-    <nav style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '1.5rem 2rem',
-      backgroundColor: 'var(--navy)',
-      borderBottom: '1px solid rgba(248, 246, 240, 0.1)',
-    }}>
-      <div style={{
-        fontFamily: "'Playfair Display', serif",
-        fontSize: '1.5rem',
-        fontWeight: 700,
-        color: 'var(--cream)',
-        letterSpacing: '-0.02em',
-      }}>
-        PlannerAPI
+    <nav
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 40px',
+        height: '60px',
+        backgroundColor: 'var(--navy)',
+        borderTop: '3px solid var(--orange)',
+        boxSizing: 'border-box',
+      }}
+    >
+      {/* Logo wordmark */}
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <span
+          style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: '18px',
+            fontWeight: 700,
+            color: 'var(--text)',
+          }}
+        >
+          planner
+        </span>
+        <span
+          style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: '18px',
+            fontWeight: 700,
+            color: 'var(--orange)',
+          }}
+        >
+          API
+        </span>
       </div>
-      <button
-        type="button"
-        onClick={() => onSignupClick?.()}
-        style={{
-          padding: '0.625rem 1.25rem',
-          backgroundColor: 'var(--accent)',
-          color: 'var(--navy)',
-          border: 'none',
-          borderRadius: '4px',
-          fontFamily: "'Inter', sans-serif",
-          fontSize: '0.875rem',
-          fontWeight: 600,
-          cursor: 'pointer',
-          transition: 'opacity 0.2s ease',
-        }}
-        onMouseOver={(e) => { e.currentTarget.style.opacity = '0.9'; }}
-        onMouseOut={(e) => { e.currentTarget.style.opacity = '1'; }}
-      >
-        Get Started
-      </button>
+
+      {/* Right: CTA */}
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <button
+          type="button"
+          onClick={() => onSignupClick?.()}
+          style={{
+            padding: '8px 20px',
+            backgroundColor: 'transparent',
+            color: 'var(--orange)',
+            border: '1px solid var(--orange)',
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: '11px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            cursor: 'pointer',
+          }}
+        >
+          Get Access
+        </button>
+      </div>
     </nav>
   );
 };

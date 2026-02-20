@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { HomePage } from './components/homepage';
 import { IntelligenceModal, IntelligencePayload } from './components/IntelligenceModal';
+import { SignupModal } from './components/SignupModal';
+import { PostSignupWelcome } from './components/PostSignupWelcome';
+import { FeatureTour } from './components/FeatureTour';
+import { useAuth } from './contexts/AuthContext';
+import { markOnboardingCompleted, markTourCompleted } from './utils/userState';
 import { ENDPOINTS, fetchWithTimeout } from './src/config/api';
 
 type RawBrief = {
@@ -20,9 +25,13 @@ type RawBrief = {
 };
 
 export const TestNewHomepage: React.FC = () => {
+  const { user } = useAuth();
   const [intelligenceOpen, setIntelligenceOpen] = useState(false);
   const [intelligencePayload, setIntelligencePayload] = useState<IntelligencePayload | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
+  const [showPostSignupWelcome, setShowPostSignupWelcome] = useState(false);
+  const [showFeatureTour, setShowFeatureTour] = useState(false);
 
   const handleBriefClick = (brief: any) => {
     // Use actual signals array directly
@@ -72,7 +81,16 @@ export const TestNewHomepage: React.FC = () => {
   };
 
   const handleSignupClick = () => {
-    alert('Signup modal will be integrated after you approve the design!');
+    setIsSignupModalOpen(true);
+  };
+
+  const handleSignupSuccess = () => {
+    setShowPostSignupWelcome(true);
+    markOnboardingCompleted();
+  };
+
+  const handleStartTour = () => {
+    setShowFeatureTour(true);
   };
 
   const handleSearch = async (query: string) => {
@@ -137,19 +155,46 @@ export const TestNewHomepage: React.FC = () => {
         }
       }
 
-      // Extract sources from citations
-      const citations = data.raw?.citations || [];
-      const signals = citations.map((citation: any, i: number) => ({
-        id: `source-${i}`,
-        title: citation.title || `Source ${i + 1}`,
-        summary: citation.snippet || '',
-        sourceName: citation.source || citation.title || `Source ${i + 1}`,
-        sourceUrl: citation.url || '#',
-      }));
+      // Extract sources: prefer search_results (Cloud Run), fallback to raw.citations (legacy)
+      const searchResults = data.search_results || [];
+      const legacyCitations = data.raw?.citations || [];
+      let signals: Array<{ id: string; title: string; summary: string; sourceName: string; sourceUrl: string }>;
+      if (searchResults.length > 0) {
+        signals = searchResults
+          .filter((sr: any) => sr.url && sr.url !== '#')
+          .map((sr: any, i: number) => ({
+            id: `source-${i}`,
+            title: sr.title || `Source ${i + 1}`,
+            summary: sr.snippet || '',
+            sourceName: sr.sourceName || (sr.url ? new URL(sr.url).hostname.replace('www.', '') : `Source ${i + 1}`),
+            sourceUrl: sr.url,
+          }));
+      } else if (Array.isArray(legacyCitations) && legacyCitations.length > 0) {
+        signals = legacyCitations
+          .map((citation: any, i: number) => {
+            const url = typeof citation === 'string' ? citation : citation?.url;
+            const title = typeof citation === 'object' ? citation?.title || citation?.source : `Source ${i + 1}`;
+            if (!url || url === '#') return null;
+            try {
+              return {
+                id: `source-${i}`,
+                title: title || `Source ${i + 1}`,
+                summary: typeof citation === 'object' ? citation?.snippet || '' : '',
+                sourceName: typeof citation === 'object' ? citation?.source || citation?.title : new URL(url).hostname.replace('www.', ''),
+                sourceUrl: url,
+              };
+            } catch {
+              return null;
+            }
+          })
+          .filter((s): s is NonNullable<typeof s> => s !== null);
+      } else {
+        signals = [];
+      }
 
       const payload: IntelligencePayload = {
         query,
-        summary: summary.substring(0, 800),
+        summary,
         keySignals: keySignals.slice(0, 5),
         signals,
         movesForLeaders: movesForLeaders.length > 0 ? movesForLeaders.slice(0, 3) : [
@@ -187,9 +232,33 @@ export const TestNewHomepage: React.FC = () => {
         payload={intelligencePayload}
         isLoading={isLoading}
         onFollowUp={(question) => {
-          console.log('[TestNewHomepage] Follow-up question:', question);
-          // Trigger a new search with the follow-up question
           handleSearch(question);
+        }}
+      />
+
+      <SignupModal
+        isOpen={isSignupModalOpen}
+        onClose={() => setIsSignupModalOpen(false)}
+        onSuccess={handleSignupSuccess}
+      />
+
+      {showPostSignupWelcome && (
+        <PostSignupWelcome
+          userName={user?.displayName}
+          onClose={() => setShowPostSignupWelcome(false)}
+          onStartTour={handleStartTour}
+        />
+      )}
+
+      <FeatureTour
+        isOpen={showFeatureTour}
+        onComplete={() => {
+          setShowFeatureTour(false);
+          markTourCompleted();
+        }}
+        onSkip={() => {
+          setShowFeatureTour(false);
+          markTourCompleted();
         }}
       />
     </>

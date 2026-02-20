@@ -21,6 +21,7 @@ type IntelligenceCard = {
   microSignal?: string;   // Last 24h development (e.g., "Today, Google expanded AI Overviews...")
   tension?: string;       // The conflict/gap (e.g., "The gap between AI-mature and laggard teams...")
   sourceUrl?: string;     // Full URL to the source article
+  sources?: Array<{ sourceName: string; sourceUrl: string; snippet?: string; title?: string }>;
 };
 
 // Brand-aligned pillar colors
@@ -246,12 +247,24 @@ export const DailyIntelligence: React.FC = () => {
   };
 
   const handleCardClick = (card: IntelligenceCard) => {
+    const signalsWithSources = (card.sources && Array.isArray(card.sources))
+      ? card.sources
+          .filter((s) => s.sourceUrl && s.sourceUrl !== '#')
+          .map((s, i) => ({
+            id: `source-${i}`,
+            title: s.title || s.sourceName || `Source ${i + 1}`,
+            summary: s.snippet || '',
+            sourceName: s.sourceName || s.title || 'Source',
+            sourceUrl: s.sourceUrl,
+          }))
+      : [];
+
     const payload: IntelligencePayload = {
       query: card.title,
       summary: card.summary,
       keySignals: card.signals,
       movesForLeaders: card.moves,
-      signals: [],
+      signals: signalsWithSources,
     };
 
     setSelectedCard(card);

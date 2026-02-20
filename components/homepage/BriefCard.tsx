@@ -36,28 +36,28 @@ export const BriefCard: React.FC<BriefCardProps> = ({
       onClick={onClick}
       onKeyDown={(e) => e.key === 'Enter' && onClick?.()}
       style={{
-        backgroundColor: 'rgba(248, 246, 240, 0.03)',
-        border: '1px solid rgba(248, 246, 240, 0.1)',
+        backgroundColor: 'var(--overlay-subtle)',
+        border: '1px solid var(--border-subtle)',
         borderLeft: `3px solid ${style.borderColor}`,
         borderRadius: '4px',
-        padding: '1.75rem',
+        padding: '1.25rem',
         cursor: 'pointer',
         transition: 'all 0.2s ease',
       }}
       onMouseOver={(e) => {
-        e.currentTarget.style.borderColor = 'rgba(248, 246, 240, 0.2)';
-        e.currentTarget.style.backgroundColor = 'rgba(248, 246, 240, 0.06)';
+        e.currentTarget.style.borderColor = 'var(--text-muted-20)';
+        e.currentTarget.style.backgroundColor = 'var(--overlay-medium)';
       }}
       onMouseOut={(e) => {
-        e.currentTarget.style.borderColor = 'rgba(248, 246, 240, 0.1)';
-        e.currentTarget.style.backgroundColor = 'rgba(248, 246, 240, 0.03)';
+        e.currentTarget.style.borderColor = 'var(--border-subtle)';
+        e.currentTarget.style.backgroundColor = 'var(--overlay-subtle)';
       }}
     >
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: '1rem',
+        marginBottom: '0.75rem',
       }}>
         <span style={{
           fontFamily: "'IBM Plex Mono', monospace",
@@ -71,7 +71,7 @@ export const BriefCard: React.FC<BriefCardProps> = ({
         <span style={{
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: '0.7rem',
-          color: 'rgba(248, 246, 240, 0.5)',
+          color: 'var(--text-muted-50)',
         }}>
           {date} · {readTime}
         </span>
@@ -83,7 +83,7 @@ export const BriefCard: React.FC<BriefCardProps> = ({
         fontWeight: 600,
         color: 'var(--cream)',
         lineHeight: 1.3,
-        marginBottom: '0.75rem',
+        marginBottom: '0.5rem',
       }}>
         {title}
       </h3>
@@ -91,9 +91,9 @@ export const BriefCard: React.FC<BriefCardProps> = ({
       <p style={{
         fontFamily: "'Inter', sans-serif",
         fontSize: '0.9375rem',
-        color: 'rgba(248, 246, 240, 0.7)',
+        color: 'var(--text-muted)',
         lineHeight: 1.6,
-        marginBottom: '1rem',
+        marginBottom: '0.75rem',
       }}>
         {summary}
       </p>
@@ -101,7 +101,7 @@ export const BriefCard: React.FC<BriefCardProps> = ({
       <div style={{
         fontFamily: "'IBM Plex Mono', monospace",
         fontSize: '0.75rem',
-        color: 'rgba(248, 246, 240, 0.5)',
+        color: 'var(--text-muted-50)',
       }}>
         {source}
       </div>

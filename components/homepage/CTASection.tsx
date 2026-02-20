@@ -15,22 +15,22 @@ export const CTASection: React.FC<CTASectionProps> = ({ onQueryClick }) => {
   return (
     <section style={{
       backgroundColor: 'var(--navy)',
-      padding: '4rem 1.5rem',
+      padding: '2rem 1.5rem',
     }}>
       <div style={{
         maxWidth: '900px',
         margin: '0 auto',
-        backgroundColor: 'rgba(248, 246, 240, 0.03)',
-        border: '1px solid rgba(248, 246, 240, 0.1)',
+        backgroundColor: 'var(--overlay-subtle)',
+        border: '1px solid var(--border-subtle)',
         borderRadius: '12px',
-        padding: '3rem 2rem',
+        padding: '1.5rem 2rem',
         textAlign: 'center',
       }}>
         <div style={{
           display: 'inline-flex',
           alignItems: 'center',
           gap: '0.5rem',
-          marginBottom: '1rem',
+          marginBottom: '0.5rem',
         }}>
           <Sparkles
             size={18}
@@ -50,10 +50,10 @@ export const CTASection: React.FC<CTASectionProps> = ({ onQueryClick }) => {
         <p style={{
           fontFamily: "'Inter', sans-serif",
           fontSize: '0.95rem',
-          color: 'rgba(248, 246, 240, 0.6)',
-          marginBottom: '2rem',
+          color: 'var(--text-muted-60)',
+          marginBottom: '1rem',
           maxWidth: '600px',
-          margin: '0 auto 2rem',
+          margin: '0 auto 1rem',
         }}>
           Try one of these popular queries or ask your own question
         </p>
@@ -72,21 +72,21 @@ export const CTASection: React.FC<CTASectionProps> = ({ onQueryClick }) => {
                 fontFamily: "'Inter', sans-serif",
                 fontSize: '0.875rem',
                 padding: '0.75rem 1.5rem',
-                backgroundColor: 'rgba(248, 246, 240, 0.06)',
-                border: '1px solid rgba(248, 246, 240, 0.15)',
+                backgroundColor: 'var(--overlay-medium)',
+                border: '1px solid var(--overlay-border)',
                 borderRadius: '50px',
                 color: 'var(--cream)',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(248, 246, 240, 0.1)';
+                e.currentTarget.style.backgroundColor = 'var(--overlay-hover)';
                 e.currentTarget.style.borderColor = 'var(--accent)';
                 e.currentTarget.style.transform = 'translateY(-2px)';
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(248, 246, 240, 0.06)';
-                e.currentTarget.style.borderColor = 'rgba(248, 246, 240, 0.15)';
+                e.currentTarget.style.backgroundColor = 'var(--overlay-medium)';
+                e.currentTarget.style.borderColor = 'var(--overlay-border)';
                 e.currentTarget.style.transform = 'translateY(0)';
               }}
             >

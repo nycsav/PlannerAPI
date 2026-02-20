@@ -53,9 +53,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     // Save to localStorage
     localStorage.setItem('theme', theme);
-    
-    // Debug log (remove in production)
-    console.log('[ThemeContext] Theme set to:', theme, 'HTML classes:', root.className);
   }, [theme]);
 
   // Listen for system theme changes (only if no manual preference)
@@ -103,7 +100,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
       
       localStorage.setItem('theme', newTheme);
-      console.log('[ThemeContext] Theme toggled to:', newTheme, 'HTML class:', root.className);
       return newTheme;
     });
   };

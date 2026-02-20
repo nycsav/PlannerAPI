@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, User, LogOut, History } from 'lucide-react';
+import { ChevronDown, User, LogOut } from 'lucide-react';
 import { Logo } from './Logo';
 import { ThemeToggle } from './ThemeToggle';
 import { useAuth } from '../contexts/AuthContext';
@@ -80,17 +80,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onSignupClick }) => {
                         {user.email}
                       </p>
                     </div>
-                    <button
-                      onClick={() => {
-                        setIsUserMenuOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 opacity-60 cursor-not-allowed"
-                      disabled
-                      title="Coming soon in Phase 3"
-                    >
-                      <History className="w-4 h-4" />
-                      History
-                    </button>
                     <button
                       onClick={handleLogout}
                       className="w-full text-left px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2"

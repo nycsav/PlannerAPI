@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Github, Twitter, Linkedin, ArrowRight, Search } from 'lucide-react';
+import { ArrowRight, Search } from 'lucide-react';
 import { Logo } from './Logo';
 
 export const Footer: React.FC = () => {
@@ -35,11 +35,6 @@ export const Footer: React.FC = () => {
             <p className="max-w-md text-base text-gray-700 dark:text-gray-200 leading-relaxed">
               AI-powered strategic intelligence for marketing leaders. Real-time insights, competitive analysis, and actionable data to drive revenue growth.
             </p>
-            <div className="flex gap-3">
-              <div className="p-3 bg-gray-100 dark:bg-slate-800/50 rounded-xl border border-gray-200/30 dark:border-slate-700/30 opacity-50 cursor-not-allowed"><Twitter className="w-5 h-5" /></div>
-              <div className="p-3 bg-gray-100 dark:bg-slate-800/50 rounded-xl border border-gray-200/30 dark:border-slate-700/30 opacity-50 cursor-not-allowed"><Linkedin className="w-5 h-5" /></div>
-              <div className="p-3 bg-gray-100 dark:bg-slate-800/50 rounded-xl border border-gray-200/30 dark:border-slate-700/30 opacity-50 cursor-not-allowed"><Github className="w-5 h-5" /></div>
-            </div>
           </div>
 
 

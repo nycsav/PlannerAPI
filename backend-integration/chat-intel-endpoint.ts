@@ -308,6 +308,8 @@ Source: [Source Name] | [URL]
 
 Remember: Every insight must pass the "So What?" test - can a ${audienceProfile.role} act on this immediately? 
 
+CRITICAL: Every bullet point, summary, implication, and action must be a complete, finished sentence. Never truncate or cut off content mid-sentence. Ensure all content is fully articulated.
+
 Write as if you're helping them make a real decision, not just sharing information. Be conversational, helpful, and focused on what matters most.`;
 
   // Retry logic with exponential backoff for reliable real-time data fetching
@@ -327,7 +329,7 @@ Write as if you're helping them make a real decision, not just sharing informati
             { role: 'user', content: query }
           ],
           temperature: 0.2,
-          max_tokens: 1500,
+          max_tokens: 2500,
           // Ensure real-time data with recency filter
           search_recency_filter: 'day', // Only get data from last 24 hours
           return_citations: true, // Always return citations for source attribution

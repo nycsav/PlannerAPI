@@ -964,24 +964,19 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
                 </div>
                 <div className="space-y-3">
                   {(() => {
-                    // Always show sources section - extract from signals or show placeholder
+                    // Always show sources - extract from signals or use Perplexity fallback
                     const validSignals = effectivePayload.signals?.filter(signal => signal.sourceUrl && signal.sourceUrl !== '#') || [];
+                    const sourcesToShow = validSignals.length > 0
+                      ? validSignals
+                      : [{
+                          id: 'perplexity-fallback',
+                          title: 'Perplexity Research',
+                          summary: 'Real-time intelligence synthesis from web search and authoritative sources.',
+                          sourceName: 'Perplexity AI',
+                          sourceUrl: 'https://www.perplexity.ai',
+                        }];
                     
-                    if (validSignals.length === 0) {
-                      // No valid sources - show helpful message
-                      return (
-                        <div className="text-center py-4">
-                          <p className="text-sm text-gray-700 dark:text-gray-200 italic">
-                            Sources will be provided when available from intelligence analysis.
-                          </p>
-                          <p className="text-xs text-gray-600 dark:text-gray-300 mt-2">
-                            All intelligence briefs include source citations from Perplexity research.
-                          </p>
-                        </div>
-                      );
-                    }
-                    
-                    return validSignals.map((signal, index) => {
+                    return sourcesToShow.map((signal, index) => {
                       let hostname = '';
                       let favicon = '';
                       try {

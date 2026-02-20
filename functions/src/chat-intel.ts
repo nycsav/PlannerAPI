@@ -141,7 +141,7 @@ Source: [Source Name] | [URL]
 - [Action 1]
 - [Action 2]
 
-Keep it concise, data-driven, and business-focused.`;
+CRITICAL: Every bullet, summary, implication, and action must be a complete, finished sentence. Never truncate or cut off content mid-sentence. Ensure all content is fully articulated. Keep it concise, data-driven, and business-focused.`;
 
   // Build messages array for Perplexity with proper types
   // If conversation history provided, use it; otherwise single-shot query
@@ -160,7 +160,7 @@ Keep it concise, data-driven, and business-focused.`;
     messages: apiMessages,
     model: PPLX_MODEL_FAST,
     temperature: 0.2,
-    max_tokens: 1500,
+    max_tokens: 2500,
     search_recency_filter: 'week', // Get recent data
     timeout: 40000, // 40 second timeout
   });
@@ -318,10 +318,11 @@ function parsePerplexityResponse(content: string, citations: string[]): PlannerC
   if (signals.length === 0) {
     const bullets = content.match(/^[-•]\s+.+$/gm) || [];
     bullets.slice(0, 5).forEach((bullet, index) => {
+      const fullText = bullet.substring(2).trim();
       signals.push({
         id: `SIG-${index + 1}`,
-        title: bullet.substring(0, 60).trim(),
-        summary: bullet.substring(2).trim(),
+        title: fullText.length > 80 ? fullText.substring(0, 80) + '…' : fullText,
+        summary: fullText,
         sourceName: 'Perplexity Analysis',
         sourceUrl: citations[index] ? extractValidUrl(citations[index]) || '#' : '#',
       });

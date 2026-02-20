@@ -7,6 +7,9 @@ import React from 'react';
 export function parseMarkdown(text: string): React.ReactNode {
   if (!text) return null;
 
+  // Strip citation markers [1], [2][3], etc.
+  text = removeCitationNumbers(text);
+
   // Split by newlines to handle bullets
   const lines = text.split('\n');
 

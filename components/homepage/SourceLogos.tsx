@@ -1,62 +1,90 @@
 import React from 'react';
 
-export const SourceLogos: React.FC = () => {
-  const sources = [
-    'McKinsey & Company',
-    'Boston Consulting Group',
-    'Gartner',
-    'Google',
-    'Anthropic',
-    'OpenAI'
-  ];
+const TIER1 = ['McKinsey', 'Gartner', 'Forrester', 'BCG', 'Bain', 'Deloitte'];
+const TIER2 = ['OpenAI', 'Anthropic', 'Google AI', 'Meta AI'];
 
+const pillBase: React.CSSProperties = {
+  display: 'inline-block',
+  padding: '6px 14px',
+  fontFamily: "'IBM Plex Mono', monospace",
+  fontSize: '10px',
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+};
+
+export const SourceLogos: React.FC = () => {
   return (
-    <section style={{
-      backgroundColor: 'var(--navy)',
-      padding: '3rem 1.5rem',
-      borderTop: '1px solid rgba(248, 246, 240, 0.08)',
-      borderBottom: '1px solid rgba(248, 246, 240, 0.08)',
-    }}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto', textAlign: 'center' }}>
-        <p style={{
+    <section
+      style={{
+        backgroundColor: 'var(--navy)',
+        padding: '60px 120px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '24px',
+        minHeight: '280px',
+        boxSizing: 'border-box',
+      }}
+    >
+      <p
+        style={{
           fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: '0.7rem',
+          fontSize: '11px',
           letterSpacing: '0.15em',
           textTransform: 'uppercase',
-          color: 'rgba(248, 246, 240, 0.5)',
-          marginBottom: '1rem',
-        }}>
-          Intelligence from tier-1 sources:
-        </p>
-        <div style={{
+          color: 'var(--orange)',
+          margin: 0,
+          textAlign: 'center',
+        }}
+      >
+        Tier-1 Intelligence Sources
+      </p>
+
+      {/* Tier 1 row */}
+      <div
+        style={{
           display: 'flex',
           flexWrap: 'wrap',
           justifyContent: 'center',
-          alignItems: 'center',
-          gap: '1.5rem',
-        }}>
-          {sources.map((source, index) => (
-            <React.Fragment key={source}>
-              <span style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '0.75rem',
-                letterSpacing: '0.05em',
-                textTransform: 'uppercase',
-                color: 'rgba(248, 246, 240, 0.4)',
-              }}>
-                {source}
-              </span>
-              {index < sources.length - 1 && (
-                <span style={{
-                  color: 'rgba(248, 246, 240, 0.2)',
-                  fontSize: '0.75rem',
-                }}>
-                  |
-                </span>
-              )}
-            </React.Fragment>
-          ))}
-        </div>
+          gap: '10px',
+        }}
+      >
+        {TIER1.map((name) => (
+          <span
+            key={name}
+            style={{
+              ...pillBase,
+              color: 'var(--text)',
+              border: '1px solid var(--border)',
+            }}
+          >
+            {name}
+          </span>
+        ))}
+      </div>
+
+      {/* Tier 2 row */}
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          gap: '10px',
+        }}
+      >
+        {TIER2.map((name) => (
+          <span
+            key={name}
+            style={{
+              ...pillBase,
+              color: 'var(--orange)',
+              border: '1px solid rgba(230, 126, 34, 0.4)',
+              backgroundColor: 'rgba(230, 126, 34, 0.05)',
+            }}
+          >
+            {name}
+          </span>
+        ))}
       </div>
     </section>
   );
