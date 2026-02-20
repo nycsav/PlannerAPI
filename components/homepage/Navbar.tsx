@@ -28,17 +28,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onSignupClick }) => {
             color: 'var(--text)',
           }}
         >
-          planner
-        </span>
-        <span
-          style={{
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: '18px',
-            fontWeight: 700,
-            color: 'var(--orange)',
-          }}
-        >
-          API
+          signal2noise
         </span>
       </div>
 

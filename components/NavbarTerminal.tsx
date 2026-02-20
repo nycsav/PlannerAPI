@@ -22,8 +22,8 @@ export const NavbarTerminal: React.FC<NavbarTerminalProps> = ({ onSignupClick })
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-sm font-black text-white uppercase tracking-tight">
-                    PLANNERAPI
+                  <span className="font-mono text-sm font-black text-white tracking-tight">
+                    signal2noise
                   </span>
                   <span className="px-2 py-0.5 bg-orange-500/20 border border-orange-500/30 rounded">
                     <span className="font-mono text-[8px] font-bold text-orange-400 uppercase tracking-widest">

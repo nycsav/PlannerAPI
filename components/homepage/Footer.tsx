@@ -28,17 +28,7 @@ export const Footer: React.FC = () => {
               color: 'var(--text)',
             }}
           >
-            planner
-          </span>
-          <span
-            style={{
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: '16px',
-              fontWeight: 700,
-              color: 'var(--orange)',
-            }}
-          >
-            API
+            signal2noise
           </span>
         </div>
         <p
@@ -70,7 +60,7 @@ export const Footer: React.FC = () => {
             color: 'var(--muted)',
           }}
         >
-          © 2026 PlannerAPI
+          © 2026 signal2noise
         </span>
         <span
           style={{

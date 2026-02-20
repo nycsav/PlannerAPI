@@ -9,8 +9,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onSignupClick }) => {
     <nav className="w-full h-16 bg-p-navy border-t-[3px] border-p-orange flex items-center justify-between px-6 md:px-[60px] lg:px-10 box-border">
       {/* Logo wordmark */}
       <div className="flex items-center">
-        <span className="font-mono font-bold text-[18px] text-p-text">planner</span>
-        <span className="font-mono font-bold text-[18px] text-p-orange">API</span>
+        <span className="font-mono font-bold text-[18px] text-p-text">signal2noise</span>
       </div>
 
       {/* Nav links — hidden on mobile */}

@@ -56,7 +56,7 @@ export const RecentSignals: React.FC<RecentSignalsProps> = ({ onBriefClick }) =>
           textAlign: 'center',
           marginBottom: '1.5rem',
         }}>
-          Without PlannerAPI, you&apos;d need subscriptions to 10 sources, daily monitoring, and hours of synthesis.
+          Without signal2noise, you&apos;d need subscriptions to 10 sources, daily monitoring, and hours of synthesis.
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {RECENT_SIGNALS.map((signal, i) => (

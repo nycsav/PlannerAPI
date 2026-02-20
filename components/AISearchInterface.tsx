@@ -177,7 +177,7 @@ const extractSources = (content: string): string[] => {
 
   // Always include base sources
   sources.add('Perplexity AI');
-  sources.add('PlannerAPI Intelligence');
+  sources.add('signal2noise Intelligence');
 
   return Array.from(sources).slice(0, 6); // Limit to 6 sources
 };

@@ -256,7 +256,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
       }
       
       // Extract sources from raw data if available
-      const sources = data.raw?.citations || ['Perplexity', 'PlannerAPI_Node'];
+      const sources = data.raw?.citations || ['Perplexity', 'signal2noise'];
       
       const parsedData = {
         summary,

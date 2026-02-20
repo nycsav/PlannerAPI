@@ -1,6 +1,6 @@
 {
-  "name": "PlannerAPI",
-  "short_name": "PlannerAPI",
+  "name": "signal2noise",
+  "short_name": "signal2noise",
   "description": "Strategic Intelligence for Marketing Leaders",
   "start_url": "/",
   "display": "standalone",

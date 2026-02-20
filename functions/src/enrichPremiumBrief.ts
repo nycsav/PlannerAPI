@@ -40,7 +40,7 @@ interface EnrichedBrief {
 /**
  * Enrich a premium brief using Claude Opus 4.6
  *
- * This function applies the PlannerAPI editorial voice (EDITORIAL_VOICE.md)
+ * This function applies the signal2noise editorial voice (EDITORIAL_VOICE.md)
  * and content framework (DAILY_INTEL_FRAMEWORK.md) to produce McKinsey-level
  * strategic intelligence.
  */

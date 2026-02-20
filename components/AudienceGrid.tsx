@@ -11,7 +11,7 @@ const cards = [
     title: 'Agency Strategists',
     subtitle: 'Strategy & Planning',
     useCase:
-      "Client asks: 'Should we build or buy AI agents?' You forward PlannerAPI's latest Operator vs. Computer Use comparison with cost analysis.",
+      "Client asks: 'Should we build or buy AI agents?' You forward signal2noise's latest Operator vs. Computer Use comparison with cost analysis.",
   },
   {
     icon: '🔬',

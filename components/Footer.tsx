@@ -41,7 +41,7 @@ export const Footer: React.FC = () => {
         </div>
 
         <div className="pt-8 border-t border-gray-200/50 dark:border-slate-700/50 flex flex-col md:flex-row justify-center items-center gap-4 text-sm text-gray-500 dark:text-gray-300">
-          <div>&copy; {new Date().getFullYear()} plannerAPI. All rights reserved.</div>
+          <div>&copy; {new Date().getFullYear()} signal2noise. All rights reserved.</div>
         </div>
       </div>
     </footer>

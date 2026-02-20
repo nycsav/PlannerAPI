@@ -1,4 +1,4 @@
-# robots.txt for PlannerAPI
+# robots.txt for signal2noise
 # https://plannerapi-prod.web.app
 
 User-agent: *

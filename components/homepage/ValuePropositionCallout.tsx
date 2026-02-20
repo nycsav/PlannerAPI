@@ -59,7 +59,7 @@ export const ValuePropositionCallout: React.FC = () => {
           color: 'var(--cream)',
           fontWeight: 600,
         }}>
-          PlannerAPI tracks all three. You get the synthesis, not the research.
+          signal2noise tracks all three. You get the synthesis, not the research.
         </p>
       </div>
     </section>

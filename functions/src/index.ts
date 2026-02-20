@@ -1,7 +1,7 @@
 /**
  * Firebase Cloud Functions Entry Point
  *
- * Exports all cloud functions for PlannerAPI
+ * Exports all cloud functions for signal2noise
  */
 
 export { chatIntel } from './chat-intel';

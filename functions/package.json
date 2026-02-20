@@ -1,6 +1,6 @@
 {
   "name": "plannerapi-functions",
-  "description": "Firebase Cloud Functions for PlannerAPI",
+  "description": "Firebase Cloud Functions for signal2noise",
   "version": "1.0.0",
   "scripts": {
     "build": "tsc",

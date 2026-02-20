@@ -7,7 +7,7 @@ const audiences = [
     title: 'Agency Strategy & Planning',
     badge: 'Strategy',
     description: 'Cross-reference OpenAI vs. Anthropic for client recommendations. Use McKinsey ROI benchmarks in pitch decks. Stay ahead of procurement questions.',
-    useCase: 'Client asks: "Should we build or buy AI agents?" You forward PlannerAPI\'s latest Operator vs. Computer Use comparison with cost analysis.',
+    useCase: 'Client asks: "Should we build or buy AI agents?" You forward signal2noise's latest Operator vs. Computer Use comparison with cost analysis.',
   },
   {
     icon: Search,

@@ -15,8 +15,7 @@ export const Footer: React.FC<FooterProps> = ({ onGetStarted }) => {
         {/* Brand */}
         <div className="flex flex-col gap-3 items-center md:items-start">
           <div className="flex items-center">
-            <span className="font-mono font-bold text-[16px] text-p-text">planner</span>
-            <span className="font-mono font-bold text-[16px] text-p-orange">API</span>
+            <span className="font-mono font-bold text-[16px] text-p-text">signal2noise</span>
           </div>
           <p className="font-sans text-[13px] text-p-muted m-0">
             Old methods. New speed.
@@ -59,7 +58,7 @@ export const Footer: React.FC<FooterProps> = ({ onGetStarted }) => {
       {/* Bottom bar */}
       <div className="flex flex-col md:flex-row justify-between items-center px-6 md:px-[60px] lg:px-[120px] py-4 border-t border-p-border gap-2 md:gap-0">
         <span className="font-mono text-[10px] text-p-muted">
-          © 2026 PlannerAPI
+          © 2026 signal2noise
         </span>
         <span className="font-mono text-[10px] text-p-muted uppercase tracking-[0.1em]">
           Strategy as Product, Not Service

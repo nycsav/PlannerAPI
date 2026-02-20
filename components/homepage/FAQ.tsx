@@ -8,7 +8,7 @@ const faqs = [
   },
   {
     q: 'Why not just use ChatGPT or Perplexity for research?',
-    a: 'Two problems: (1) Recency bias—LLMs return recent articles, not best sources. (2) No synthesis—you get links, not strategic implications. PlannerAPI uses tier-1 sources only and tells you "what this means" + "what to do about it."',
+    a: 'Two problems: (1) Recency bias—LLMs return recent articles, not best sources. (2) No synthesis—you get links, not strategic implications. signal2noise uses tier-1 sources only and tells you "what this means" + "what to do about it."',
   },
   {
     q: 'How do you choose which sources to track?',

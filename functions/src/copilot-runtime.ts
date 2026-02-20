@@ -31,7 +31,7 @@ const openai = new OpenAI({
   defaultHeaders: useOpenRouter 
     ? {
         'HTTP-Referer': 'https://plannerapi.com',
-        'X-Title': 'PlannerAPI Intelligence Brief',
+        'X-Title': 'signal2noise Intelligence Brief',
       }
     : undefined,
 });
