@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 288 48" width="288" height="48" role="img" aria-label="signal2noise" >
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&amp;family=IBM+Plex+Mono&amp;display=swap');
+    </style>
+  </defs>
+
+  <!-- 2px vertical orange bar, full height of logo including tagline -->
+  <rect x="0" y="0" width="2" height="48" fill="#E67E22"/>
+
+  <!-- Wordmark: "signal 2 noise" - Playfair Display, hero style -->
+  <text x="12" y="22" font-family="'Playfair Display', Georgia, serif" font-size="20" fill="#F5F5F5">
+    <tspan font-weight="400">signal </tspan>
+    <tspan font-weight="700" font-size="22" fill="#E67E22">2</tspan>
+    <tspan font-weight="400"> </tspan>
+    <tspan font-weight="400" font-style="italic" fill="#9CA3AF" opacity="0.6">noise</tspan>
+  </text>
+
+  <!-- Tagline: AGENTIC SHIFT INTELLIGENCE (5px gap below wordmark, opacity 0.75) -->
+  <text x="12" y="39" font-family="'IBM Plex Mono', monospace" font-size="8" letter-spacing="3" fill="#E67E22" opacity="0.75">AGENTIC SHIFT INTELLIGENCE</text>
+</svg>

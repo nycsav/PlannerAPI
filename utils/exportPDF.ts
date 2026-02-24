@@ -1,7 +1,7 @@
 /**
  * Export Intelligence Brief to PDF
- * Uses browser's native print-to-PDF functionality with Blob URLs
- * to avoid network interception/CAPTCHA issues
+ * Uses browser's native print-to-PDF functionality via hidden iframe.
+ * Brand: signal2noise — dark theme, #0d1117 bg, #E67E22 accent.
  */
 
 export interface PDFExportData {
@@ -12,22 +12,7 @@ export interface PDFExportData {
   signals?: Array<{
     sourceName: string;
     sourceUrl: string;
-  }>;
-  frameworks?: Array<{
-    label: string;
-    actions: string[];
-  }>;
-  metrics?: Array<{
-    value: number;
-    label?: string;
-    trend?: 'up' | 'down' | 'neutral';
-    context?: string;
-  }>;
-  comparisons?: Array<{
-    label: string;
-    value: number;
-    unit: string;
-    context: string;
+    title?: string;
   }>;
   followUpMessages?: Array<{
     role: 'user' | 'assistant';
@@ -36,347 +21,238 @@ export interface PDFExportData {
 }
 
 export function exportIntelligenceBriefToPDF(data: PDFExportData) {
-  // Clean markdown asterisks and citation numbers from text
-  // PRD requirement: Citation numbers should not appear in Moves for Leaders
-  const cleanText = (text: string) => {
-    return text
-      .replace(/\*\*/g, '') // Remove markdown bold
-      .replace(/\[\d+\](\[\d+\])*/g, '') // Remove citation numbers like [1], [2][3]
+  const cleanText = (text: string) =>
+    text
+      .replace(/\*\*/g, '')
+      .replace(/\[\d+\](\[\d+\])*/g, '')
       .trim();
-  };
 
-  // Build HTML content
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <title>Intelligence Brief - ${cleanText(data.query)}</title>
-      <style>
-        @page {
-          size: A4;
-          margin: 20mm;
-        }
+  const date = new Date().toLocaleDateString('en-US', {
+    month: 'long', day: 'numeric', year: 'numeric'
+  });
 
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
+  const movesHtml = (data.movesForLeaders || []).map((move, i) => {
+    const label = i === 0 ? '<span class="monday-label">Your Monday move: </span>' : '';
+    return `<li>${label}${cleanText(move)}</li>`;
+  }).join('');
 
-        body {
-          font-family: 'Helvetica', 'Arial', sans-serif;
-          line-height: 1.6;
-          color: #000;
-          max-width: 210mm;
-          margin: 0 auto;
-          padding: 20px;
-        }
+  const signalsHtml = (data.keySignals || []).map(s =>
+    `<li>${cleanText(s)}</li>`
+  ).join('');
 
-        .header {
-          background-color: #1B365D;
-          color: white;
-          padding: 15px 20px;
-          margin: -20px -20px 30px -20px;
-        }
+  const sourcesHtml = (data.signals || [])
+    .filter(s => s.sourceUrl && s.sourceUrl !== '#')
+    .map((s, i) => {
+      const name = s.title || s.sourceName || `Source ${i + 1}`;
+      return `<div class="source-item">${i + 1}. ${name}<br><a href="${s.sourceUrl}">${s.sourceUrl}</a></div>`;
+    }).join('');
 
-        .header h1 {
-          font-size: 24px;
-          font-weight: bold;
-          letter-spacing: 2px;
-        }
+  const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>signal2noise — ${cleanText(data.query)}</title>
+  <style>
+    @page { size: A4; margin: 20mm; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        .query-label {
-          font-size: 10px;
-          text-transform: uppercase;
-          color: #666;
-          margin-bottom: 5px;
-          letter-spacing: 1px;
-        }
+    body {
+      font-family: 'Helvetica Neue', 'Arial', sans-serif;
+      background: #0d1117;
+      color: #F5F5F5;
+      line-height: 1.6;
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 24px;
+    }
 
-        .query-text {
-          font-size: 12px;
-          color: #1B365D;
-          margin-bottom: 20px;
-          font-weight: 600;
-        }
+    .header {
+      background: #0d1117;
+      border-bottom: 2px solid #E67E22;
+      padding: 16px 0 12px;
+      margin-bottom: 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
 
-        .main-title {
-          font-size: 28px;
-          font-weight: bold;
-          text-transform: uppercase;
-          color: #1B365D;
-          margin-bottom: 25px;
-          letter-spacing: 1px;
-        }
+    .logo {
+      font-family: 'Helvetica Neue', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #F5F5F5;
+    }
 
-        .section {
-          margin-bottom: 25px;
-          page-break-inside: avoid;
-        }
+    .logo span { color: #E67E22; }
 
-        .section-title {
-          font-size: 16px;
-          font-weight: bold;
-          text-transform: uppercase;
-          color: #1B365D;
-          margin-bottom: 10px;
-          border-bottom: 2px solid #1B365D;
-          padding-bottom: 5px;
-        }
+    .header-date {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: rgba(245, 245, 245, 0.45);
+    }
 
-        .section-content {
-          font-size: 11px;
-          line-height: 1.7;
-        }
+    .query-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #E67E22;
+      margin-bottom: 6px;
+    }
 
-        .list-item {
-          margin-bottom: 8px;
-          padding-left: 20px;
-          position: relative;
-        }
+    .query-text {
+      font-size: 22px;
+      font-weight: 700;
+      color: #F5F5F5;
+      margin-bottom: 28px;
+      line-height: 1.25;
+    }
 
-        .list-item:before {
-          content: "•";
-          position: absolute;
-          left: 0;
-          color: #FF6B35;
-          font-weight: bold;
-          font-size: 14px;
-        }
+    .section { margin-bottom: 24px; page-break-inside: avoid; }
 
-        .framework {
-          margin-bottom: 15px;
-        }
+    .section-title {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: #E67E22;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(230, 126, 34, 0.3);
+    }
 
-        .framework-title {
-          font-size: 12px;
-          font-weight: bold;
-          color: #000;
-          margin-bottom: 5px;
-        }
+    .summary-text {
+      font-size: 12px;
+      line-height: 1.75;
+      color: rgba(245, 245, 245, 0.85);
+    }
 
-        .framework-action {
-          margin-left: 15px;
-          margin-bottom: 5px;
-          font-size: 10px;
-        }
+    ul { list-style: none; padding: 0; }
 
-        .sources {
-          page-break-inside: avoid;
-        }
+    ul li {
+      font-size: 11px;
+      line-height: 1.65;
+      color: rgba(245, 245, 245, 0.85);
+      padding: 6px 0 6px 18px;
+      border-bottom: 1px solid rgba(245, 245, 245, 0.06);
+      position: relative;
+    }
 
-        .source-item {
-          margin-bottom: 8px;
-          font-size: 10px;
-        }
+    ul li:last-child { border-bottom: none; }
 
-        .source-link {
-          color: #2563EB;
-          text-decoration: none;
-        }
+    ul li::before {
+      content: "—";
+      position: absolute;
+      left: 0;
+      color: #E67E22;
+      font-weight: 700;
+    }
 
-        .footer {
-          margin-top: 40px;
-          padding-top: 20px;
-          border-top: 1px solid #ccc;
-          font-size: 9px;
-          color: #666;
-          display: flex;
-          justify-content: space-between;
-        }
+    .monday-label {
+      color: #E67E22;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 9px;
+    }
 
-        @media print {
-          body {
-            padding: 0;
-          }
+    .source-item {
+      font-size: 9px;
+      color: rgba(245, 245, 245, 0.5);
+      margin-bottom: 6px;
+      line-height: 1.5;
+    }
 
-          .header {
-            margin: 0;
-          }
+    .source-item a {
+      color: rgba(230, 126, 34, 0.7);
+      text-decoration: none;
+    }
 
-          .no-print {
-            display: none;
-          }
-        }
-      </style>
-    </head>
-    <body>
-      <div class="header">
-        <h1>PLANNERAPI</h1>
-      </div>
+    .footer {
+      margin-top: 40px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(245, 245, 245, 0.1);
+      display: flex;
+      justify-content: space-between;
+      font-size: 8px;
+      color: rgba(245, 245, 245, 0.35);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
 
-      <div class="query-label">YOUR QUERY</div>
-      <div class="query-text">${cleanText(data.query)}</div>
+    @media print {
+      body { background: #0d1117; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
 
-      <h1 class="main-title">Intelligence Brief</h1>
+  <div class="header">
+    <div class="logo">signal<span>2</span>noise</div>
+    <div class="header-date">${date}</div>
+  </div>
 
-      <div class="section">
-        <h2 class="section-title">Summary</h2>
-        <div class="section-content">
-          ${cleanText(data.summary)}
-        </div>
-      </div>
+  <div class="query-label">Intelligence Brief</div>
+  <div class="query-text">${cleanText(data.query)}</div>
 
-      ${data.keySignals && data.keySignals.length > 0 ? `
-        <div class="section">
-          <h2 class="section-title">Key Signals</h2>
-          <div class="section-content">
-            ${data.keySignals.map(signal => `
-              <div class="list-item">${cleanText(signal)}</div>
-            `).join('')}
-          </div>
-        </div>
-      ` : ''}
+  <div class="section">
+    <div class="section-title">Summary</div>
+    <div class="summary-text">${cleanText(data.summary)}</div>
+  </div>
 
-      ${data.movesForLeaders && data.movesForLeaders.length > 0 ? `
-        <div class="section">
-          <h2 class="section-title">Moves for Leaders</h2>
-          <div class="section-content">
-            ${data.movesForLeaders.map(move => `
-              <div class="list-item">${cleanText(move)}</div>
-            `).join('')}
-          </div>
-        </div>
-      ` : ''}
+  ${signalsHtml ? `
+  <div class="section">
+    <div class="section-title">Signals</div>
+    <ul>${signalsHtml}</ul>
+  </div>` : ''}
 
-      ${data.frameworks && data.frameworks.length > 0 ? `
-        <div class="section">
-          <h2 class="section-title">Strategic Frameworks</h2>
-          <div class="section-content">
-            ${data.frameworks.map(framework => `
-              <div class="framework">
-                <div class="framework-title">${framework.label}</div>
-                ${framework.actions.map(action => `
-                  <div class="framework-action">• ${cleanText(action)}</div>
-                `).join('')}
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      ` : ''}
+  ${movesHtml ? `
+  <div class="section">
+    <div class="section-title">Moves for Leaders</div>
+    <ul>${movesHtml}</ul>
+  </div>` : ''}
 
-      ${data.signals && data.signals.length > 0 ? `
-        <div class="section sources">
-          <h2 class="section-title">Sources</h2>
-          <div class="section-content">
-            ${data.signals.map((signal, index) => `
-              <div class="source-item">
-                ${index + 1}. ${signal.sourceName}
-                ${signal.sourceUrl && signal.sourceUrl !== '#' ? `<br><a href="${signal.sourceUrl}" class="source-link">${signal.sourceUrl}</a>` : ''}
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      ` : ''}
+  ${sourcesHtml ? `
+  <div class="section">
+    <div class="section-title">Sources</div>
+    ${sourcesHtml}
+  </div>` : ''}
 
-      ${(data.metrics && data.metrics.length > 0) || (data.comparisons && data.comparisons.length > 0) ? `
-        <div class="section">
-          <h2 class="section-title">Key Metrics & Insights</h2>
-          <div class="section-content">
-            ${data.metrics && data.metrics.length > 0 ? `
-              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px;">
-                ${data.metrics.map(metric => `
-                  <div style="border: 1px solid #ddd; padding: 10px; border-radius: 8px; background: #f9fafb;">
-                    <div style="font-size: 20px; font-weight: bold; color: #1B365D; margin-bottom: 5px;">
-                      ${metric.value}${metric.label?.includes('%') ? '%' : ''}
-                    </div>
-                    <div style="font-size: 10px; color: #666; text-transform: uppercase; margin-bottom: 3px;">
-                      ${metric.label || 'Metric'}
-                    </div>
-                    ${metric.context ? `<div style="font-size: 9px; color: #888; margin-top: 5px;">${cleanText(metric.context)}</div>` : ''}
-                  </div>
-                `).join('')}
-              </div>
-            ` : ''}
-            ${data.comparisons && data.comparisons.length > 0 ? `
-              <div style="margin-top: 10px;">
-                <div style="font-size: 11px; font-weight: bold; margin-bottom: 8px; color: #666;">Comparative Analysis</div>
-                ${data.comparisons.map(comp => `
-                  <div style="margin-bottom: 10px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 3px;">
-                      <span style="font-weight: 600;">${comp.label}</span>
-                      <span style="color: #1B365D; font-weight: bold;">${comp.value}${comp.unit}</span>
-                    </div>
-                    <div style="background: #e5e7eb; height: 6px; border-radius: 3px; overflow: hidden;">
-                      <div style="background: #1B365D; height: 100%; width: ${Math.min(comp.value, 100)}%; border-radius: 3px;"></div>
-                    </div>
-                    ${comp.context ? `<div style="font-size: 8px; color: #888; margin-top: 2px;">${cleanText(comp.context)}</div>` : ''}
-                  </div>
-                `).join('')}
-              </div>
-            ` : ''}
-          </div>
-        </div>
-      ` : ''}
+  <div class="footer">
+    <span>signals.ensolabs.ai</span>
+    <span>Generated by signal2noise</span>
+  </div>
 
-      ${data.followUpMessages && data.followUpMessages.length > 0 ? `
-        <div class="section">
-          <h2 class="section-title">Follow-Up Discussion</h2>
-          <div class="section-content">
-            ${data.followUpMessages.map((msg, index) => `
-              <div style="margin-bottom: 12px; ${msg.role === 'user' ? 'padding-left: 0;' : 'padding-left: 15px; border-left: 3px solid #FF6B35;'}">
-                <div style="font-size: 9px; text-transform: uppercase; color: ${msg.role === 'user' ? '#1B365D' : '#FF6B35'}; font-weight: bold; margin-bottom: 3px;">
-                  ${msg.role === 'user' ? 'Question' : 'Answer'}
-                </div>
-                <div style="font-size: 10px; line-height: 1.5;">
-                  ${cleanText(msg.content)}
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      ` : ''}
+</body>
+</html>`;
 
-      <div class="footer">
-        <span>Generated by signal2noise</span>
-        <span>${new Date().toLocaleDateString()}</span>
-      </div>
-    </body>
-    </html>
-  `;
-
-  // Use hidden iframe approach for reliable printing without network requests
-  // This avoids CAPTCHA/interception issues completely
-  
-  // Create a hidden iframe
   const iframe = document.createElement('iframe');
   iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
   iframe.setAttribute('id', 'pdf-print-frame');
-  
-  // Remove any existing print frame
+
   const existingFrame = document.getElementById('pdf-print-frame');
-  if (existingFrame) {
-    existingFrame.remove();
-  }
-  
+  if (existingFrame) existingFrame.remove();
+
   document.body.appendChild(iframe);
-  
   const iframeDoc = iframe.contentWindow?.document;
   if (!iframeDoc || !iframe.contentWindow) {
     alert('Unable to create print preview. Please try again.');
     iframe.remove();
     return;
   }
-  
-  // Write content to iframe
+
   iframeDoc.open();
   iframeDoc.write(htmlContent);
   iframeDoc.close();
-  
-  // Wait for content to render, then print
+
   setTimeout(() => {
     try {
       iframe.contentWindow?.focus();
       iframe.contentWindow?.print();
     } catch (e) {
       console.error('Print failed:', e);
-      alert('Print failed. Please try again.');
     }
-    
-    // Clean up iframe after a delay (to allow print dialog to complete)
-    setTimeout(() => {
-      iframe.remove();
-    }, 1000);
+    setTimeout(() => iframe.remove(), 1000);
   }, 300);
 }

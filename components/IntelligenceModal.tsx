@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { X, Download, Share2, Mail, Loader2, FileText, Zap, Target, ExternalLink, Send, BookOpen, MessageCircle, BarChart2, BarChart3, FileSearch, Sparkles } from 'lucide-react';
+import { X, Download, Share2, Mail, Loader2, FileText, Zap, Target, ExternalLink, Send, BookOpen, MessageCircle, BarChart2, BarChart3, FileSearch, Sparkles, Link } from 'lucide-react';
 import { parseMarkdown, parseInlineMarkdown, parsePerplexityMarkdown } from '../utils/markdown';
 import { exportIntelligenceBriefToPDF } from '../utils/exportPDF';
 import { MetricCard } from './MetricCard';
@@ -54,6 +54,7 @@ type IntelligenceModalProps = {
   onClose: () => void;
   onFollowUp?: (question: string, displayQuery?: string) => void;
   isLoading?: boolean;
+  cardId?: string; // Firestore doc ID — enables shareable /brief/:cardId URL
 };
 
 /**
@@ -289,7 +290,8 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
   payload,
   onClose,
   onFollowUp,
-  isLoading = false
+  isLoading = false,
+  cardId,
 }) => {
   console.log('[IntelligenceModal] Rendered with open:', open, 'isLoading:', isLoading, 'hasPayload:', !!payload, 'payload:', payload);
   console.log('[IntelligenceModal] Perplexity endpoint:', ENDPOINTS.perplexitySearch);
@@ -456,6 +458,20 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
     const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`;
     window.open(linkedInUrl, '_blank');
     alert('Content copied to clipboard. Paste it in your LinkedIn post!');
+  };
+
+  const handleCopyLink = () => {
+    const url = cardId
+      ? `https://signals.ensolabs.ai/brief/${cardId}`
+      : window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+      // Brief visual feedback without alert
+      const btn = document.getElementById('copy-link-btn');
+      if (btn) {
+        btn.setAttribute('title', 'Copied!');
+        setTimeout(() => btn.setAttribute('title', 'Copy shareable link'), 1500);
+      }
+    });
   };
 
   const handleEmail = () => {
@@ -681,6 +697,15 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
                 title="Download PDF"
               >
                 <Download className="w-5 h-5 text-gray-700 dark:text-gray-200" />
+              </button>
+              <button
+                id="copy-link-btn"
+                onClick={handleCopyLink}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-bureau-signal dark:focus:ring-planner-orange focus:ring-offset-2"
+                aria-label="Copy shareable link"
+                title="Copy shareable link"
+              >
+                <Link className="w-5 h-5 text-gray-600 dark:text-gray-300" />
               </button>
               <button
                 onClick={handleShareLinkedIn}

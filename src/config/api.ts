@@ -14,10 +14,10 @@
  * Can be overridden with environment variables for multi-environment support
  */
 export const API_CONFIG = {
-  // Google Cloud Run backend (primary service)
+  // Google Cloud Run backend (primary service — plannerapi-prod project)
   cloudRun:
     import.meta.env.VITE_CLOUD_RUN_URL ||
-    'https://planners-backend-865025512785.us-central1.run.app',
+    'https://planners-backend-9036060950.us-central1.run.app',
 
   // Firebase Cloud Functions (secondary service)
   cloudFunctions:
@@ -68,12 +68,21 @@ export const ENDPOINTS = {
   briefingsLatest: `${API_CONFIG.cloudRun}/briefings/latest`,
 
   /**
-   * Perplexity Search: Perform a Perplexity search
-   * Used by: HeroSearch.tsx, AISearchInterface.tsx
+   * Perplexity Search: Perform a Perplexity search (full sonar-pro brief)
+   * Used by: TestNewHomepage.tsx (on card open), AISearchInterface.tsx
    * Method: POST
    * Body: { query: string }
    */
   perplexitySearch: `${API_CONFIG.cloudRun}/perplexity/search`,
+
+  /**
+   * Perplexity Search Instant: Standalone Search API for fast results list
+   * Used by: HeroSection search bar (before full sonar-pro is requested)
+   * Method: POST
+   * Body: { query: string }
+   * Returns: { results: Array<{ title, url, snippet, date }>, query }
+   */
+  perplexitySearchInstant: `${API_CONFIG.cloudRun}/perplexity/search-instant`,
 
   /**
    * Chat Simple: Simple follow-up question processing
@@ -96,6 +105,15 @@ export const ENDPOINTS = {
    * Body: CopilotKit protocol messages
    */
   copilotRuntime: `${API_CONFIG.cloudFunctions}/copilotRuntime`,
+
+  /**
+   * Chat Intel (Cloud Run): Structured intelligence brief via /chat-intel on Cloud Run
+   * Used by: TestNewHomepage.tsx hero search bar
+   * Method: POST
+   * Body: { query: string, audience?: string }
+   * Returns: { signals: IntelligenceSignal[], implications: string[], actions: string[] }
+   */
+  chatIntelSearch: `${API_CONFIG.cloudRun}/chat-intel`,
 
   /**
    * CopilotKit Health: Health check endpoint

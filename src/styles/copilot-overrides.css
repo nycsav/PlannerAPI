@@ -427,10 +427,4 @@
   }
 }
 
-/* ===================================
-   DARK MODE SUPPORT (Future)
-   =================================== */
-@media (prefers-color-scheme: dark) {
-  /* Currently maintaining light theme for consistency */
-  /* Add dark mode overrides here when design system expands */
-}
+/* Site is always dark; prefers-color-scheme not used for theme. */

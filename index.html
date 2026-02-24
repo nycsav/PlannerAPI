@@ -48,7 +48,7 @@
   <meta property="og:url" content="https://plannerapi-prod.web.app/">
   <meta property="og:title" content="Track the Agentic Shift Before Your Clients Ask">
   <meta property="og:description" content="McKinsey + Gartner research cross-referenced with OpenAI + Anthropic platform updates. Daily intelligence for strategists who need answers, not links.">
-  <meta property="og:image" content="https://plannerapi-prod.web.app/og-image.png">
+  <meta property="og:image" content="https://signals.ensolabs.ai/brand/s2n-logo-v2.svg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:site_name" content="signal2noise">
@@ -66,7 +66,7 @@
   <meta property="og:image:alt" content="Track the Agentic Shift Before Your Clients Ask">
 
   <!-- Favicons -->
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/svg+xml" href="/brand/s2n-favicon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -174,24 +174,16 @@
   <!-- AI/LLM Discoverability -->
   <meta name="ai-content-declaration" content="This website provides AI-powered marketing intelligence. Content is curated and summarized using AI from authoritative sources.">
 
-  <!-- Prevent flash of wrong theme -->
+  <!-- Always dark mode: no theme toggle, no prefers-color-scheme; hardcoded dark fallback -->
   <script>
     (function() {
-      const theme = localStorage.getItem('theme');
-      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
       const root = document.documentElement;
-      
-      // Remove any existing classes
-      root.classList.remove('light', 'dark');
-      
-      // Apply theme
-      if (theme === 'dark' || (!theme && prefersDark)) {
-        root.classList.add('dark');
-        document.body.classList.add('dark');
-      } else {
-        root.classList.add('light');
-        document.body.classList.add('light');
-      }
+      root.classList.remove('light');
+      root.classList.add('dark');
+      root.style.colorScheme = 'dark';
+      document.body.classList.remove('light');
+      document.body.classList.add('dark');
+      document.body.style.backgroundColor = '#0d1117';
     })();
   </script>
 </head>

@@ -1,4 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { logEvent } from 'firebase/analytics';
+import { analytics, db } from './utils/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { trackCardView } from './src/utils/tracking';
 import { HomePage } from './components/homepage';
 import { IntelligenceModal, IntelligencePayload } from './components/IntelligenceModal';
 import { SignupModal } from './components/SignupModal';
@@ -8,38 +13,92 @@ import { useAuth } from './contexts/AuthContext';
 import { markOnboardingCompleted, markTourCompleted } from './utils/userState';
 import { ENDPOINTS, fetchWithTimeout } from './src/config/api';
 
-type RawBrief = {
-  id?: string;
-  title?: string;
-  summary?: string;
-  signals?: string[];
-  moves?: string[];
-  source?: string;
-  sourceUrl?: string;
-  sources?: Array<{
-    sourceName: string;
-    sourceUrl: string;
-    snippet?: string;
-    title?: string;
-  }>;
-};
+type SearchResult = { title: string; url: string; snippet: string; date?: string };
 
 export const TestNewHomepage: React.FC = () => {
+  const location = useLocation();
   const { user } = useAuth();
   const [intelligenceOpen, setIntelligenceOpen] = useState(false);
   const [intelligencePayload, setIntelligencePayload] = useState<IntelligencePayload | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentCardId, setCurrentCardId] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [isInstantSearching, setIsInstantSearching] = useState(false);
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
   const [showPostSignupWelcome, setShowPostSignupWelcome] = useState(false);
   const [showFeatureTour, setShowFeatureTour] = useState(false);
 
-  const handleBriefClick = (brief: any) => {
-    // Use actual signals array directly
-    const keySignals = brief.signals || [];
+  // GA4 page view tracking
+  useEffect(() => {
+    if (analytics) {
+      logEvent(analytics, 'page_view', {
+        page_path: location.pathname,
+        page_title: document.title,
+        page_location: window.location.href,
+      });
+    }
+  }, [location]);
 
-    // Build signals with proper source information
-    // If brief has 'sources' array (from Firestore), use it
-    // Otherwise, create signal objects from the signals text
+  // Fix 3: On mount, check if URL is /brief/:cardId — load and open that card
+  useEffect(() => {
+    const pathMatch = location.pathname.match(/^\/brief\/([^/]+)$/);
+    if (!pathMatch) return;
+    const cardId = pathMatch[1];
+    const fetchCardById = async () => {
+      try {
+        const docRef = doc(db, 'discover_cards', cardId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const d = docSnap.data();
+          const keySignals: string[] = d.signals || [];
+          const signalsWithSources = keySignals.map((signal: string, i: number) => {
+            const firstSentence = signal.split(/[.!?]/)[0].trim();
+            const title = firstSentence.length > 60 ? firstSentence.substring(0, 60) + '...' : firstSentence;
+            return {
+              id: `sig-${i}`,
+              title: title || `Signal ${i + 1}`,
+              summary: signal,
+              sourceName: d.source || 'Source',
+              sourceUrl: d.sourceUrl || '#',
+            };
+          });
+          setCurrentCardId(cardId);
+          setIntelligencePayload({
+            query: d.title || '',
+            summary: d.summary || '',
+            keySignals,
+            signals: signalsWithSources,
+            movesForLeaders: d.moves || [],
+          });
+          setIntelligenceOpen(true);
+        }
+      } catch (err) {
+        console.error('[brief] fetch card error:', err);
+      }
+    };
+    fetchCardById();
+  }, []); // intentionally run once on mount
+
+  const openModal = (payload: IntelligencePayload, cardId?: string) => {
+    setIntelligencePayload(payload);
+    setCurrentCardId(cardId || null);
+    setIntelligenceOpen(true);
+    if (cardId) {
+      window.history.pushState({}, '', `/brief/${cardId}`);
+    }
+  };
+
+  const closeModal = () => {
+    setIntelligenceOpen(false);
+    setCurrentCardId(null);
+    // Restore URL to homepage if we navigated to a brief URL
+    if (window.location.pathname.startsWith('/brief/')) {
+      window.history.pushState({}, '', '/');
+    }
+  };
+
+  const handleBriefClick = (brief: any) => {
+    const keySignals = brief.signals || [];
     let signalsWithSources = [];
     if (brief.sources && Array.isArray(brief.sources)) {
       signalsWithSources = brief.sources.map((src: any, i: number) => ({
@@ -50,14 +109,9 @@ export const TestNewHomepage: React.FC = () => {
         sourceUrl: src.sourceUrl || '#',
       }));
     } else {
-      // Fallback: create signal objects from signals array
       signalsWithSources = keySignals.map((signal: string, i: number) => {
-        // Extract first sentence or first 60 chars as title
         const firstSentence = signal.split(/[.!?]/)[0].trim();
-        const title = firstSentence.length > 60
-          ? firstSentence.substring(0, 60) + '...'
-          : firstSentence;
-
+        const title = firstSentence.length > 60 ? firstSentence.substring(0, 60) + '...' : firstSentence;
         return {
           id: `sig-${i}`,
           title: title || `Signal ${i + 1}`,
@@ -67,149 +121,82 @@ export const TestNewHomepage: React.FC = () => {
         };
       });
     }
-
     const payload: IntelligencePayload = {
       query: brief.title || '',
       summary: brief.summary || '',
-      keySignals: keySignals,
+      keySignals,
       signals: signalsWithSources,
       movesForLeaders: brief.moves || [],
     };
-
-    setIntelligencePayload(payload);
-    setIntelligenceOpen(true);
+    openModal(payload, brief.id || undefined);
+    trackCardView({ id: brief.id, title: brief.title || '', summary: brief.summary, pillar: brief.pillar });
   };
 
-  const handleSignupClick = () => {
-    setIsSignupModalOpen(true);
+  const handleSignupClick = () => setIsSignupModalOpen(true);
+  const handleSignupSuccess = () => { setShowPostSignupWelcome(true); markOnboardingCompleted(); };
+  const handleStartTour = () => setShowFeatureTour(true);
+
+  // Instant search: shows result list below search bar (unchanged)
+  const handleInstantSearch = async (query: string) => {
+    if (!query.trim()) return;
+    setIsInstantSearching(true);
+    setSearchResults([]);
+    try {
+      const resp = await fetchWithTimeout(ENDPOINTS.perplexitySearchInstant, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+        timeout: 15000,
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        setSearchResults(data.results || []);
+      }
+    } catch (err) {
+      console.error('[instant search] failed:', err);
+    } finally {
+      setIsInstantSearching(false);
+    }
   };
 
-  const handleSignupSuccess = () => {
-    setShowPostSignupWelcome(true);
-    markOnboardingCompleted();
-  };
-
-  const handleStartTour = () => {
-    setShowFeatureTour(true);
-  };
-
+  // Fix 2: ASK button now calls /chat-intel → opens modal immediately with structured response
   const handleSearch = async (query: string) => {
     if (!query.trim()) return;
-
-    // Open modal immediately with loading state
     setIsLoading(true);
-    setIntelligenceOpen(true);
     setIntelligencePayload(null);
+    setCurrentCardId(null);
+    setIntelligenceOpen(true);
+    setSearchResults([]);
 
     try {
-      const resp = await fetchWithTimeout(
-        ENDPOINTS.perplexitySearch,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query }),
-          timeout: 40000,
-        }
-      );
+      const resp = await fetchWithTimeout(ENDPOINTS.chatIntelSearch, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, audience: 'CMO' }),
+        timeout: 30000,
+      });
 
       if (!resp.ok) throw new Error(`Backend error: ${resp.status}`);
       const data = await resp.json();
 
-      // Parse response sections
-      const sections = data.answer?.split('##') || [];
-
-      // Extract Summary (first section after title)
-      let summary = '';
-      if (sections.length > 1) {
-        summary = sections[1].split('\n').filter((l: string) => l.trim() && !l.includes('##')).join(' ').trim();
-      } else {
-        summary = data.answer || '';
-      }
-
-      // Extract Moves for Leaders first (look for action-oriented section)
-      const movesForLeaders: string[] = [];
-      const movesSection = sections.find((s: string) =>
-        s.toLowerCase().includes('action') ||
-        s.toLowerCase().includes('move') ||
-        s.toLowerCase().includes('recommend')
-      );
-      if (movesSection) {
-        const moveRegex = /^[-*•]\s+(.+)$/gm;
-        let moveMatch;
-        while ((moveMatch = moveRegex.exec(movesSection)) !== null) {
-          movesForLeaders.push(moveMatch[1].trim());
-        }
-      }
-
-      // Extract Key Signals (bullet points from non-moves sections)
-      const keySignals: string[] = [];
-      const nonMovesSections = sections.filter((s: string) => s !== movesSection);
-      const nonMovesText = nonMovesSections.join('\n');
-      const bulletRegex = /^[-*•]\s+(.+)$/gm;
-      let match;
-      while ((match = bulletRegex.exec(nonMovesText)) !== null) {
-        const signal = match[1].trim();
-        // Avoid duplicates
-        if (!keySignals.includes(signal) && !movesForLeaders.includes(signal)) {
-          keySignals.push(signal);
-        }
-      }
-
-      // Extract sources: prefer search_results (Cloud Run), fallback to raw.citations (legacy)
-      const searchResults = data.search_results || [];
-      const legacyCitations = data.raw?.citations || [];
-      let signals: Array<{ id: string; title: string; summary: string; sourceName: string; sourceUrl: string }>;
-      if (searchResults.length > 0) {
-        signals = searchResults
-          .filter((sr: any) => sr.url && sr.url !== '#')
-          .map((sr: any, i: number) => ({
-            id: `source-${i}`,
-            title: sr.title || `Source ${i + 1}`,
-            summary: sr.snippet || '',
-            sourceName: sr.sourceName || (sr.url ? new URL(sr.url).hostname.replace('www.', '') : `Source ${i + 1}`),
-            sourceUrl: sr.url,
-          }));
-      } else if (Array.isArray(legacyCitations) && legacyCitations.length > 0) {
-        signals = legacyCitations
-          .map((citation: any, i: number) => {
-            const url = typeof citation === 'string' ? citation : citation?.url;
-            const title = typeof citation === 'object' ? citation?.title || citation?.source : `Source ${i + 1}`;
-            if (!url || url === '#') return null;
-            try {
-              return {
-                id: `source-${i}`,
-                title: title || `Source ${i + 1}`,
-                summary: typeof citation === 'object' ? citation?.snippet || '' : '',
-                sourceName: typeof citation === 'object' ? citation?.source || citation?.title : new URL(url).hostname.replace('www.', ''),
-                sourceUrl: url,
-              };
-            } catch {
-              return null;
-            }
-          })
-          .filter((s): s is NonNullable<typeof s> => s !== null);
-      } else {
-        signals = [];
-      }
-
+      // /chat-intel returns { signals: IntelligenceSignal[], implications: string[], actions: string[] }
       const payload: IntelligencePayload = {
         query,
-        summary,
-        keySignals: keySignals.slice(0, 5),
-        signals,
-        movesForLeaders: movesForLeaders.length > 0 ? movesForLeaders.slice(0, 3) : [
+        summary: (data.signals?.[0]?.summary) || (data.implications?.[0]) || '',
+        keySignals: data.implications || [],
+        signals: data.signals || [],
+        movesForLeaders: data.actions?.length > 0 ? data.actions : [
           'Review the key signals and assess impact on your current strategy',
           'Identify quick-win opportunities to implement within 30 days',
-          'Establish measurement framework to track progress'
+          'Establish measurement framework to track progress',
         ],
       };
-
       setIntelligencePayload(payload);
     } catch (error) {
-      console.error('Search error:', error);
+      console.error('[handleSearch] error:', error);
       setIntelligencePayload({
         query,
-        summary: "I had trouble getting that intelligence. Please try again or contact support.",
+        summary: 'Unable to retrieve intelligence right now. Please try again.',
         keySignals: [],
         movesForLeaders: [],
       });
@@ -224,16 +211,18 @@ export const TestNewHomepage: React.FC = () => {
         onBriefClick={handleBriefClick}
         onSignupClick={handleSignupClick}
         onSearch={handleSearch}
+        onInstantSearch={handleInstantSearch}
+        searchResults={searchResults}
+        isInstantSearching={isInstantSearching}
       />
 
       <IntelligenceModal
         open={intelligenceOpen}
-        onClose={() => setIntelligenceOpen(false)}
+        onClose={closeModal}
         payload={intelligencePayload}
         isLoading={isLoading}
-        onFollowUp={(question) => {
-          handleSearch(question);
-        }}
+        cardId={currentCardId || undefined}
+        onFollowUp={(question) => handleSearch(question)}
       />
 
       <SignupModal
@@ -252,14 +241,8 @@ export const TestNewHomepage: React.FC = () => {
 
       <FeatureTour
         isOpen={showFeatureTour}
-        onComplete={() => {
-          setShowFeatureTour(false);
-          markTourCompleted();
-        }}
-        onSkip={() => {
-          setShowFeatureTour(false);
-          markTourCompleted();
-        }}
+        onComplete={() => { setShowFeatureTour(false); markTourCompleted(); }}
+        onSkip={() => { setShowFeatureTour(false); markTourCompleted(); }}
       />
     </>
   );

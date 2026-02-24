@@ -4,16 +4,20 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Magic Patterns - Editorial theme (light/dark) */
+/* Site is always dark; no light/cream theme. Hardcoded fallbacks for html/body. */
+html,
+body {
+  background-color: #0d1117 !important;
+}
+
 :root {
-  /* Redesign variables (PlannerAPI v2) */
+  /* Redesign variables (PlannerAPI v2) – dark theme only */
   --navy: #0A1128;
   --navy-card: #0D1631;
   --orange: #E67E22;
   --text: #F5F5F5;
   --muted: #7A8BA0;
   --border: #1E2A45;
-  /* Legacy aliases kept for backward compatibility */
   --cream: #f8f6f0;
   --accent: #E67E22;
   --accent-muted: rgba(230, 126, 34, 0.15);
@@ -32,31 +36,20 @@
   --source-logo-filter: brightness(0) invert(1);
 }
 
-/* Light mode: cream bg, navy text (--navy=bg, --cream=text in homepage) */
+/* Override html.light if ever applied: force dark values so site never shows cream */
 html.light {
-  --navy: #f8f6f0;
-  --cream: #0d1321;
-  --accent: #c45a1a;
-  --accent-muted: rgba(196, 90, 26, 0.12);
-  --border-subtle: rgba(13, 19, 33, 0.1);
-  --border-light: rgba(13, 19, 33, 0.08);
-  --text-muted: rgba(13, 19, 33, 0.75);
-  --text-muted-60: rgba(13, 19, 33, 0.6);
-  --text-muted-45: rgba(13, 19, 33, 0.45);
-  --text-muted-50: rgba(13, 19, 33, 0.5);
-  --text-muted-20: rgba(13, 19, 33, 0.2);
-  --overlay-subtle: rgba(13, 19, 33, 0.03);
-  --overlay-light: rgba(13, 19, 33, 0.04);
-  --overlay-medium: rgba(13, 19, 33, 0.06);
-  --overlay-hover: rgba(13, 19, 33, 0.1);
-  --overlay-border: rgba(13, 19, 33, 0.15);
-  --source-logo-filter: brightness(0);
+  --navy: #0d1321 !important;
+  --cream: #f8f6f0 !important;
+  --text: #F5F5F5 !important;
+  --muted: rgba(248, 246, 240, 0.7) !important;
 }
 
-/* Dark mode: navy bg, cream text */
+/* Dark mode (default; class applied by index.html script and ThemeContext) */
 html.dark {
   --navy: #0d1321;
   --cream: #f8f6f0;
+  --text: #F5F5F5;
+  --muted: rgba(248, 246, 240, 0.7);
   --accent: #e8b86d;
   --accent-muted: rgba(232, 184, 109, 0.15);
   --border-subtle: rgba(248, 246, 240, 0.1);
@@ -76,37 +69,38 @@ html.dark {
 
 @layer base {
   :root {
-    --color-surface: #FFFFFF;
-    --color-ink: #0F172A;
+    --color-surface: #0d1117;
+    --color-ink: #F8FAFC;
   }
 
   .dark {
-    --color-surface: #0F172A;
+    --color-surface: #0d1117;
     --color-ink: #F8FAFC;
   }
 
   html {
-    background-color: #FFFFFF;
+    background-color: #0d1117 !important;
     transition: background-color 0.2s ease;
   }
 
-  html.dark {
-    background-color: #0F172A !important;
+  html.dark,
+  html.light {
+    background-color: #0d1117 !important;
   }
 
   body {
-    background-color: #FFFFFF !important;
+    background-color: #0d1117 !important;
     margin: 0;
-    color: #0F172A;
+    color: #F8FAFC;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-family: 'Inter', system-ui, sans-serif;
     transition: background-color 0.2s ease, color 0.2s ease;
   }
 
-  /* Ensure dark mode applies to body - use html.dark selector for higher specificity */
-  html.dark body {
-    background-color: #0F172A !important;
+  html.dark body,
+  html.light body {
+    background-color: #0d1117 !important;
     color: #F8FAFC !important;
   }
 
@@ -125,6 +119,16 @@ html.dark {
     color: #CBD5E1 !important; /* slate-300 - readable */
   }
 
+  html.dark .text-gray-500,
+  html.dark .text-gray-400 {
+    color: #94A3B8 !important; /* slate-400 - visible on dark */
+  }
+
+  html.dark .text-slate-500,
+  html.dark .text-slate-400 {
+    color: #94A3B8 !important; /* visible on dark when no dark: variant */
+  }
+
   /* Force high contrast for modal sidebar panels in dark mode */
   html.dark .dark\:bg-slate-800 h3,
   html.dark .dark\:bg-slate-800 h4,
@@ -139,22 +143,57 @@ html.dark {
   }
 
   /* Force dark mode backgrounds - high specificity to override Tailwind */
-  html.dark .bg-white {
-    background-color: #0F172A !important;
+  html.dark .bg-white,
+  html.light .bg-white {
+    background-color: #0d1117 !important;
   }
 
-  html.dark .dark\:bg-slate-900 {
-    background-color: #0F172A !important;
+  html.dark .dark\:bg-slate-900,
+  html.light .dark\:bg-slate-900 {
+    background-color: #0d1117 !important;
   }
 
   /* Override section backgrounds */
-  html.dark .section-zebra {
-    background-color: #0F172A !important;
+  html.dark .section-zebra,
+  html.light .section-zebra {
+    background-color: #0d1117 !important;
   }
 
-  /* Ensure navbar is dark in dark mode */
-  html.dark nav {
-    background-color: #0F172A !important;
+  /* Ensure navbar is dark */
+  html.dark nav,
+  html.light nav {
+    background-color: #0d1117 !important;
+  }
+
+  /* Homepage nav: force dark bar and visible text (overrides var() from old/cached bundle) */
+  .homepage-nav {
+    background-color: #0d1321 !important;
+    border-top-color: #E67E22 !important;
+  }
+  .homepage-nav .homepage-nav-logo-text,
+  .homepage-nav span {
+    color: #F5F5F5 !important;
+  }
+  .homepage-nav button {
+    color: #E67E22 !important;
+    border-color: #E67E22 !important;
+  }
+
+  /* Homepage footer: force dark bg and visible text (overrides var() from old/cached bundle) */
+  .homepage-footer {
+    background-color: #0d1321 !important;
+    border-top-color: #1E2A45 !important;
+  }
+  .homepage-footer .homepage-footer-brand,
+  .homepage-footer > div > div > span,
+  .homepage-footer > div > p {
+    color: #F5F5F5 !important;
+  }
+  .homepage-footer > div > p {
+    color: rgba(248, 246, 240, 0.7) !important;
+  }
+  .homepage-footer .homepage-footer-footnote span {
+    color: rgba(248, 246, 240, 0.7) !important;
   }
 
   /* Logo SVG color variables for dark mode */
@@ -175,12 +214,14 @@ html.dark {
   }
 
   /* Main layout and containers */
-  html.dark main {
-    background-color: #0F172A !important;
+  html.dark main,
+  html.light main {
+    background-color: #0d1117 !important;
   }
 
-  html.dark [class*="min-h-screen"] {
-    background-color: #0F172A !important;
+  html.dark [class*="min-h-screen"],
+  html.light [class*="min-h-screen"] {
+    background-color: #0d1117 !important;
   }
 
   /* Display font for headlines */
@@ -353,5 +394,15 @@ html.dark {
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  /* Footer footnote: remove selection/tap highlight so it doesn't look like highlighted text */
+  .homepage-footer-footnote {
+    -webkit-tap-highlight-color: transparent;
+  }
+  .homepage-footer-footnote::selection,
+  .homepage-footer-footnote *::selection {
+    background-color: transparent;
+    color: inherit;
   }
 }

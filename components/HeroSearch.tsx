@@ -188,7 +188,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({ onSearch, onOpenChat }) 
 
       const res = await fetchWithTimeout(
         `${ENDPOINTS.trendingTopics}?audience=${encodeURIComponent(audienceFormatted)}&limit=6`,
-        { timeout: 30000 }
+        { timeout: 5000 }
       );
 
       if (!res.ok) throw new Error(`Request failed: ${res.status}`);

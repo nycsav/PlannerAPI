@@ -1,5 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { logEvent } from 'firebase/analytics';
+import { analytics } from './utils/firebase';
 import { Layout } from './components/Layout';
 import { IntelligenceCard } from './components/IntelligenceCard';
 import { ConversationalBrief } from './components/ConversationalBrief';
@@ -55,7 +57,19 @@ const SectionHeader: React.FC<{ id: string; title: string; subtitle?: string; ba
 );
 
 const App: React.FC = () => {
+  const location = useLocation();
   const { audience } = useAudience();
+
+  // GA4 page view tracking
+  useEffect(() => {
+    if (analytics) {
+      logEvent(analytics, 'page_view', {
+        page_path: location.pathname,
+        page_title: document.title,
+        page_location: window.location.href,
+      });
+    }
+  }, [location]);
 
   const [searchState, setSearchState] = useState<{
     isOpen: boolean;

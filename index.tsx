@@ -2,6 +2,7 @@ import './index.css';
 import './src/styles/unified-design-system.css';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import App from './TestNewHomepage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AudienceProvider } from './contexts/AudienceContext';
@@ -17,13 +18,15 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <ErrorBoundary>
-      <ThemeProvider>
-        <AuthProvider>
-          <AudienceProvider>
-            <App />
-          </AudienceProvider>
-        </AuthProvider>
-      </ThemeProvider>
+      <BrowserRouter>
+        <ThemeProvider>
+          <AuthProvider>
+            <AudienceProvider>
+              <App />
+            </AudienceProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </BrowserRouter>
     </ErrorBoundary>
   </React.StrictMode>
 );

@@ -11,20 +11,37 @@ import { AudienceGrid } from '../AudienceGrid';
 import { FAQAccordion } from '../FAQAccordion';
 import { Footer } from './Footer';
 
+type SearchResult = { title: string; url: string; snippet: string; date?: string };
+
 interface HomePageProps {
   onBriefClick?: (brief: any) => void;
   onSignupClick?: () => void;
   onSearch?: (query: string) => void;
+  onInstantSearch?: (query: string) => void;
+  searchResults?: SearchResult[];
+  isInstantSearching?: boolean;
 }
 
-export const HomePage: React.FC<HomePageProps> = ({ onSignupClick, onSearch }) => {
+export const HomePage: React.FC<HomePageProps> = ({
+  onSignupClick,
+  onSearch,
+  onInstantSearch,
+  searchResults,
+  isInstantSearching,
+}) => {
   return (
     <div style={{ backgroundColor: 'var(--navy)', minHeight: '100vh' }}>
       {/* 1. Navigation */}
       <Navbar onSignupClick={onSignupClick} />
 
       {/* 2. Hero */}
-      <HeroSection onSearch={onSearch} onSignupClick={onSignupClick} />
+      <HeroSection
+        onSearch={onSearch}
+        onInstantSearch={onInstantSearch}
+        onSignupClick={onSignupClick}
+        searchResults={searchResults}
+        isSearching={isInstantSearching}
+      />
 
       {/* 3. Value Proposition Callout (preserved) */}
       <ValuePropositionCallout />

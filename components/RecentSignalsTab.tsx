@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { db } from '../utils/firebase';
+import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 
 export interface Signal {
+  id: string;
   date: string;
   title: string;
   summary: string;
@@ -8,12 +11,66 @@ export interface Signal {
 }
 
 export interface RecentSignalsTabProps {
-  signals: Signal[];
   onReadMore?: (signal: Signal) => void;
 }
 
-export const RecentSignalsTab: React.FC<RecentSignalsTabProps> = ({ signals = [], onReadMore }) => {
+const formatDate = (publishedAt: any): string => {
+  try {
+    const ts = publishedAt?.toDate ? publishedAt.toDate() : new Date(publishedAt);
+    return ts.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch {
+    return new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+};
+
+export const RecentSignalsTab: React.FC<RecentSignalsTabProps> = ({ onReadMore }) => {
+  const [signals, setSignals] = useState<Signal[]>([]);
   const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const fetchSignals = async () => {
+      try {
+        const q = query(
+          collection(db, 'discover_cards'),
+          orderBy('publishedAt', 'desc'),
+          limit(20)
+        );
+        const snapshot = await getDocs(q);
+
+        // Deduplicate by doc id first, then by formatted date (one card per date)
+        const seenIds = new Set<string>();
+        const seenDates = new Set<string>();
+        const fetched: Signal[] = [];
+
+        for (const docSnap of snapshot.docs) {
+          if (seenIds.has(docSnap.id)) continue;
+          seenIds.add(docSnap.id);
+
+          const d = docSnap.data();
+          const date = formatDate(d.publishedAt);
+
+          if (seenDates.has(date)) continue;
+          seenDates.add(date);
+
+          fetched.push({
+            id: docSnap.id,
+            date,
+            title: d.title || 'Intelligence Update',
+            summary: d.summary || '',
+            sources: d.source ? [d.source] : [],
+          });
+
+          if (fetched.length >= 5) break;
+        }
+
+        if (fetched.length > 0) setSignals(fetched);
+      } catch (err) {
+        console.error('[RecentSignalsTab] fetch error:', err);
+      }
+    };
+    fetchSignals();
+  }, []);
+
   const signal = signals[active];
 
   if (!signal) return null;
@@ -35,7 +92,7 @@ export const RecentSignalsTab: React.FC<RecentSignalsTabProps> = ({ signals = []
         >
           {signals.map((s, i) => (
             <button
-              key={s.date}
+              key={s.id}
               role="tab"
               aria-selected={i === active}
               onClick={() => setActive(i)}
@@ -126,7 +183,7 @@ export const RecentSignalsTab: React.FC<RecentSignalsTabProps> = ({ signals = []
         >
           {signals.map((s, i) => (
             <button
-              key={s.date}
+              key={s.id}
               type="button"
               role="tab"
               aria-label={s.date}

@@ -7,6 +7,12 @@ export interface StatCalloutProps {
   source?: string;
 }
 
+/* All colors hardcoded for dark theme so section is always visible */
+const STAT_BG = '#0d1321';
+const STAT_TEXT = '#F5F5F5';
+const STAT_MUTED = 'rgba(248, 246, 240, 0.7)';
+const STAT_ORANGE = '#E67E22';
+
 export const StatCallout: React.FC<StatCalloutProps> = ({
   stat = '78/6',
   label = 'The AI Maturity Gap',
@@ -17,7 +23,7 @@ export const StatCallout: React.FC<StatCalloutProps> = ({
     <section
       aria-label={`Key stat: ${label}`}
       style={{
-        backgroundColor: 'var(--navy)',
+        backgroundColor: STAT_BG,
         padding: '80px 0',
         borderTop: '1px solid rgba(230, 126, 34, 0.2)',
         borderBottom: '1px solid rgba(230, 126, 34, 0.2)',
@@ -31,7 +37,7 @@ export const StatCallout: React.FC<StatCalloutProps> = ({
             fontWeight: 700,
             fontSize: 'clamp(80px, 12vw, 144px)',
             lineHeight: 0.9,
-            color: 'var(--orange)',
+            color: STAT_ORANGE,
             marginBottom: '28px',
           }}
         >
@@ -42,7 +48,7 @@ export const StatCallout: React.FC<StatCalloutProps> = ({
             fontFamily: "'Playfair Display', serif",
             fontWeight: 700,
             fontSize: '32px',
-            color: 'var(--text)',
+            color: STAT_TEXT,
             marginBottom: '24px',
           }}
         >
@@ -53,7 +59,7 @@ export const StatCallout: React.FC<StatCalloutProps> = ({
             fontFamily: "'Inter', sans-serif",
             fontSize: '17px',
             lineHeight: 1.8,
-            color: 'var(--muted)',
+            color: STAT_MUTED,
             marginBottom: '24px',
           }}
         >
@@ -65,7 +71,7 @@ export const StatCallout: React.FC<StatCalloutProps> = ({
             fontSize: '11px',
             letterSpacing: '0.15em',
             textTransform: 'uppercase',
-            color: 'var(--orange)',
+            color: STAT_ORANGE,
           }}
         >
           {source}

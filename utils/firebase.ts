@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc, Timestamp } from 'firebase/firestore';
+import { getAnalytics, logEvent, type Analytics } from 'firebase/analytics';
 
 // Firebase configuration from environment variables
 const firebaseConfig = {
@@ -10,6 +11,7 @@ const firebaseConfig = {
   storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID || 'plannerapi-prod'}.appspot.com`,
   messagingSenderId: import.meta.env.VITE_FIREBASE_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_GA4_MEASUREMENT_ID,
 };
 
 // Initialize Firebase
@@ -18,6 +20,19 @@ const app = initializeApp(firebaseConfig);
 // Initialize services
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+// Initialize Analytics (only in browser, and only when measurementId is set)
+let analytics: Analytics | null = null;
+if (typeof window !== 'undefined' && import.meta.env.VITE_GA4_MEASUREMENT_ID) {
+  analytics = getAnalytics(app);
+
+  // Fire a test event immediately to verify GA4 connection
+  logEvent(analytics, 'firebase_initialized', {
+    timestamp: new Date().toISOString(),
+    measurement_id: import.meta.env.VITE_GA4_MEASUREMENT_ID,
+  });
+}
+export { analytics };
 
 // Google Auth Provider
 export const googleProvider = new GoogleAuthProvider();

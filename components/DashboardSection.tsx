@@ -6,6 +6,7 @@ import { IntelligenceModal, IntelligencePayload } from './IntelligenceModal';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { IntelligenceCard, Pillar, PILLAR_CONFIG } from '../utils/dashboardMetrics';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { trackCardView, trackFilterApplied } from '../src/utils/tracking';
 
 export const DashboardSection: React.FC = () => {
   const { cards, loading, isLiveData, refetch } = useDashboardData({ cardLimit: 12 });
@@ -18,6 +19,12 @@ export const DashboardSection: React.FC = () => {
   const { trackPillarFilter } = useAnalytics();
 
   const handleCardClick = (card: IntelligenceCard) => {
+    trackCardView({
+      id: card.id,
+      title: card.title,
+      summary: card.summary,
+      pillar: card.pillar,
+    });
     const payload: IntelligencePayload = {
       query: card.title,
       summary: card.summary,
@@ -44,6 +51,7 @@ export const DashboardSection: React.FC = () => {
 
   const handleFilterChange = (next: Pillar | null) => {
     setIsTransitioning(true);
+    trackFilterApplied('pillar', next ?? 'all');
     window.setTimeout(() => {
       trackPillarFilter(next, selectedPillar);
       setSelectedPillar(next);
