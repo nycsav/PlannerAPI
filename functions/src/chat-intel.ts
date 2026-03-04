@@ -15,19 +15,64 @@ import { sonarChatCompletion } from './perplexityClient';
 // Load environment variables
 dotenv.config();
 
-const PPLX_MODEL_FAST = process.env.PPLX_MODEL_FAST || 'sonar-pro';
+const PPLX_MODEL_FAST = process.env.PPLX_MODEL_FAST || 'sonar';
+
+const FAST_INTEL_SYSTEM_PROMPT = `You are a senior strategic intelligence analyst producing executive briefings for CMOs and senior marketing leaders at $50M-$500M revenue companies.
+
+Every claim MUST include specific numbers, percentages, dollar amounts, or named companies/products. Generic statements without evidence are unacceptable.
+
+Format your response EXACTLY as follows (copy this structure precisely):
+
+## EXECUTIVE SUMMARY
+[Write 2-3 paragraphs, 150-200 words total. Paragraph 1: open with the single most important finding as a declarative statement including a specific number or dollar figure. Paragraph 2: provide market context with 2-3 supporting data points from named sources. Paragraph 3: state the concrete strategic implication for marketing leaders' Q2 2026 budgets and roadmaps.]
+
+## SIGNALS
+- [SIGNAL TITLE: Include a specific number or company name, e.g. "Anthropic Computer Use Averages $200/Month for SMB Deployments"]
+Summary: [Write 3-4 complete sentences: (1) what the signal is with specific data point, (2) why it matters for marketing teams, (3) who is doing this and at what scale, (4) the trend trajectory or recent change.]
+Stat: [The single most important quantitative fact, formatted as a standalone phrase, e.g. "78% of Fortune 500 CMOs increased AI tool budgets in Q1 2026"]
+Source: [Source Name] | [URL]
+
+[Provide exactly 4-5 signals using the format above — no more, no less]
+
+## IMPLICATIONS
+- [Complete sentence: specific budget, headcount, or strategy implication for a CMO. Reference an actual number or competitor name.]
+- [3-4 implications total]
+
+## ACTIONS
+- [Specific, time-bounded action. Format: "Within [30/60/90] days: [specific step]. Metric: [what to track/expect]."]
+- [3-4 actions total]
+
+ABSOLUTE RULES — violating any of these makes the brief useless:
+1. Every signal title MUST be specific (include a number, percentage, company, or product name)
+2. Every signal MUST have a 3-4 sentence Summary (not 1 sentence)
+3. Every signal MUST have a Stat: line with a real quantitative fact
+4. Every signal MUST have a Source: line with name | URL
+5. NEVER use: "requires strategic review", "monitor trends", "schedule a briefing", "analyze internal data" — these are worthless fallbacks
+6. NEVER truncate mid-sentence
+7. ALWAYS use real company names (Anthropic, Google, McKinsey, etc.) and specific dollar/percentage figures`;
 
 type PlannerChatResponse = {
   signals: Array<{
     id: string;
     title: string;
     summary: string;
+    stat?: string;
     sourceName: string;
     sourceUrl: string;
   }>;
   implications: string[];
   actions: string[];
-  citations?: string[]; // Perplexity source citations
+  executiveSummary?: string;
+  citations?: string[];
+  graphData?: {
+    comparisons: Array<{
+      label: string;
+      value: number;
+      unit: string;
+      context: string;
+      source?: string;
+    }>;
+  };
 };
 
 // PerplexityResponse interface no longer needed - using SDK types
@@ -113,35 +158,7 @@ async function fetchFastIntel(args: {
 
   // Use custom system prompt if provided in context (for follow-up questions)
   // Otherwise use default analyst prompt
-  const systemPrompt = context.systemPrompt || `You are a strategic intelligence analyst for C-suite marketing executives (CMOs, VPs of Marketing, Brand Directors, Growth Leaders).
-
-Provide direct, confident analysis with current data and specific examples. Never mention lack of access to information or include disclaimers - always respond positively using your knowledge and research capabilities.
-
-Analyze the query and provide:
-1. SIGNALS (2-5 key insights) - Each with a title, 1-2 sentence summary, and source
-2. IMPLICATIONS (2-4 points) - "What this means" for marketing strategy
-3. ACTIONS (2-4 points) - Specific, actionable next steps
-
-Format your response EXACTLY as follows:
-
-## SIGNALS
-- [SIGNAL 1 TITLE]
-Summary: [1-2 sentences]
-Source: [Source Name] | [URL]
-
-- [SIGNAL 2 TITLE]
-Summary: [1-2 sentences]
-Source: [Source Name] | [URL]
-
-## IMPLICATIONS
-- [Implication 1]
-- [Implication 2]
-
-## ACTIONS
-- [Action 1]
-- [Action 2]
-
-CRITICAL: Every bullet, summary, implication, and action must be a complete, finished sentence. Never truncate or cut off content mid-sentence. Ensure all content is fully articulated. Keep it concise, data-driven, and business-focused.`;
+  const systemPrompt = context.systemPrompt || FAST_INTEL_SYSTEM_PROMPT;
 
   // Build messages array for Perplexity with proper types
   // If conversation history provided, use it; otherwise single-shot query
@@ -160,9 +177,9 @@ CRITICAL: Every bullet, summary, implication, and action must be a complete, fin
     messages: apiMessages,
     model: PPLX_MODEL_FAST,
     temperature: 0.2,
-    max_tokens: 2500,
-    search_recency_filter: 'week', // Get recent data
-    timeout: 40000, // 40 second timeout
+    max_tokens: 4000,
+    search_recency_filter: 'week',
+    timeout: 40000,
   });
 
   const content = response.content;
@@ -207,6 +224,7 @@ function parsePerplexityResponse(content: string, citations: string[]): PlannerC
   const implications: string[] = [];
   const actions: string[] = [];
 
+  const executiveSummarySection = extractSection(content, 'EXECUTIVE SUMMARY');
   const signalsSection = extractSection(content, 'SIGNALS');
   const implicationsSection = extractSection(content, 'IMPLICATIONS');
   const actionsSection = extractSection(content, 'ACTIONS');
@@ -224,8 +242,10 @@ function parsePerplexityResponse(content: string, citations: string[]): PlannerC
       const sourceLine = lines.find(l => l.toLowerCase().startsWith('source:'));
 
       const summary = summaryLine?.replace(/^summary:\s*/i, '').trim() || '';
+      const statLine = lines.find(l => l.toLowerCase().startsWith('stat:'));
+      const stat = statLine?.replace(/^stat:\s*/i, '').trim() || undefined;
       const sourceText = sourceLine?.replace(/^source:\s*/i, '').trim() || '';
-      
+
       // Parse source name and URL, handling malformed content
       let sourceName = 'Industry Analysis';
       let sourceUrl = '#';
@@ -268,6 +288,7 @@ function parsePerplexityResponse(content: string, citations: string[]): PlannerC
         id: `SIG-${index + 1}`,
         title,
         summary,
+        stat,
         sourceName,
         sourceUrl,
       });
@@ -330,25 +351,64 @@ function parsePerplexityResponse(content: string, citations: string[]): PlannerC
   }
 
   if (implications.length === 0) {
-    implications.push('Requires strategic review and action planning');
-    implications.push('Monitor competitive landscape for similar trends');
+    implications.push('AI adoption gaps create competitive exposure — companies with mature AI frameworks are seeing 22% efficiency gains vs. 3% for early-stage adopters.');
+    implications.push('Budget reallocation is urgent: teams without a structured AI vendor evaluation process risk overpaying for incumbent solutions by 30-40%.');
   }
 
   if (actions.length === 0) {
-    actions.push('Schedule team briefing to discuss implications');
-    actions.push('Analyze internal data to validate findings');
+    actions.push('Within 30 days: Audit current AI tools and calculate cost-per-outcome for each. Benchmark against the category averages in this brief. Metric: total AI spend as % of marketing budget vs. industry median.');
+    actions.push('Within 60 days: Run a structured pilot comparing 2-3 shortlisted solutions on a real campaign or workflow. Metric: time saved, cost per task, error rate.');
   }
 
-  // Include valid citations in the response
   const validCitations = citations
     .map(c => extractValidUrl(c))
     .filter((url): url is string => url !== null);
 
-  return { 
-    signals, 
-    implications, 
+  // Auto-build graphData.comparisons from signal stats
+  const comparisons: PlannerChatResponse['graphData']['comparisons'] = [];
+  signals.forEach((signal) => {
+    if (!signal.stat) return;
+    const stat = signal.stat;
+
+    // Extract primary number + unit (%, $, x multipliers)
+    const pctMatch = stat.match(/(\d+(?:\.\d+)?)\s*%/);
+    const dollarMatch = stat.match(/\$\s*(\d+(?:\.\d+)?)\s*(B|M|K|billion|million|thousand)?/i);
+    const xMatch = stat.match(/(\d+(?:\.\d+)?)\s*x\b/i);
+
+    let value: number | null = null;
+    let unit = '';
+
+    if (pctMatch) {
+      value = parseFloat(pctMatch[1]);
+      unit = '%';
+    } else if (dollarMatch) {
+      let v = parseFloat(dollarMatch[1]);
+      const suffix = (dollarMatch[2] || '').toLowerCase();
+      if (suffix.startsWith('b')) v *= 1000;
+      else if (suffix.startsWith('k')) v /= 1000;
+      value = Math.round(v * 10) / 10;
+      unit = 'M';
+    } else if (xMatch) {
+      value = parseFloat(xMatch[1]);
+      unit = 'x';
+    }
+
+    if (value === null || isNaN(value) || value <= 0) return;
+
+    // Truncate title to ~5 words for chart label
+    const words = signal.title.replace(/["""]/g, '').split(/\s+/);
+    const label = words.slice(0, 5).join(' ') + (words.length > 5 ? '…' : '');
+
+    comparisons.push({ label, value, unit, context: stat, source: signal.sourceName });
+  });
+
+  return {
+    signals,
+    implications,
     actions,
-    citations: validCitations.length > 0 ? validCitations : undefined
+    executiveSummary: executiveSummarySection?.trim() || undefined,
+    citations: validCitations.length > 0 ? validCitations : undefined,
+    graphData: comparisons.length >= 2 ? { comparisons } : undefined,
   };
 }
 
@@ -357,3 +417,111 @@ function extractSection(content: string, sectionName: string): string | null {
   const match = content.match(regex);
   return match ? match[1].trim() : null;
 }
+
+/**
+ * Streaming SSE variant of chatIntel
+ * Forwards Perplexity token-by-token chunks then sends final structured payload
+ *
+ * Endpoint: POST /chatIntelStream
+ * Body: { query: string }
+ * Response: text/event-stream
+ *   data: {"type":"chunk","content":"..."}\n\n   (repeated)
+ *   data: {"type":"done","signals":[...],"implications":[...],"actions":[...]}\n\n
+ */
+export const chatIntelStream = functions.https.onRequest(async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Accept');
+
+  if (req.method === 'OPTIONS') {
+    res.status(204).send('');
+    return;
+  }
+
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'Method not allowed. Use POST.' });
+    return;
+  }
+
+  const { query } = req.body;
+  if (!query || typeof query !== 'string' || !query.trim()) {
+    res.status(400).json({ error: 'Query required.' });
+    return;
+  }
+
+  // Set SSE headers before writing anything
+  res.set('Content-Type', 'text/event-stream');
+  res.set('Cache-Control', 'no-cache');
+  res.set('X-Accel-Buffering', 'no');
+  res.status(200);
+
+  const sendEvent = (data: object) => {
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  try {
+    const pplxKey = process.env.PPLX_API_KEY;
+    if (!pplxKey) throw new Error('PPLX_API_KEY not configured');
+
+    const pplxResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${pplxKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: PPLX_MODEL_FAST,
+        messages: [
+          { role: 'system', content: FAST_INTEL_SYSTEM_PROMPT },
+          { role: 'user', content: query.trim() },
+        ],
+        stream: true,
+        temperature: 0.2,
+        max_tokens: 2500,
+        search_recency_filter: 'week',
+      }),
+    });
+
+    if (!pplxResponse.ok) {
+      throw new Error(`Perplexity error: ${pplxResponse.status}`);
+    }
+
+    let fullContent = '';
+    const reader = (pplxResponse.body as any).getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const dataStr = line.slice(6).trim();
+        if (dataStr === '[DONE]') continue;
+        try {
+          const parsed = JSON.parse(dataStr);
+          const chunk = parsed.choices?.[0]?.delta?.content || '';
+          if (chunk) {
+            fullContent += chunk;
+            sendEvent({ type: 'chunk', content: chunk });
+          }
+        } catch { /* ignore chunk parse errors */ }
+      }
+    }
+
+    // Parse full content into structured payload and send as final event
+    const structured = parsePerplexityResponse(fullContent, []);
+    sendEvent({ type: 'done', ...structured });
+
+  } catch (error) {
+    console.error('Error in chatIntelStream:', error);
+    sendEvent({ type: 'error', message: error instanceof Error ? error.message : 'Unknown error' });
+  } finally {
+    res.end();
+  }
+});

@@ -1,10 +1,11 @@
 /**
  * Perplexity API v2 Endpoints
  *
- * Three API modes:
+ * Four API modes:
  * 1. POST /perplexity/search - Sonar Chat Completions (sonar)
  * 2. POST /perplexity/research - Agentic Research (sonar-reasoning-pro)
  * 3. POST /perplexity/raw-search - Raw Search (ranked results for RAG)
+ * 4. POST /perplexity/search-instant - Raw Search fast path for autocomplete (<500ms)
  */
 
 import * as functions from 'firebase-functions';
@@ -204,5 +205,61 @@ export const perplexityRawSearch = functions.https.onRequest(async (req, res) =>
       error: 'Unable to complete search at this time.',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
+  }
+});
+
+/**
+ * Endpoint 4: Instant Search (fast path for autocomplete/search dropdown)
+ *
+ * Uses rawSearch (Perplexity Search API) — ~358ms median vs 1.5s for chat completions
+ *
+ * Usage:
+ *   POST /perplexity/search-instant
+ *   Body: { query: string }
+ *   Returns: { results: Array<{ title, url, snippet, date }>, query }
+ */
+export const perplexitySearchInstant = functions.https.onRequest(async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    res.status(204).send('');
+    return;
+  }
+
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'Method not allowed. Use POST.' });
+    return;
+  }
+
+  try {
+    const { query } = req.body;
+
+    if (!query || typeof query !== 'string' || !query.trim()) {
+      res.status(400).json({ error: 'Query required.' });
+      return;
+    }
+
+    const response = await rawSearch({
+      query: query.trim(),
+      search_recency_filter: 'day',
+      max_results: 5,
+      timeout: 8000,
+    });
+
+    const results = (response.results || []).map((r: any) => ({
+      title: r.title || '',
+      url: r.url || '',
+      snippet: r.snippet || '',
+      date: r.date || '',
+    }));
+
+    res.status(200).json({ results, query: query.trim() });
+
+  } catch (error) {
+    console.error('Error in perplexitySearchInstant:', error);
+    // Return empty results rather than error — instant search is non-critical
+    res.status(200).json({ results: [], query: req.body?.query || '' });
   }
 });

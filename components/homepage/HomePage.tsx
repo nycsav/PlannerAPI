@@ -4,6 +4,7 @@ import { HeroSection } from './HeroSection';
 import { ValuePropositionCallout } from './ValuePropositionCallout';
 import { StatCallout } from '../StatCallout';
 import { RecentSignalsTab } from '../RecentSignalsTab';
+import { SignalPulseChart } from '../SignalPulseChart';
 import { SourceLogosMinimal } from '../SourceLogosMinimal';
 import { HowItWorks3Column } from '../HowItWorks3Column';
 import { ExampleCardPreview } from '../ExampleCardPreview';
@@ -56,6 +57,11 @@ export const HomePage: React.FC<HomePageProps> = ({
         <RecentSignalsTab
           onReadMore={(signal) => onSearch?.(signal.title)}
         />
+      </div>
+
+      {/* 5b. Signal Pulse Chart — live pillar distribution */}
+      <div style={{ marginBottom: '80px' }}>
+        <SignalPulseChart />
       </div>
 
       {/* 6. Source Logos Minimal — 80px after */}

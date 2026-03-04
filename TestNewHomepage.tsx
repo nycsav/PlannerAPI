@@ -27,6 +27,7 @@ export const TestNewHomepage: React.FC = () => {
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
   const [showPostSignupWelcome, setShowPostSignupWelcome] = useState(false);
   const [showFeatureTour, setShowFeatureTour] = useState(false);
+  const [streamingText, setStreamingText] = useState('');
 
   // GA4 page view tracking
   useEffect(() => {
@@ -39,7 +40,7 @@ export const TestNewHomepage: React.FC = () => {
     }
   }, [location]);
 
-  // Fix 3: On mount, check if URL is /brief/:cardId — load and open that card
+  // On mount, check if URL is /brief/:cardId — load and open that card directly
   useEffect(() => {
     const pathMatch = location.pathname.match(/^\/brief\/([^/]+)$/);
     if (!pathMatch) return;
@@ -69,6 +70,7 @@ export const TestNewHomepage: React.FC = () => {
             keySignals,
             signals: signalsWithSources,
             movesForLeaders: d.moves || [],
+            images: Array.isArray(d.images) ? d.images : [],
           });
           setIntelligenceOpen(true);
         }
@@ -127,6 +129,7 @@ export const TestNewHomepage: React.FC = () => {
       keySignals,
       signals: signalsWithSources,
       movesForLeaders: brief.moves || [],
+      images: Array.isArray(brief.images) ? brief.images : [],
     };
     openModal(payload, brief.id || undefined);
     trackCardView({ id: brief.id, title: brief.title || '', summary: brief.summary, pillar: brief.pillar });
@@ -159,37 +162,38 @@ export const TestNewHomepage: React.FC = () => {
     }
   };
 
-  // Fix 2: ASK button now calls /chat-intel → opens modal immediately with structured response
+  // ASK button → chatIntel endpoint (non-streaming, publicly accessible)
   const handleSearch = async (query: string) => {
     if (!query.trim()) return;
     setIsLoading(true);
+    setStreamingText('');
     setIntelligencePayload(null);
     setCurrentCardId(null);
     setIntelligenceOpen(true);
     setSearchResults([]);
 
     try {
-      const resp = await fetchWithTimeout(ENDPOINTS.chatIntelSearch, {
+      const response = await fetch(ENDPOINTS.chatIntel, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, audience: 'CMO' }),
-        timeout: 30000,
+        body: JSON.stringify({ query }),
+        signal: AbortSignal.timeout(35000),
       });
 
-      if (!resp.ok) throw new Error(`Backend error: ${resp.status}`);
-      const data = await resp.json();
+      if (!response.ok) throw new Error(`Backend error: ${response.status}`);
+      const data = await response.json();
 
-      // /chat-intel returns { signals: IntelligenceSignal[], implications: string[], actions: string[] }
       const payload: IntelligencePayload = {
         query,
-        summary: (data.signals?.[0]?.summary) || (data.implications?.[0]) || '',
+        summary: data.executiveSummary || data.signals?.[0]?.summary || data.implications?.[0] || '',
         keySignals: data.implications || [],
         signals: data.signals || [],
         movesForLeaders: data.actions?.length > 0 ? data.actions : [
-          'Review the key signals and assess impact on your current strategy',
-          'Identify quick-win opportunities to implement within 30 days',
-          'Establish measurement framework to track progress',
+          'Within 30 days: Audit current AI tools and calculate cost-per-outcome. Metric: total AI spend vs. industry median.',
+          'Within 60 days: Run a pilot comparing shortlisted solutions on a real workflow. Metric: time saved, cost per task.',
+          'Within 90 days: Present ROI findings to leadership with a structured vendor recommendation.',
         ],
+        graphData: data.graphData,
       };
       setIntelligencePayload(payload);
     } catch (error) {
@@ -202,6 +206,7 @@ export const TestNewHomepage: React.FC = () => {
       });
     } finally {
       setIsLoading(false);
+      setStreamingText('');
     }
   };
 
@@ -221,6 +226,7 @@ export const TestNewHomepage: React.FC = () => {
         onClose={closeModal}
         payload={intelligencePayload}
         isLoading={isLoading}
+        streamingText={streamingText}
         cardId={currentCardId || undefined}
         onFollowUp={(question) => handleSearch(question)}
       />

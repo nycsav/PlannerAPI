@@ -24,6 +24,8 @@ export interface IntelligenceCard {
   sourceCount: number;
   publishedAt: Timestamp;
   type: 'brief' | 'hot_take';
+  images?: Array<{ image_url: string; origin_url: string; height?: number; width?: number; title?: string }>;
+  citations?: Array<{ title: string; url: string; snippet?: string }>;
   graphData?: {
     comparisons?: Array<{
       label: string;

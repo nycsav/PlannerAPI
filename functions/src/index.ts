@@ -4,7 +4,7 @@
  * Exports all cloud functions for signal2noise
  */
 
-export { chatIntel } from './chat-intel';
+export { chatIntel, chatIntelStream } from './chat-intel';
 export { chatSimple } from './chat-simple';
 export { generateDiscoverCards } from './generateDiscoverCards';
 export { storeN8nCards } from './storeN8nCards';
@@ -18,9 +18,10 @@ export { enrichPremiumBriefFunction as enrichPremiumBrief } from './enrichPremiu
 // CopilotKit Runtime
 export { copilotRuntime, copilotHealth } from './copilot-runtime';
 
-// Perplexity API v2 Endpoints (three modes)
+// Perplexity API v2 Endpoints (four modes)
 export {
   perplexitySearch,
   perplexityResearch,
-  perplexityRawSearch
+  perplexityRawSearch,
+  perplexitySearchInstant,
 } from './perplexity-endpoints';

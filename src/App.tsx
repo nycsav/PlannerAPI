@@ -7,10 +7,12 @@ import { StatCallout }      from './components/StatCallout';
 import { RecentSignalsTab } from './components/RecentSignalsTab';
 import { SourceLogos }      from './components/SourceLogos';
 import { HowItWorks }       from './components/HowItWorks';
+import { AudienceGrid }     from './components/AudienceGrid';
 import { ExampleCard }      from './components/ExampleCard';
 import { Footer }           from './components/Footer';
 import type { SignalCard }  from './components/RecentSignalsTab';
 import type { ExampleCardData } from './components/ExampleCard';
+import { ENDPOINTS } from './config/api';
 
 // ---------------------------------------------------------------------------
 // TASK 3: StatCallout — permanent editorial decision
@@ -31,15 +33,28 @@ const App: React.FC = () => {
   const [cards, setCards] = useState<SignalCard[]>([]);
   const [cardsLoading, setCardsLoading] = useState(true);
 
+  // Trending topics — never blocks search on failure
+  const [trendingTopics, setTrendingTopics] = useState<{ topic: string; description: string }[]>([]);
+
+  useEffect(() => {
+    fetch(`${ENDPOINTS.trendingTopics}?audience=CMO`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.topics) setTrendingTopics(data.topics);
+      })
+      .catch(() => {/* silent — search stays enabled */});
+  }, []);
+
   useEffect(() => {
     const fetchCards = async () => {
       try {
         const q = query(
           collection(db, 'discover_cards'),
           orderBy('publishedAt', 'desc'),
-          limit(9)
+          limit(50)
         );
         const snapshot = await getDocs(q);
+        console.log(`[Firestore] discover_cards fetched: ${snapshot.docs.length} total cards`);
         const fetched: SignalCard[] = snapshot.docs.map(doc => {
           const data = doc.data();
           const ts = data.publishedAt;
@@ -61,6 +76,8 @@ const App: React.FC = () => {
             sources: Array.isArray(data.sources)
               ? data.sources.map((s: any) => s.sourceName ?? s.title ?? '').filter(Boolean)
               : (data.source ? [String(data.source)] : []),
+            images:    Array.isArray(data.images)    ? data.images    : [],
+            citations: Array.isArray(data.citations) ? data.citations : [],
           };
         });
         setCards(fetched);
@@ -90,10 +107,12 @@ const App: React.FC = () => {
       <HeroSection
         onGetStarted={() => setSignupOpen(true)}
         onSeeExample={() => document.getElementById('example-card-section')?.scrollIntoView({ behavior: 'smooth' })}
+        trendingTopics={trendingTopics}
       />
       <StatCallout {...STAT} />
       <RecentSignalsTab cards={cards} loading={cardsLoading} />
       <SourceLogos />
+      <AudienceGrid />
       <HowItWorks />
       <div id="example-card-section">
         <ExampleCard card={exampleCard} />

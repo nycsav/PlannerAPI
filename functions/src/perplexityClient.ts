@@ -148,7 +148,7 @@ export async function sonarChatCompletion(params: {
         chatCompletionPromise,
         timeout,
         'Sonar Chat Completion'
-      );
+      ) as any;
 
       // Extract search_results (replaces deprecated citations array)
       const searchResults = (response as any).search_results || [];
@@ -200,7 +200,7 @@ export async function agenticResearch(params: {
         responsePromise,
         timeout,
         'Agentic Research'
-      );
+      ) as any;
 
       // Extract search_results
       const searchResults = (response as any).search_results || [];
@@ -251,7 +251,7 @@ export async function rawSearch(params: {
         searchPromise,
         timeout,
         'Raw Search'
-      );
+      ) as any;
 
       return {
         results: response.results || [],

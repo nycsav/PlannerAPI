@@ -29,8 +29,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const q = query.trim();
-    if (!q) return;
+    // Fall back to placeholder so button always fires even if user hasn't typed
+    const q = query.trim() || 'Ask: What should CMOs prioritize for AI in Q2 2026?';
+    if (!query.trim()) setQuery(q);
     trackCTAClick('ai_search', 'homepage_hero');
     // ASK opens the intelligence modal directly via /chat-intel
     onSearch?.(q);
@@ -200,19 +201,17 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           />
           <button
             type="submit"
-            disabled={!query.trim()}
             style={{
               padding: '14px 24px',
               backgroundColor: HERO_ORANGE,
               color: HERO_BG,
               border: 'none',
-              cursor: query.trim() ? 'pointer' : 'not-allowed',
+              cursor: 'pointer',
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: '11px',
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
-              opacity: query.trim() ? 1 : 0.5,
               flexShrink: 0,
               transition: 'opacity 0.15s',
             }}

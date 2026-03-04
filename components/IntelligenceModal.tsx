@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { X, Download, Share2, Mail, Loader2, FileText, Zap, Target, ExternalLink, Send, BookOpen, MessageCircle, BarChart2, BarChart3, FileSearch, Sparkles, Link } from 'lucide-react';
+import { BriefBarChart } from './BriefBarChart';
 import { parseMarkdown, parseInlineMarkdown, parsePerplexityMarkdown } from '../utils/markdown';
 import { exportIntelligenceBriefToPDF } from '../utils/exportPDF';
 import { MetricCard } from './MetricCard';
@@ -19,6 +20,7 @@ type IntelligenceSignal = {
   id: string;
   title: string;
   summary: string;
+  stat?: string;
   sourceName: string;
   sourceUrl: string;
 };
@@ -29,6 +31,7 @@ export type IntelligencePayload = {
   keySignals: string[];
   signals?: IntelligenceSignal[]; // Full signal objects with sources
   movesForLeaders: string[];
+  images?: Array<{ image_url: string; origin_url?: string; title?: string }>;
   frameworks?: IntelligenceFramework[];
   followUps?: { label: string; question: string; displayQuery?: string }[];
   graphData?: {
@@ -54,6 +57,7 @@ type IntelligenceModalProps = {
   onClose: () => void;
   onFollowUp?: (question: string, displayQuery?: string) => void;
   isLoading?: boolean;
+  streamingText?: string; // Live SSE token stream shown while loading
   cardId?: string; // Firestore doc ID — enables shareable /brief/:cardId URL
 };
 
@@ -291,6 +295,7 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
   onClose,
   onFollowUp,
   isLoading = false,
+  streamingText = '',
   cardId,
 }) => {
   console.log('[IntelligenceModal] Rendered with open:', open, 'isLoading:', isLoading, 'hasPayload:', !!payload, 'payload:', payload);
@@ -650,10 +655,17 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
               </div>
             </div>
 
-            {/* Loading indicator at bottom */}
-            <div className="mt-12">
-              <LoadingSpinner size="md" text="Analyzing intelligence..." />
-            </div>
+            {/* Live streaming preview — replaces skeleton when tokens arrive */}
+            {streamingText ? (
+              <div className="mt-8 font-mono text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap bg-gray-50 dark:bg-slate-800/60 rounded-xl p-6 border border-gray-200/60 dark:border-slate-700/50 max-h-72 overflow-y-auto">
+                {streamingText}
+                <span className="inline-block w-1.5 h-4 bg-indigo-500 animate-pulse ml-0.5 align-middle rounded-sm" />
+              </div>
+            ) : (
+              <div className="mt-12">
+                <LoadingSpinner size="md" text="Analyzing intelligence..." />
+              </div>
+            )}
           </div>
         )}
 
@@ -751,9 +763,12 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
                 {effectivePayload.query}
               </p>
 
-              {/* Big heading with premium spacing */}
-              <h1 className="font-display text-5xl md:text-6xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight leading-tight">
+              {/* Verdict headline — first signal title or query */}
+              <p className="font-mono text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.18em] mb-3">
                 Intelligence Brief
+              </p>
+              <h1 className="font-display text-2xl md:text-3xl font-black text-gray-900 dark:text-gray-100 leading-tight mb-2 max-w-3xl">
+                {effectivePayload?.signals?.[0]?.title || effectivePayload?.query || 'Intelligence Brief'}
               </h1>
 
               {/* Sources Banner - Always Visible */}
@@ -797,89 +812,207 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
                   <MetricsGrid metrics={metrics} />
                 </div>
               )}
-              {/* Section 1: SUMMARY - Premium Design */}
-              <section className="space-y-6">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-sm">
-                    <FileText className="w-5 h-5 text-white" />
-                  </div>
-                  <h2 className="font-display text-2xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
-                    Summary
-                  </h2>
+              {/* Image grid — 2-column with captions */}
+              {effectivePayload.images && effectivePayload.images.length > 0 && (
+                <div className={`grid gap-4 ${effectivePayload.images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                  {effectivePayload.images.slice(0, 4).map((img, i) => (
+                    <figure key={i} className="group">
+                      <a
+                        href={img.origin_url || img.image_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block overflow-hidden rounded-lg border border-gray-200/60 dark:border-slate-700/50 hover:border-planner-orange/40 transition-colors"
+                      >
+                        <img
+                          src={img.image_url}
+                          alt={img.title || ''}
+                          className="w-full object-cover"
+                          style={{ maxHeight: effectivePayload.images!.length === 1 ? '320px' : '180px' }}
+                          onError={(e) => { (e.currentTarget.closest('figure') as HTMLElement).style.display = 'none'; }}
+                        />
+                      </a>
+                      {img.title && (
+                        <figcaption className="mt-1.5 text-xs text-gray-500 dark:text-gray-400 font-mono leading-snug">
+                          {img.title}
+                          {img.origin_url && (
+                            <a href={img.origin_url} target="_blank" rel="noopener noreferrer" className="ml-2 text-planner-orange hover:underline">
+                              Source ↗
+                            </a>
+                          )}
+                        </figcaption>
+                      )}
+                    </figure>
+                  ))}
                 </div>
-                <div className="font-sans text-lg text-gray-900 dark:text-gray-100 leading-relaxed prose prose-slate dark:prose-invert max-w-none">
-                  {parseMarkdown(effectivePayload.summary)}
-                </div>
-              </section>
+              )}
 
-              {/* Section 2: KEY SIGNALS - Premium Design */}
-                {effectivePayload.keySignals.length > 0 && (
-              <section className="space-y-6">
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-4">
+              {/* Section 1: SUMMARY */}
+              {effectivePayload.summary && (
+                <section className="space-y-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-sm">
+                      <FileText className="w-5 h-5 text-white" />
+                    </div>
+                    <h2 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
+                      Executive Summary
+                    </h2>
+                  </div>
+                  <div className="font-sans text-base text-gray-800 dark:text-gray-200 leading-[1.8] prose prose-slate dark:prose-invert max-w-prose">
+                    {parseMarkdown(effectivePayload.summary)}
+                  </div>
+                  {/* Pull quote — extract first sentence containing a stat */}
+                  {(() => {
+                    const sentences = effectivePayload.summary.split(/(?<=[.!?])\s+/);
+                    const statSentence = sentences.find(s => /\d+%|\$\d+|\d+x\s|\d+\s*(billion|million|thousand)/i.test(s));
+                    if (!statSentence || statSentence.length < 40) return null;
+                    return (
+                      <blockquote className="mt-6 pl-5 border-l-4 border-planner-orange">
+                        <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 leading-snug italic">
+                          "{statSentence.replace(/^["']|["']$/g, '').trim()}"
+                        </p>
+                      </blockquote>
+                    );
+                  })()}
+                </section>
+              )}
+
+              {/* Section 1b: DATA VISUALIZATION — auto-generated from signal stats */}
+              {effectivePayload.graphData?.comparisons && effectivePayload.graphData.comparisons.length >= 2 && (
+                <BriefBarChart
+                  comparisons={effectivePayload.graphData.comparisons}
+                  query={effectivePayload.query}
+                />
+              )}
+
+              {/* Section 2: INTELLIGENCE SIGNALS — full article cards */}
+              {(effectivePayload.signals && effectivePayload.signals.length > 0) && (
+                <section className="space-y-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
                       <div className="p-2.5 bg-gradient-to-br from-planner-orange to-orange-600 rounded-xl shadow-sm">
                         <Zap className="w-5 h-5 text-white" />
                       </div>
-                      <h2 className="font-display text-2xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
-                        Key Signals
+                      <h2 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
+                        Intelligence Signals
                       </h2>
                     </div>
-                    {/* Visualize Trends Button - Premium Style */}
                     {(metrics.length > 0 || effectivePayload.graphData?.comparisons?.length) && (
                       <button
                         onClick={() => setShowDashboard(!showDashboard)}
-                        className={`flex items-center gap-2 px-4 py-2.5 text-sm font-bold rounded-xl transition-all duration-200 shadow-sm ${
+                        className={`flex items-center gap-2 px-3 py-2 text-xs font-bold rounded-lg transition-all duration-200 ${
                           showDashboard
-                            ? 'bg-planner-orange text-white shadow-lg scale-[1.02]'
-                            : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-gray-200 hover:bg-slate-200 dark:hover:bg-slate-600 hover:shadow-md'
+                            ? 'bg-planner-orange text-white'
+                            : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-gray-200 hover:bg-slate-200 dark:hover:bg-slate-600'
                         }`}
                       >
-                        <BarChart2 className="w-4 h-4" />
-                        {showDashboard ? 'Hide Dashboard' : 'Visualize Signals'}
+                        <BarChart2 className="w-3.5 h-3.5" />
+                        {showDashboard ? 'Hide Chart' : 'Visualize'}
                       </button>
                     )}
                   </div>
-                  
-                  {/* Interactive Dashboard - Premium Hex/Profound-style */}
+
                   {showDashboard && (
                     <InteractiveDashboard
-                      metrics={metrics.map(m => ({
-                        value: m.value,
-                        label: m.label || 'Metric',
-                        trend: m.trend,
-                        context: m.context
-                      }))}
+                      metrics={metrics.map(m => ({ value: m.value, label: m.label || 'Metric', trend: m.trend, context: m.context }))}
                       comparisons={effectivePayload.graphData?.comparisons}
                       query={effectivePayload.query}
                       signals={effectivePayload.signals || []}
-                      onMetricClick={(metric) => {
-                        console.log('[InteractiveDashboard] Metric clicked:', metric);
-                        // Could open drill-down modal or expand section
-                      }}
-                      onComparisonClick={(comparison) => {
-                        console.log('[InteractiveDashboard] Comparison clicked:', comparison);
-                        // Could show detailed comparison view
-                      }}
-                      onExport={(format) => {
-                        console.log('[InteractiveDashboard] Export requested:', format);
-                        // Trigger export with selected visualizations
-                      }}
+                      onMetricClick={(metric) => { console.log('[Dashboard] metric:', metric); }}
+                      onComparisonClick={(comparison) => { console.log('[Dashboard] comparison:', comparison); }}
+                      onExport={(format) => { console.log('[Dashboard] export:', format); }}
                     />
                   )}
-                  
-                  {/* Signal Cards - Premium Expandable Design */}
-                  <div className="space-y-3">
+
+                  <div className="space-y-4">
+                    {effectivePayload.signals.map((signal, index) => {
+                      let hostname = '';
+                      try { hostname = new URL(signal.sourceUrl).hostname.replace('www.', ''); } catch { hostname = signal.sourceName; }
+                      const digDeeperQ = `Tell me more about: ${signal.title}`;
+                      return (
+                        <article
+                          key={signal.id || index}
+                          className="group p-5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-planner-orange/40 dark:hover:border-planner-orange/40 hover:shadow-lg bg-white dark:bg-slate-800/50 transition-all duration-200"
+                        >
+                          {/* Signal header */}
+                          <div className="flex items-start gap-3 mb-3">
+                            <span className="flex-shrink-0 w-6 h-6 rounded-md bg-planner-orange/10 dark:bg-planner-orange/20 text-planner-orange text-xs font-bold flex items-center justify-center mt-0.5">
+                              {index + 1}
+                            </span>
+                            <h3 className="font-sans text-base font-bold text-gray-900 dark:text-gray-100 leading-snug flex-1">
+                              {signal.title}
+                            </h3>
+                          </div>
+
+                          {/* Signal summary — the meat */}
+                          {signal.summary && signal.summary !== signal.title && (
+                            <p className="text-sm text-gray-700 dark:text-gray-300 leading-[1.75] mb-3 ml-9">
+                              {signal.summary}
+                            </p>
+                          )}
+
+                          {/* Stat callout */}
+                          {signal.stat && (
+                            <div className="ml-9 mb-3 px-3 py-2 rounded-lg bg-planner-orange/8 dark:bg-planner-orange/10 border-l-2 border-planner-orange">
+                              <p className="text-sm font-semibold text-planner-orange">
+                                {signal.stat}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Footer: source + dig deeper */}
+                          <div className="ml-9 flex items-center justify-between gap-2 mt-1">
+                            {signal.sourceUrl && signal.sourceUrl !== '#' ? (
+                              <a
+                                href={signal.sourceUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-planner-orange transition-colors"
+                              >
+                                <img
+                                  src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=16`}
+                                  className="w-3.5 h-3.5 rounded-sm opacity-70"
+                                  alt=""
+                                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                />
+                                <span className="font-mono">{signal.sourceName || hostname}</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            ) : (
+                              <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">{signal.sourceName}</span>
+                            )}
+                            {onFollowUp && (
+                              <button
+                                onClick={() => onFollowUp(digDeeperQ)}
+                                className="opacity-0 group-hover:opacity-100 flex items-center gap-1 text-xs font-medium text-planner-orange hover:text-orange-600 transition-all duration-150"
+                              >
+                                <MessageCircle className="w-3.5 h-3.5" />
+                                Dig deeper →
+                              </button>
+                            )}
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+
+              {/* Section 2b: WHAT THIS MEANS — implications */}
+              {effectivePayload.keySignals.length > 0 && (
+                <section className="space-y-3">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2.5 bg-gradient-to-br from-violet-500 to-violet-600 rounded-xl shadow-sm">
+                      <Sparkles className="w-5 h-5 text-white" />
+                    </div>
+                    <h2 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
+                      What This Means
+                    </h2>
+                  </div>
+                  <div className="space-y-2">
                     {effectivePayload.keySignals.map((signal, index) => (
-                      <div
-                        key={index}
-                        className="group p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-md bg-white dark:bg-slate-800/50 transition-all duration-200 cursor-pointer"
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="w-2 h-2 rounded-full bg-planner-orange mt-2 shrink-0" />
-                          <p className="text-base text-gray-900 dark:text-gray-100 leading-relaxed flex-1">
-                            {parseInlineMarkdown(signal)}
-                          </p>
-                        </div>
+                      <div key={index} className="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">
+                        <div className="w-1.5 h-1.5 rounded-full bg-violet-500 mt-2 shrink-0" />
+                        <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">{parseInlineMarkdown(signal)}</p>
                       </div>
                     ))}
                   </div>
@@ -972,78 +1105,45 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
                 )}
               </div>
 
-              {/* Sources section - ALWAYS shown below Strategic Frameworks */}
-              <div data-section="sources-detail" className="mt-6 border-2 border-blue-200/60 dark:border-violet-500/50 rounded-2xl bg-gradient-to-br from-blue-50/50 to-violet-50/30 dark:from-slate-800 dark:to-slate-700/80 p-6 shadow-lg">
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="p-2 bg-blue-500 dark:bg-violet-500 rounded-lg shadow-sm">
-                    <BookOpen className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
-                      Research Sources
+              {/* Sources section — compact list */}
+              <div data-section="sources-detail" className="mt-6 rounded-xl border border-slate-200/60 dark:border-slate-700/40 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200/60 dark:border-slate-700/40">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                    <h3 className="font-mono text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                      Sources
                     </h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">
-                      Verified by Perplexity AI
-                    </p>
                   </div>
+                  <span className="text-xs text-slate-400 dark:text-slate-500">Verified by Perplexity</span>
                 </div>
-                <div className="space-y-3">
+                <div className="divide-y divide-slate-100 dark:divide-slate-700/50">
                   {(() => {
-                    // Always show sources - extract from signals or use Perplexity fallback
-                    const validSignals = effectivePayload.signals?.filter(signal => signal.sourceUrl && signal.sourceUrl !== '#') || [];
-                    const sourcesToShow = validSignals.length > 0
-                      ? validSignals
-                      : [{
-                          id: 'perplexity-fallback',
-                          title: 'Perplexity Research',
-                          summary: 'Real-time intelligence synthesis from web search and authoritative sources.',
-                          sourceName: 'Perplexity AI',
-                          sourceUrl: 'https://www.perplexity.ai',
-                        }];
-                    
+                    const validSignals = effectivePayload.signals?.filter(s => s.sourceUrl && s.sourceUrl !== '#') || [];
+                    const sourcesToShow = validSignals.length > 0 ? validSignals : [{
+                      id: 'perplexity-fallback', title: 'Perplexity Research', summary: '', stat: undefined,
+                      sourceName: 'Perplexity AI', sourceUrl: 'https://www.perplexity.ai',
+                    }];
                     return sourcesToShow.map((signal, index) => {
                       let hostname = '';
-                      let favicon = '';
-                      try {
-                        const url = new URL(signal.sourceUrl);
-                        hostname = url.hostname.replace('www.', '');
-                        favicon = `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`;
-                      } catch {
-                        hostname = signal.sourceUrl;
-                      }
-
+                      try { hostname = new URL(signal.sourceUrl).hostname.replace('www.', ''); } catch { hostname = signal.sourceUrl; }
+                      const favicon = `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`;
                       return (
                         <a
                           key={signal.id || index}
                           href={signal.sourceUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="group flex items-start gap-3 p-4 rounded-xl border-2 border-blue-100 dark:border-slate-600 hover:border-blue-400 dark:hover:border-violet-400 bg-white dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-slate-700/80 hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-violet-400 focus:ring-offset-2"
+                          className="group flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
                         >
-                          <div className="flex items-center gap-3 shrink-0">
-                            <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500 dark:bg-violet-500 text-white text-xs font-bold shadow-sm">
-                              {index + 1}
-                            </span>
-                            {favicon && (
-                              <img
-                                src={favicon}
-                                alt=""
-                                className="w-6 h-6 rounded"
-                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                              />
-                            )}
-                          </div>
+                          <span className="text-xs font-mono text-slate-400 dark:text-slate-500 w-4 shrink-0">{index + 1}</span>
+                          <img src={favicon} alt="" className="w-4 h-4 rounded-sm opacity-70 shrink-0" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                           <div className="min-w-0 flex-1">
-                            <p className="font-sans text-sm font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-violet-400 mb-1.5 leading-snug">
-                              {signal.sourceName || signal.title || hostname}
+                            <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 group-hover:text-planner-orange truncate leading-snug">
+                              {signal.sourceName || hostname}
                             </p>
-                            <div className="flex items-center gap-2">
-                              <p className="font-mono text-xs text-gray-600 dark:text-gray-400">
-                                {hostname}
-                              </p>
-                              <ExternalLink className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-violet-400" />
-                            </div>
+                            <p className="font-mono text-[10px] text-gray-400 dark:text-gray-500 truncate">{hostname}</p>
                           </div>
+                          <ExternalLink className="w-3 h-3 text-gray-400 dark:text-gray-500 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </a>
                       );
                     });

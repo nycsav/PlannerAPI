@@ -19,15 +19,16 @@
     "@anthropic-ai/sdk": "^0.57.0",
     "@copilotkit/runtime": "^1.51.2",
     "@notionhq/client": "^2.2.15",
-    "@perplexity-ai/perplexity_ai": "^0.25.0",
+    "@perplexity-ai/perplexity_ai": "^0.26.1",
     "dotenv": "^17.2.3",
     "firebase-admin": "^12.0.0",
     "firebase-functions": "^4.5.0",
+    "jwks-rsa": "^4.0.1",
     "openai": "^6.16.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
-    "typescript": "^5.3.0"
+    "typescript": "^5.7.2"
   },
   "private": true
 }

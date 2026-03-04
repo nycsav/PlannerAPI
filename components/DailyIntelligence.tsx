@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, TrendingUp, Sparkles } from 'lucide-react';
+import { Clock, TrendingUp, Sparkles, ArrowRight } from 'lucide-react';
 import { db } from '../utils/firebase';
 import { collection, query, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
 import { IntelligenceModal, IntelligencePayload } from './IntelligenceModal';
@@ -22,6 +22,8 @@ type IntelligenceCard = {
   tension?: string;       // The conflict/gap (e.g., "The gap between AI-mature and laggard teams...")
   sourceUrl?: string;     // Full URL to the source article
   sources?: Array<{ sourceName: string; sourceUrl: string; snippet?: string; title?: string }>;
+  images?: Array<{ image_url: string; origin_url: string; height?: number; width?: number; title?: string }>;
+  citations?: Array<{ title: string; url: string; snippet?: string }>;
 };
 
 // Brand-aligned pillar colors
@@ -186,6 +188,7 @@ export const DailyIntelligence: React.FC = () => {
   const [selectedCard, setSelectedCard] = useState<IntelligenceCard | null>(null);
   const [intelligencePayload, setIntelligencePayload] = useState<IntelligencePayload | null>(null);
   const [useLiveData, setUseLiveData] = useState(false);
+  const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCards();
@@ -328,8 +331,8 @@ export const DailyIntelligence: React.FC = () => {
         {featuredCard && (
           <div
             className="md:col-span-2 md:row-span-2 bg-gradient-to-br from-white to-bureau-surface/30 rounded-xl border-2 border-bureau-signal/20 overflow-hidden hover:shadow-2xl hover:border-bureau-signal/40 hover:-translate-y-0.5 cursor-pointer relative group focus:outline-none focus:ring-2 focus:ring-bureau-signal focus:ring-offset-2 transition-all duration-200"
-            onClick={() => handleCardClick(featuredCard)}
-            onKeyDown={(e) => handleKeyDown(e, featuredCard)}
+            onClick={() => setExpandedCardId(expandedCardId === featuredCard.id ? null : featuredCard.id)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedCardId(expandedCardId === featuredCard.id ? null : featuredCard.id); } }}
             role="button"
             tabIndex={0}
             aria-label={`Read featured intelligence: ${featuredCard.title}`}
@@ -369,7 +372,55 @@ export const DailyIntelligence: React.FC = () => {
                   <TrendingUp className="w-3.5 h-3.5" />
                   <span className="font-medium">{featuredCard.sourceCount} sources</span>
                 </span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleCardClick(featuredCard); }}
+                  className="ml-auto text-bureau-signal font-semibold hover:underline flex items-center gap-1"
+                >
+                  Read Full Brief <ArrowRight className="w-4 h-4" />
+                </button>
               </div>
+
+              {expandedCardId === featuredCard.id && (
+                <div className="mt-4 border-t border-bureau-border pt-4 animate-in slide-in-from-top-2">
+                  {featuredCard.signals?.length > 0 && (
+                    <div className="mb-4">
+                      <p className="text-xs font-mono text-bureau-slate uppercase tracking-wider mb-2">Signals</p>
+                      {featuredCard.signals.map((signal, i) => (
+                        <p key={i} className="text-sm text-gray-700 mb-1 pl-3 border-l-2 border-bureau-signal">{signal}</p>
+                      ))}
+                    </div>
+                  )}
+                  {featuredCard.images?.length > 0 && (
+                    <div className="mb-4">
+                      <p className="text-xs font-mono text-bureau-slate uppercase tracking-wider mb-2">Source Images</p>
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        {featuredCard.images.slice(0, 3).map((img, i) => (
+                          <a key={i} href={img.origin_url} target="_blank" rel="noopener noreferrer"
+                             className="flex-shrink-0">
+                            <img
+                              src={img.image_url}
+                              alt={`Source ${i + 1}`}
+                              className="h-24 w-auto rounded object-cover border border-bureau-border hover:opacity-80 transition-opacity"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {((featuredCard.citations?.length ?? 0) > 0 || (featuredCard.sources?.length ?? 0) > 0) && (
+                    <div>
+                      <p className="text-xs font-mono text-bureau-slate uppercase tracking-wider mb-2">Sources</p>
+                      {(featuredCard.citations ?? featuredCard.sources?.map(s => ({ title: s.title ?? s.sourceName, url: s.sourceUrl, snippet: s.snippet })) ?? []).slice(0, 3).map((cite, i) => (
+                        <a key={i} href={cite.url} target="_blank" rel="noopener noreferrer"
+                           className="block text-xs text-bureau-signal hover:underline mb-1 truncate">
+                          {cite.title || cite.url}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -379,8 +430,8 @@ export const DailyIntelligence: React.FC = () => {
           <div
             key={card.id}
             className="md:col-span-2 bg-white rounded-xl border border-bureau-border p-lg hover:shadow-xl hover:border-planner-orange/30 hover:-translate-y-0.5 cursor-pointer group focus:outline-none focus:ring-2 focus:ring-bureau-signal focus:ring-offset-2 transition-all duration-200"
-            onClick={() => handleCardClick(card)}
-            onKeyDown={(e) => handleKeyDown(e, card)}
+            onClick={() => setExpandedCardId(expandedCardId === card.id ? null : card.id)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedCardId(expandedCardId === card.id ? null : card.id); } }}
             role="button"
             tabIndex={0}
             aria-label={`Read intelligence: ${card.title}`}
@@ -409,12 +460,60 @@ export const DailyIntelligence: React.FC = () => {
               {card.summary}
             </p>
 
-            <div className="text-xs text-bureau-slate/80">
+            <div className="flex items-center justify-between text-xs text-bureau-slate/80">
               <span className="inline-flex items-center gap-1.5">
                 <TrendingUp className="w-3 h-3" />
                 <span className="font-medium">{card.sourceCount} sources</span>
               </span>
+              <button
+                onClick={(e) => { e.stopPropagation(); handleCardClick(card); }}
+                className="text-bureau-signal font-semibold hover:underline flex items-center gap-1"
+              >
+                Read Full Brief <ArrowRight className="w-3 h-3" />
+              </button>
             </div>
+
+            {expandedCardId === card.id && (
+              <div className="mt-4 border-t border-bureau-border pt-4 animate-in slide-in-from-top-2">
+                {card.signals?.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-xs font-mono text-bureau-slate uppercase tracking-wider mb-2">Signals</p>
+                    {card.signals.map((signal, i) => (
+                      <p key={i} className="text-sm text-gray-700 mb-1 pl-3 border-l-2 border-bureau-signal">{signal}</p>
+                    ))}
+                  </div>
+                )}
+                {card.images?.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-xs font-mono text-bureau-slate uppercase tracking-wider mb-2">Source Images</p>
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {card.images.slice(0, 3).map((img, i) => (
+                        <a key={i} href={img.origin_url} target="_blank" rel="noopener noreferrer"
+                           className="flex-shrink-0">
+                          <img
+                            src={img.image_url}
+                            alt={`Source ${i + 1}`}
+                            className="h-24 w-auto rounded object-cover border border-bureau-border hover:opacity-80 transition-opacity"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {((card.citations?.length ?? 0) > 0 || (card.sources?.length ?? 0) > 0) && (
+                  <div>
+                    <p className="text-xs font-mono text-bureau-slate uppercase tracking-wider mb-2">Sources</p>
+                    {(card.citations ?? card.sources?.map(s => ({ title: s.title ?? s.sourceName, url: s.sourceUrl, snippet: s.snippet })) ?? []).slice(0, 3).map((cite, i) => (
+                      <a key={i} href={cite.url} target="_blank" rel="noopener noreferrer"
+                         className="block text-xs text-bureau-signal hover:underline mb-1 truncate">
+                        {cite.title || cite.url}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>

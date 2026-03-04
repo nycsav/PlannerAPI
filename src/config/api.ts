@@ -82,7 +82,7 @@ export const ENDPOINTS = {
    * Body: { query: string }
    * Returns: { results: Array<{ title, url, snippet, date }>, query }
    */
-  perplexitySearchInstant: `${API_CONFIG.cloudRun}/perplexity/search-instant`,
+  perplexitySearchInstant: `${API_CONFIG.cloudFunctions}/perplexitySearchInstant`,
 
   /**
    * Chat Simple: Simple follow-up question processing
@@ -108,12 +108,23 @@ export const ENDPOINTS = {
 
   /**
    * Chat Intel (Cloud Run): Structured intelligence brief via /chat-intel on Cloud Run
-   * Used by: TestNewHomepage.tsx hero search bar
+   * Used by: TestNewHomepage.tsx hero search bar (legacy)
    * Method: POST
    * Body: { query: string, audience?: string }
    * Returns: { signals: IntelligenceSignal[], implications: string[], actions: string[] }
    */
   chatIntelSearch: `${API_CONFIG.cloudRun}/chat-intel`,
+
+  /**
+   * Chat Intel Stream: SSE streaming version of chatIntel (Firebase Function)
+   * Used by: TestNewHomepage.tsx hero search bar (replaces chatIntelSearch)
+   * Method: POST
+   * Body: { query: string }
+   * Response: text/event-stream
+   *   data: {"type":"chunk","content":"..."}  (repeated per token)
+   *   data: {"type":"done","signals":[...],"implications":[...],"actions":[...]}
+   */
+  chatIntelStream: `${API_CONFIG.cloudFunctions}/chatIntelStream`,
 
   /**
    * CopilotKit Health: Health check endpoint

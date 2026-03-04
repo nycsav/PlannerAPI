@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "plannerapi-prod"
-  }
+  },
+  "targets": {
+    "plannerapi-prod": {
+      "hosting": {
+        "signals": [
+          "plannerapi-prod"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
