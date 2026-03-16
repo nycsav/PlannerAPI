@@ -227,6 +227,8 @@ export async function rawSearch(params: {
   search_recency_filter?: 'day' | 'week' | 'month' | 'year';
   search_domain_filter?: string[];
   max_results?: number;
+  return_images?: boolean;
+  return_related_questions?: boolean;
   timeout?: number;
 }): Promise<any> {
   const {
@@ -234,6 +236,8 @@ export async function rawSearch(params: {
     search_recency_filter = 'day',
     search_domain_filter,
     max_results = 10,
+    return_images = false,
+    return_related_questions = false,
     timeout = DEFAULT_TIMEOUT,
   } = params;
 
@@ -245,6 +249,8 @@ export async function rawSearch(params: {
         search_recency_filter,
         search_domain_filter,
         max_results,
+        return_images,
+        return_related_questions,
       });
 
       const response = await withTimeout(
@@ -255,6 +261,8 @@ export async function rawSearch(params: {
 
       return {
         results: response.results || [],
+        images: response.images || [],
+        related_questions: response.related_questions || [],
         search_query: query,
         count: response.results?.length || 0,
       };

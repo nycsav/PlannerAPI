@@ -25,6 +25,17 @@ type IntelligenceSignal = {
   sourceUrl: string;
 };
 
+/** Enriched signal intelligence fields from getSignalInsight endpoint */
+export type SignalInsight = {
+  signal_score: number;          // 1–10 importance to CMOs
+  signal_type: 'trend' | 'disruption' | 'opportunity' | 'risk';
+  why_it_matters: string;        // 2 sentences, marketing-specific
+  affected_brands: string[];     // named companies
+  data_point: string;            // single key stat
+  visual_metaphor: string;       // rocket | warning | dollar | ai | people | globe | chart | target
+  linkedin_hook: string;         // opening line for LinkedIn post
+};
+
 export type IntelligencePayload = {
   query: string;
   summary: string;
@@ -49,6 +60,7 @@ export type IntelligencePayload = {
       context: string;
     }>;
   };
+  insight?: SignalInsight;        // Background-enriched intel (optional)
 };
 
 type IntelligenceModalProps = {
@@ -348,6 +360,28 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
 
   // Dashboard visualization state
   const [showDashboard, setShowDashboard] = useState(false);
+
+  // Background signal insight enrichment
+  const [insight, setInsight] = useState<SignalInsight | null>(null);
+  useEffect(() => {
+    if (!payload?.query) { setInsight(null); return; }
+    // If insight already embedded in payload, use it directly
+    if (payload.insight) { setInsight(payload.insight); return; }
+    setInsight(null);
+    const title = payload.signals?.[0]?.title || payload.query;
+    const snippet = payload.summary?.slice(0, 300) || '';
+    const controller = new AbortController();
+    fetch(ENDPOINTS.getSignalInsight, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, snippet }),
+      signal: controller.signal,
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then((data: SignalInsight | null) => { if (data?.signal_score) setInsight(data); })
+      .catch(() => {/* non-critical */});
+    return () => controller.abort();
+  }, [payload?.query]);
 
   // Quick chat modal state
   const [showQuickChat, setShowQuickChat] = useState(false);
@@ -876,7 +910,102 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
                 </section>
               )}
 
-              {/* Section 1b: DATA VISUALIZATION — auto-generated from signal stats */}
+              {/* Section 1b: SIGNAL INSIGHT PANEL — enriched via getSignalInsight */}
+              {insight && (
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                  {/* Header bar */}
+                  <div className="flex items-center justify-between px-5 py-3 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center gap-3">
+                      <span
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold uppercase tracking-wider rounded-md"
+                        style={{
+                          backgroundColor: insight.signal_type === 'risk' ? 'rgba(239,68,68,0.12)' :
+                            insight.signal_type === 'disruption' ? 'rgba(230,126,34,0.12)' :
+                            insight.signal_type === 'opportunity' ? 'rgba(34,197,94,0.12)' : 'rgba(96,165,250,0.12)',
+                          color: insight.signal_type === 'risk' ? '#ef4444' :
+                            insight.signal_type === 'disruption' ? '#E67E22' :
+                            insight.signal_type === 'opportunity' ? '#22c55e' : '#60a5fa',
+                        }}
+                      >
+                        {insight.signal_type.toUpperCase()}
+                      </span>
+                      <span className="font-mono text-xs text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                        Signal Score
+                      </span>
+                    </div>
+                    {/* Score badge */}
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-0.5">
+                        {Array.from({ length: 10 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className="w-2 h-4 rounded-sm"
+                            style={{
+                              backgroundColor: i < insight.signal_score
+                                ? (insight.signal_score >= 8 ? '#ef4444' : insight.signal_score >= 6 ? '#E67E22' : '#60a5fa')
+                                : 'var(--border)',
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <span className="font-mono text-sm font-bold text-gray-900 dark:text-gray-100">
+                        {insight.signal_score}/10
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Body */}
+                  <div className="p-5 space-y-4 bg-white dark:bg-slate-800/30">
+                    {/* Why it matters */}
+                    <div>
+                      <p className="font-mono text-xs uppercase tracking-widest text-planner-orange mb-1">Why It Matters</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{insight.why_it_matters}</p>
+                    </div>
+
+                    {/* Data point + affected brands row */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {insight.data_point && (
+                        <div className="px-4 py-3 rounded-lg bg-planner-orange/8 dark:bg-planner-orange/10 border-l-2 border-planner-orange">
+                          <p className="font-mono text-xs uppercase tracking-widest text-planner-orange mb-1">Key Stat</p>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{insight.data_point}</p>
+                        </div>
+                      )}
+                      {insight.affected_brands?.length > 0 && (
+                        <div>
+                          <p className="font-mono text-xs uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Affected</p>
+                          <div className="flex flex-wrap gap-2">
+                            {insight.affected_brands.map((brand) => (
+                              <span
+                                key={brand}
+                                className="px-2 py-1 text-xs font-medium rounded border border-slate-200 dark:border-slate-600 text-gray-700 dark:text-gray-300"
+                              >
+                                {brand}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* LinkedIn hook */}
+                    {insight.linkedin_hook && (
+                      <div className="flex items-start gap-3 pt-1">
+                        <div className="flex-shrink-0 mt-0.5 p-1.5 rounded bg-blue-50 dark:bg-blue-900/20">
+                          <svg className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z M4 6a2 2 0 100-4 2 2 0 000 4z"/>
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-mono text-xs uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">LinkedIn Hook</p>
+                          <p className="text-sm italic text-gray-600 dark:text-gray-400">"{insight.linkedin_hook}"</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Section 1c: DATA VISUALIZATION — auto-generated from signal stats */}
               {effectivePayload.graphData?.comparisons && effectivePayload.graphData.comparisons.length >= 2 && (
                 <BriefBarChart
                   comparisons={effectivePayload.graphData.comparisons}

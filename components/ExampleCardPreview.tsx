@@ -1,10 +1,5 @@
 import React from 'react';
 
-const BG = '#0A1128';
-const ACCENT = '#E67E22';
-const TEXT = '#F5F5F5';
-const MUTED = 'rgba(245, 245, 245, 0.75)';
-
 interface ExampleCardPreviewProps {
   onAskFollowUp?: () => void;
   label?: string;
@@ -14,9 +9,10 @@ export const ExampleCardPreview: React.FC<ExampleCardPreviewProps> = ({ onAskFol
   return (
     <section
       style={{
-        backgroundColor: BG,
-        padding: '80px 1.5rem',
-        borderTop: '1px solid rgba(245,245,245,0.1)',
+        backgroundColor: 'var(--bg-card)',
+        padding: '80px 120px',
+        borderTop: '1px solid var(--border-subtle)',
+        transition: 'background-color 0.2s ease',
       }}
     >
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
@@ -26,19 +22,19 @@ export const ExampleCardPreview: React.FC<ExampleCardPreviewProps> = ({ onAskFol
             fontSize: '11px',
             letterSpacing: '0.15em',
             textTransform: 'uppercase',
-            color: MUTED,
+            color: 'var(--muted)',
             marginBottom: '16px',
             textAlign: 'center',
           }}
         >
-          {label ?? 'LIVE INTELLIGENCE BRIEF'}
+          {label ?? 'EXAMPLE INTELLIGENCE BRIEF'}
         </p>
         <h2
           style={{
             fontFamily: "'Inter', sans-serif",
             fontWeight: 700,
             fontSize: 'clamp(24px, 3vw, 42px)',
-            color: TEXT,
+            color: 'var(--text)',
             marginBottom: '32px',
             textAlign: 'center',
           }}
@@ -50,7 +46,7 @@ export const ExampleCardPreview: React.FC<ExampleCardPreviewProps> = ({ onAskFol
             border: '2px solid rgba(230, 126, 34, 0.4)',
             borderRadius: '4px',
             padding: '80px 48px',
-            backgroundColor: 'rgba(245,245,245,0.02)',
+            backgroundColor: 'var(--overlay-subtle)',
           }}
         >
           <h3
@@ -58,7 +54,7 @@ export const ExampleCardPreview: React.FC<ExampleCardPreviewProps> = ({ onAskFol
               fontFamily: "'Inter', sans-serif",
               fontWeight: 700,
               fontSize: '32px',
-              color: TEXT,
+              color: 'var(--text)',
               lineHeight: 1.3,
               marginBottom: '24px',
             }}
@@ -69,7 +65,7 @@ export const ExampleCardPreview: React.FC<ExampleCardPreviewProps> = ({ onAskFol
             style={{
               fontFamily: "'Inter', sans-serif",
               fontSize: '18px',
-              color: MUTED,
+              color: 'var(--muted)',
               lineHeight: 1.8,
               marginBottom: '24px',
             }}
@@ -82,7 +78,7 @@ export const ExampleCardPreview: React.FC<ExampleCardPreviewProps> = ({ onAskFol
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: '11px',
                 letterSpacing: '0.1em',
-                color: ACCENT,
+                color: 'var(--orange)',
                 marginBottom: '12px',
               }}
             >
@@ -92,7 +88,7 @@ export const ExampleCardPreview: React.FC<ExampleCardPreviewProps> = ({ onAskFol
               style={{
                 fontFamily: "'Inter', sans-serif",
                 fontSize: '16px',
-                color: MUTED,
+                color: 'var(--muted)',
                 lineHeight: 1.7,
                 paddingLeft: '20px',
                 margin: 0,
@@ -106,7 +102,7 @@ export const ExampleCardPreview: React.FC<ExampleCardPreviewProps> = ({ onAskFol
                 '22% efficiency gains for AI-mature teams vs. 3% for beginners',
               ].map((item, i) => (
                 <li key={i} style={{ marginBottom: '8px', position: 'relative', paddingLeft: '16px' }}>
-                  <span style={{ position: 'absolute', left: 0, color: ACCENT }}>•</span>
+                  <span style={{ position: 'absolute', left: 0, color: 'var(--orange)' }}>•</span>
                   {item}
                 </li>
               ))}
@@ -118,7 +114,7 @@ export const ExampleCardPreview: React.FC<ExampleCardPreviewProps> = ({ onAskFol
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: '11px',
                 letterSpacing: '0.1em',
-                color: ACCENT,
+                color: 'var(--orange)',
                 marginBottom: '8px',
               }}
             >
@@ -128,7 +124,7 @@ export const ExampleCardPreview: React.FC<ExampleCardPreviewProps> = ({ onAskFol
               style={{
                 fontFamily: "'Inter', sans-serif",
                 fontSize: '16px',
-                color: MUTED,
+                color: 'var(--muted)',
                 lineHeight: 1.6,
               }}
             >
@@ -143,8 +139,8 @@ export const ExampleCardPreview: React.FC<ExampleCardPreviewProps> = ({ onAskFol
                   padding: '6px 12px',
                   fontFamily: "'IBM Plex Mono', monospace",
                   fontSize: '12px',
-                  color: TEXT,
-                  border: '1px solid rgba(245,245,245,0.2)',
+                  color: 'var(--text)',
+                  border: '1px solid var(--border-subtle)',
                 }}
               >
                 {s}
@@ -157,7 +153,7 @@ export const ExampleCardPreview: React.FC<ExampleCardPreviewProps> = ({ onAskFol
             style={{
               fontFamily: "'Inter', sans-serif",
               fontSize: '14px',
-              color: ACCENT,
+              color: 'var(--orange)',
               background: 'none',
               border: 'none',
               cursor: 'pointer',

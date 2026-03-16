@@ -1,10 +1,5 @@
 import React, { useState } from 'react';
 
-const BG = '#0A1128';
-const ACCENT = '#E67E22';
-const TEXT = '#F5F5F5';
-const MUTED = 'rgba(245, 245, 245, 0.65)';
-
 const items = [
   {
     q: "How is signal2noise different from reading McKinsey's blog?",
@@ -39,9 +34,10 @@ export const FAQAccordion: React.FC = () => {
     <section
       id="faq"
       style={{
-        backgroundColor: BG,
-        padding: '80px 1.5rem 120px',
-        borderTop: '1px solid rgba(245,245,245,0.1)',
+        backgroundColor: 'var(--bg)',
+        padding: '80px 120px',
+        borderTop: '1px solid var(--border-subtle)',
+        transition: 'background-color 0.2s ease',
       }}
     >
       <div style={{ maxWidth: '720px', margin: '0 auto' }}>
@@ -50,9 +46,7 @@ export const FAQAccordion: React.FC = () => {
           return (
             <div
               key={i}
-              style={{
-                borderBottom: '1px solid rgba(245,245,245,0.1)',
-              }}
+              style={{ borderBottom: '1px solid var(--border-subtle)' }}
             >
               <button
                 type="button"
@@ -66,11 +60,12 @@ export const FAQAccordion: React.FC = () => {
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '20px',
                   fontWeight: 500,
-                  color: isOpen ? ACCENT : TEXT,
+                  color: isOpen ? 'var(--orange)' : 'var(--text)',
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',
                   textAlign: 'left',
+                  transition: 'color 0.15s',
                 }}
               >
                 <span style={{ paddingRight: '1rem' }}>{item.q}</span>
@@ -99,7 +94,7 @@ export const FAQAccordion: React.FC = () => {
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '0.875rem',
                     lineHeight: 1.55,
-                    color: MUTED,
+                    color: 'var(--muted)',
                     padding: '24px 2.5rem 40px 0',
                   }}
                 >

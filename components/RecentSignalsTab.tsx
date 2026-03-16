@@ -8,6 +8,7 @@ export interface Signal {
   title: string;
   summary: string;
   sources: string[];
+  pillar?: string;
 }
 
 export interface RecentSignalsTabProps {
@@ -23,9 +24,22 @@ const formatDate = (publishedAt: any): string => {
   }
 };
 
+const PILLAR_LABEL: Record<string, string> = {
+  ai_strategy: 'AI SIGNAL',
+  brand_performance: 'BRAND SIGNAL',
+  competitive_intel: 'COMPETITIVE SIGNAL',
+  media_trends: 'MEDIA SIGNAL',
+};
+
+const BG = 'var(--bg-card)';
+const ACCENT = 'var(--orange)';
+const TEXT = 'var(--text)';
+const MUTED = 'var(--muted)';
+const BORDER = 'var(--border-subtle)';
+
 export const RecentSignalsTab: React.FC<RecentSignalsTabProps> = ({ onReadMore }) => {
   const [signals, setSignals] = useState<Signal[]>([]);
-  const [active, setActive] = useState(0);
+  const [activeDate, setActiveDate] = useState<string>('');
 
   useEffect(() => {
     const fetchSignals = async () => {
@@ -37,9 +51,7 @@ export const RecentSignalsTab: React.FC<RecentSignalsTabProps> = ({ onReadMore }
         );
         const snapshot = await getDocs(q);
 
-        // Deduplicate by doc id first, then by formatted date (one card per date)
         const seenIds = new Set<string>();
-        const seenDates = new Set<string>();
         const fetched: Signal[] = [];
 
         for (const docSnap of snapshot.docs) {
@@ -47,23 +59,20 @@ export const RecentSignalsTab: React.FC<RecentSignalsTabProps> = ({ onReadMore }
           seenIds.add(docSnap.id);
 
           const d = docSnap.data();
-          const date = formatDate(d.publishedAt);
-
-          if (seenDates.has(date)) continue;
-          seenDates.add(date);
-
           fetched.push({
             id: docSnap.id,
-            date,
+            date: formatDate(d.publishedAt),
             title: d.title || 'Intelligence Update',
             summary: d.summary || '',
             sources: d.source ? [d.source] : [],
+            pillar: d.pillar || '',
           });
-
-          if (fetched.length >= 5) break;
         }
 
-        if (fetched.length > 0) setSignals(fetched);
+        if (fetched.length > 0) {
+          setSignals(fetched);
+          setActiveDate(fetched[0].date);
+        }
       } catch (err) {
         console.error('[RecentSignalsTab] fetch error:', err);
       }
@@ -71,141 +80,183 @@ export const RecentSignalsTab: React.FC<RecentSignalsTabProps> = ({ onReadMore }
     fetchSignals();
   }, []);
 
-  const signal = signals[active];
+  // Unique dates in order (most recent first)
+  const dates = Array.from(new Set(signals.map((s) => s.date))).slice(0, 5);
+  const visibleSignals = signals.filter((s) => s.date === activeDate);
 
-  if (!signal) return null;
+  if (signals.length === 0) return null;
 
   return (
     <section
       id="recent-signals"
       style={{
-        backgroundColor: 'var(--navy)',
-        padding: '60px 120px 80px',
-        borderTop: '1px solid var(--border)',
+        backgroundColor: BG,
+        padding: '80px 120px',
+        borderTop: `1px solid ${BORDER}`,
+        boxSizing: 'border-box',
+        transition: 'background-color 0.2s ease',
       }}
     >
-      <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-        <div
-          className="flex flex-wrap gap-2 mb-6 border-b"
-          style={{ borderColor: 'var(--border)' }}
-          role="tablist"
-        >
-          {signals.map((s, i) => (
-            <button
-              key={s.id}
-              role="tab"
-              aria-selected={i === active}
-              onClick={() => setActive(i)}
-              style={{
-                padding: '0.5rem 1rem',
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '12px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                fontWeight: i === active ? 700 : 400,
-                color: i === active ? 'var(--orange)' : 'var(--muted)',
-                background: 'none',
-                border: 'none',
-                borderBottom: i === active ? '2px solid var(--orange)' : '2px solid transparent',
-                cursor: 'pointer',
-                marginBottom: '-1px',
-              }}
-            >
-              {s.date}
-            </button>
-          ))}
-        </div>
-        <div key={active} style={{ animation: 'recentSignalsFade 0.3s ease-out' }}>
-          <h3
-            style={{
-              fontFamily: "'Playfair Display', serif",
-              fontWeight: 700,
-              fontSize: '28px',
-              color: 'var(--text)',
-              marginBottom: '12px',
-              lineHeight: 1.3,
-            }}
-          >
-            {signal.title}
-          </h3>
-          <p
-            style={{
-              fontFamily: "'Inter', sans-serif",
-              fontSize: '15px',
-              lineHeight: 1.7,
-              color: 'var(--muted)',
-              marginBottom: '16px',
-            }}
-          >
-            {signal.summary}
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
-            {signal.sources.map((src) => (
-              <span
-                key={src}
-                style={{
-                  padding: '4px 10px',
-                  fontSize: '9px',
-                  fontFamily: "'IBM Plex Mono', monospace",
-                  color: 'var(--orange)',
-                  border: '1px solid rgba(230, 126, 34, 0.4)',
-                  backgroundColor: 'rgba(230, 126, 34, 0.05)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                }}
-              >
-                {src}
-              </span>
-            ))}
-          </div>
+      {/* Section label */}
+      <p
+        style={{
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: '11px',
+          letterSpacing: '0.2em',
+          textTransform: 'uppercase',
+          color: ACCENT,
+          marginBottom: '4px',
+        }}
+      >
+        RECENT INTELLIGENCE
+      </p>
+
+      {/* Date filter tabs */}
+      <div
+        style={{
+          display: 'flex',
+          gap: 0,
+          borderBottom: `1px solid ${BORDER}`,
+          marginBottom: '48px',
+          overflowX: 'auto',
+        }}
+        role="tablist"
+      >
+        {dates.map((date) => (
           <button
-            type="button"
-            onClick={() => onReadMore?.(signal)}
+            key={date}
+            role="tab"
+            aria-selected={date === activeDate}
+            onClick={() => setActiveDate(date)}
             style={{
+              padding: '10px 20px',
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: '11px',
-              letterSpacing: '0.1em',
               textTransform: 'uppercase',
-              color: 'var(--orange)',
+              letterSpacing: '0.08em',
+              color: date === activeDate ? ACCENT : MUTED,
               background: 'none',
               border: 'none',
+              borderBottom: date === activeDate ? `2px solid ${ACCENT}` : '2px solid transparent',
               cursor: 'pointer',
-              padding: 0,
+              marginBottom: '-1px',
+              whiteSpace: 'nowrap',
             }}
           >
-            Read more →
+            {date}
           </button>
-        </div>
-        <div
-          className="flex md:hidden justify-center gap-2 mt-6"
-          role="tablist"
-          aria-label="Select signal date"
-        >
-          {signals.map((s, i) => (
-            <button
-              key={s.id}
-              type="button"
-              role="tab"
-              aria-label={s.date}
-              aria-selected={i === active}
-              onClick={() => setActive(i)}
-              style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                border: 'none',
-                padding: 0,
-                cursor: 'pointer',
-                backgroundColor: i === active ? 'var(--orange)' : 'var(--border)',
-              }}
-            />
-          ))}
-        </div>
+        ))}
       </div>
+
+      {/* 3-column card grid */}
+      <div
+        className="grid grid-cols-1 md:grid-cols-3 gap-6"
+      >
+        {visibleSignals.map((signal) => (
+          <article
+            key={signal.id}
+            style={{
+              border: `1px solid ${BORDER}`,
+              padding: '28px 24px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+            }}
+          >
+            {/* Pillar tag */}
+            <span
+              style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '9px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.12em',
+                color: ACCENT,
+                fontWeight: 700,
+              }}
+            >
+              {PILLAR_LABEL[signal.pillar || ''] || 'AI SIGNAL'}
+            </span>
+
+            {/* Title */}
+            <h3
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontWeight: 700,
+                fontSize: '18px',
+                lineHeight: 1.3,
+                color: TEXT,
+                margin: 0,
+              }}
+            >
+              {signal.title}
+            </h3>
+
+            {/* Summary — 2-line clamp */}
+            <p
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '14px',
+                lineHeight: 1.6,
+                color: MUTED,
+                margin: 0,
+                overflow: 'hidden',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical' as const,
+                flex: 1,
+              }}
+            >
+              {signal.summary}
+            </p>
+
+            {/* Source badges */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {signal.sources.map((src) => (
+                <span
+                  key={src}
+                  style={{
+                    padding: '3px 8px',
+                    fontSize: '9px',
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    color: ACCENT,
+                    border: '1px solid rgba(230, 126, 34, 0.35)',
+                    backgroundColor: 'rgba(230, 126, 34, 0.05)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  {src}
+                </span>
+              ))}
+            </div>
+
+            {/* Read more */}
+            <button
+              type="button"
+              onClick={() => onReadMore?.(signal)}
+              style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '11px',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: ACCENT,
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
+                textAlign: 'left',
+              }}
+            >
+              Read more →
+            </button>
+          </article>
+        ))}
+      </div>
+
       <style>{`
         @keyframes recentSignalsFade {
-          from { opacity: 0; }
-          to { opacity: 1; }
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </section>

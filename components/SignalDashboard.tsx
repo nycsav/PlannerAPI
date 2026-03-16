@@ -1,172 +1,359 @@
+import React, { useEffect, useState } from 'react';
+import { LineChart, Line, ResponsiveContainer, Tooltip } from 'recharts';
+import { ENDPOINTS } from '../src/config/api';
 
-import React, { useState } from 'react';
-import { Command, Zap, FlaskConical, Share2, Activity, Terminal, Globe, Cpu, Sparkles, Database, Brain } from 'lucide-react';
-
-interface SignalDashboardProps {
-  onSearch: (q: string) => void;
+export interface SignalScore {
+  rank: number;
+  topic: string;
+  signal_momentum: 'rising' | 'stable' | 'falling';
+  score_today: number;
+  score_yesterday: number;
+  delta: number;
+  top_brand: string;
+  chart_data: number[];
 }
 
-export const SignalDashboard: React.FC<SignalDashboardProps> = ({ onSearch }) => {
-  const [query, setQuery] = useState('');
+interface SignalDashboardProps {
+  /** Pre-fetched signals — pass from parent if already loaded */
+  signals?: SignalScore[];
+}
 
-  const clusters = [
-    { label: "CREATIVE FATIGUE", pillar: "Brand & Content", heat: "High" },
-    { label: "ATTRIBUTION DRIFT", pillar: "AI Workflows", heat: "Stable" },
-    { label: "TALENT RE-INDEXING", pillar: "Careers & Skills", heat: "Accelerating" }
-  ];
+const MOMENTUM_COLORS: Record<string, string> = {
+  rising: '#22c55e',
+  stable: '#E67E22',
+  falling: '#ef4444',
+};
 
-  const IntelligenceMetric = ({ label, value, sources, heatColor }: { label: string, value: string, sources: string[], heatColor: string }) => (
-    <div className="flex flex-col gap-3 p-4 rounded-xl border border-scandi-navy/5 bg-white shadow-sm hover:shadow-md transition-all group cursor-pointer">
-      <div className="flex justify-between items-start">
-        <span className="font-mono text-[9px] uppercase tracking-widest text-scandi-navy/40 font-black">{label}</span>
-        <div className="flex gap-1">
-          {sources.map(s => (
-            <div key={s} className="w-4 h-4 rounded-full bg-scandi-navy/5 flex items-center justify-center border border-white">
-              <span className="text-[6px] font-black text-scandi-navy/30">{s[0]}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="flex items-baseline gap-2">
-        <span className="text-2xl font-black tracking-tightest leading-none text-scandi-navy font-sans uppercase">{value}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <div className={`h-1.5 w-1.5 rounded-full ${heatColor} animate-pulse`}></div>
-        <span className="font-mono text-[8px] uppercase tracking-widest font-black text-scandi-navy/30">Live Signal</span>
-      </div>
+const MOMENTUM_LABELS: Record<string, string> = {
+  rising: '▲ RISING',
+  stable: '● STABLE',
+  falling: '▼ FALLING',
+};
+
+function ScoreBar({ score }: { score: number }) {
+  return (
+    <div
+      style={{
+        width: '80px',
+        height: '4px',
+        backgroundColor: 'var(--border)',
+        borderRadius: 0,
+        overflow: 'hidden',
+        flexShrink: 0,
+      }}
+    >
+      <div
+        style={{
+          width: `${score}%`,
+          height: '100%',
+          backgroundColor: score >= 75 ? '#ef4444' : score >= 50 ? 'var(--orange)' : '#60a5fa',
+          transition: 'width 0.6s ease',
+        }}
+      />
     </div>
   );
+}
+
+function Sparkline({ data, momentum }: { data: number[]; momentum: string }) {
+  const chartData = data.map((v, i) => ({ v, i }));
+  const color = MOMENTUM_COLORS[momentum] || 'var(--orange)';
+  return (
+    <div style={{ width: '80px', height: '32px', flexShrink: 0 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={chartData} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
+          <Line
+            type="monotone"
+            dataKey="v"
+            stroke={color}
+            strokeWidth={1.5}
+            dot={false}
+            isAnimationActive={true}
+          />
+          <Tooltip
+            content={() => null}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function SkeletonRow() {
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '24px 1fr 80px 80px 48px 80px',
+        alignItems: 'center',
+        gap: '16px',
+        padding: '14px 0',
+        borderBottom: '1px solid var(--border-light)',
+      }}
+    >
+      {[24, 140, 80, 80, 40, 80].map((w, i) => (
+        <div
+          key={i}
+          style={{
+            height: '10px',
+            width: `${w}px`,
+            backgroundColor: 'var(--overlay-hover)',
+            borderRadius: 0,
+          }}
+          className="animate-pulse"
+        />
+      ))}
+    </div>
+  );
+}
+
+export const SignalDashboard: React.FC<SignalDashboardProps> = ({ signals: propSignals }) => {
+  const [signals, setSignals] = useState<SignalScore[]>(propSignals || []);
+  const [loading, setLoading] = useState(!propSignals || propSignals.length === 0);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (propSignals && propSignals.length > 0) {
+      setSignals(propSignals);
+      setLoading(false);
+      return;
+    }
+    const fetchScores = async () => {
+      try {
+        const res = await fetch(ENDPOINTS.getSignalScores, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+          signal: AbortSignal.timeout(20000),
+        });
+        if (!res.ok) throw new Error(`${res.status}`);
+        const data = await res.json();
+        setSignals(data.signals || []);
+      } catch {
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchScores();
+  }, []);
+
+  if (error) return null;
 
   return (
-    <div className="bg-white border-2 border-scandi-navy/5 rounded-2xl shadow-xl overflow-hidden mb-12 relative">
-      {/* System Status Line */}
-      <div className="bg-scandi-navy/5 px-6 py-2.5 flex justify-between items-center border-b border-scandi-navy/5">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <Cpu className="w-3.5 h-3.5 text-scandi-blue" />
-            <span className="font-mono text-[9px] uppercase font-black text-scandi-navy/60 tracking-widest">Logic Engine: Active</span>
-          </div>
-          <div className="hidden sm:flex items-center gap-4 border-l border-scandi-navy/10 pl-4">
-             <div className="flex items-center gap-2">
-               <Database className="w-3 h-3 text-scandi-navy/20" />
-               <span className="font-mono text-[9px] uppercase font-black text-scandi-navy/20 tracking-widest">Index: 4.2M Signals</span>
-             </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-[8px] uppercase font-black text-scandi-navy/40 tracking-[0.2em]">Strategy Sandbox v0.9</span>
-        </div>
-      </div>
-
-      <div className="flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-scandi-navy/5">
-        
-        {/* Column 1: AI Reasoning Entry */}
-        <div className="lg:w-[40%] p-8 space-y-8 bg-scandi-white/30">
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Brain className="w-4 h-4 text-scandi-blue" />
-                <h2 className="font-mono text-[10px] uppercase tracking-widest text-scandi-navy font-black">Hypothesis Sandbox</h2>
-              </div>
-              <Sparkles className="w-4 h-4 text-scandi-sienna animate-pulse" />
-            </div>
-            
-            <form onSubmit={(e) => { e.preventDefault(); onSearch(query); }} className="relative group">
-              <input 
-                type="text" 
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Stress-test a briefing hypothesis..." 
-                className="w-full bg-white border-2 border-scandi-navy/5 rounded-xl pl-5 pr-14 py-5 text-sm font-bold shadow-sm focus:border-scandi-blue/20 focus:ring-4 focus:ring-scandi-blue/5 outline-none transition-all placeholder:text-scandi-navy/20"
-              />
-              <button className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-scandi-navy text-white rounded-lg hover:bg-scandi-blue transition-all shadow-lg active:scale-95">
-                <Command className="w-4 h-4" />
-              </button>
-            </form>
-
-            <div className="grid grid-cols-1 gap-2">
-              {clusters.map(cluster => (
-                <button 
-                  key={cluster.label} 
-                  onClick={() => onSearch(cluster.label)}
-                  className="flex items-center justify-between p-3.5 rounded-xl border border-scandi-navy/5 bg-white hover:border-scandi-blue/30 hover:bg-scandi-blue/[0.02] transition-all text-left group/cluster"
-                >
-                  <div className="flex flex-col">
-                    <span className="font-mono text-[10px] uppercase tracking-widest text-scandi-navy font-black group-hover/cluster:text-scandi-blue">{cluster.label}</span>
-                    <span className="font-mono text-[7px] uppercase text-scandi-navy/30 tracking-widest mt-0.5">{cluster.pillar}</span>
-                  </div>
-                  <div className="flex items-center gap-2 px-2 py-0.5 rounded bg-scandi-navy/5 font-mono text-[8px] uppercase font-black text-scandi-navy/40">
-                    {cluster.heat}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Column 2: Performance Clusters */}
-        <div className="lg:flex-1 p-8 grid grid-cols-1 md:grid-cols-2 gap-6 bg-white">
-          <IntelligenceMetric 
-            label="Market Signal Heat" 
-            value="Volatile" 
-            sources={['Perplexity', 'Gemini']} 
-            heatColor="bg-scandi-sienna"
-          />
-          <IntelligenceMetric 
-            label="Briefing Velocity" 
-            value="84.2ms" 
-            sources={['Claude']} 
-            heatColor="bg-green-500"
-          />
-          <IntelligenceMetric 
-            label="Talent Alpha" 
-            value="+22.5%" 
-            sources={['LinkedIn', 'Perplexity']} 
-            heatColor="bg-scandi-blue"
-          />
-          <IntelligenceMetric 
-            label="Brand Persistence" 
-            value="High" 
-            sources={['Gemini']} 
-            heatColor="bg-scandi-blue"
-          />
-        </div>
-
-        {/* Column 3: The Scenario Lab */}
-        <div className="lg:w-[25%] p-8 bg-scandi-navy text-white flex flex-col justify-between relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-scandi-sienna/10 blur-3xl rounded-full -mr-16 -mt-16 animate-pulse"></div>
-          
-          <div className="space-y-6 relative z-10">
-            <div className="flex items-center gap-2">
-              <FlaskConical className="w-4 h-4 text-scandi-sienna" />
-              <h2 className="font-mono text-[10px] uppercase font-black tracking-widest text-scandi-sienna">Scenario Lab</h2>
-            </div>
-            <p className="text-[12px] text-white/40 leading-relaxed font-medium">
-              Validate Q4 spend elasticity against a 100% cookie-less baseline.
+    <section
+      id="signal-dashboard"
+      style={{
+        backgroundColor: 'var(--bg-card)',
+        padding: '64px 120px',
+        borderTop: '1px solid var(--border-subtle)',
+        transition: 'background-color 0.2s ease',
+      }}
+    >
+      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+        {/* Header */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+            marginBottom: '32px',
+          }}
+        >
+          <div>
+            <p
+              style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '11px',
+                letterSpacing: '0.15em',
+                textTransform: 'uppercase',
+                color: 'var(--orange)',
+                marginBottom: '8px',
+              }}
+            >
+              LIVE SIGNAL INTELLIGENCE
             </p>
-            
-            <div className="space-y-3 pt-4">
-              <div className="flex items-center justify-between text-[8px] font-mono text-white/20 uppercase tracking-widest font-black">
-                <span>Simulation Confidence</span>
-                <span>88%</span>
-              </div>
-              <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-scandi-sienna w-[88%] shadow-[0_0_10px_#F97316]"></div>
-              </div>
-            </div>
+            <h2
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontWeight: 700,
+                fontSize: '28px',
+                color: 'var(--text)',
+                margin: 0,
+                lineHeight: 1.2,
+              }}
+            >
+              Top Signals Right Now
+            </h2>
           </div>
-          
-          <button 
-            onClick={() => onSearch("Deploy full-vertical cookie-less simulation")}
-            className="relative z-10 flex items-center justify-between w-full group pt-8 mt-10 border-t border-white/5 hover:text-scandi-sienna transition-all"
+          <span
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: '10px',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: 'var(--muted)',
+            }}
           >
-            <span className="text-[10px] font-mono uppercase font-black tracking-[0.2em] text-white/30 group-hover:text-white transition-all">
-              Execute Model
-            </span>
-            <Share2 className="w-4 h-4 text-scandi-sienna group-hover:scale-110 transition-transform" />
-          </button>
+            Powered by sonar-reasoning-pro
+          </span>
         </div>
+
+        {/* Column headers */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '24px 1fr 80px 80px 48px 80px',
+            alignItems: 'center',
+            gap: '16px',
+            padding: '0 0 8px 0',
+            borderBottom: '1px solid var(--border)',
+          }}
+        >
+          {['#', 'SIGNAL', 'SCORE', 'MOMENTUM', 'Δ', '7-DAY'].map((h) => (
+            <span
+              key={h}
+              style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '9px',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: 'var(--muted)',
+              }}
+            >
+              {h}
+            </span>
+          ))}
+        </div>
+
+        {/* Rows */}
+        {loading ? (
+          <>
+            {[1, 2, 3, 4, 5].map((i) => <SkeletonRow key={i} />)}
+          </>
+        ) : (
+          signals.map((s) => {
+            const momentumColor = MOMENTUM_COLORS[s.signal_momentum] || 'var(--orange)';
+            const deltaStr = s.delta > 0 ? `+${s.delta}` : `${s.delta}`;
+            return (
+              <div
+                key={s.rank}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '24px 1fr 80px 80px 48px 80px',
+                  alignItems: 'center',
+                  gap: '16px',
+                  padding: '14px 0',
+                  borderBottom: '1px solid var(--border-light)',
+                  transition: 'background-color 0.15s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--overlay-hover)')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+              >
+                {/* Rank */}
+                <span
+                  style={{
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: '11px',
+                    color: 'var(--muted)',
+                    fontWeight: 700,
+                  }}
+                >
+                  {s.rank}
+                </span>
+
+                {/* Topic + brand */}
+                <div>
+                  <div
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: 'var(--text)',
+                      marginBottom: '2px',
+                      overflow: 'hidden',
+                      whiteSpace: 'nowrap',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {s.topic}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: "'IBM Plex Mono', monospace",
+                      fontSize: '9px',
+                      letterSpacing: '0.06em',
+                      color: 'var(--muted)',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    {s.top_brand}
+                  </div>
+                </div>
+
+                {/* Score bar + number */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <ScoreBar score={s.score_today} />
+                  <span
+                    style={{
+                      fontFamily: "'IBM Plex Mono', monospace",
+                      fontSize: '10px',
+                      color: 'var(--text)',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {s.score_today}
+                  </span>
+                </div>
+
+                {/* Momentum badge */}
+                <span
+                  style={{
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: '9px',
+                    letterSpacing: '0.06em',
+                    color: momentumColor,
+                    fontWeight: 700,
+                  }}
+                >
+                  {MOMENTUM_LABELS[s.signal_momentum] || s.signal_momentum.toUpperCase()}
+                </span>
+
+                {/* Delta */}
+                <span
+                  style={{
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    color: s.delta > 0 ? '#22c55e' : s.delta < 0 ? '#ef4444' : 'var(--muted)',
+                  }}
+                >
+                  {deltaStr}
+                </span>
+
+                {/* Sparkline */}
+                <Sparkline
+                  data={s.chart_data || [50, 50, 50, 50, 50, 50, s.score_today]}
+                  momentum={s.signal_momentum}
+                />
+              </div>
+            );
+          })
+        )}
+
+        {!loading && signals.length === 0 && !error && (
+          <div
+            style={{
+              padding: '32px 0',
+              textAlign: 'center',
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: '11px',
+              color: 'var(--muted)',
+            }}
+          >
+            Signal data unavailable. Retry shortly.
+          </div>
+        )}
       </div>
-    </div>
+    </section>
   );
 };

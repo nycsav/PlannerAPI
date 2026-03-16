@@ -4,19 +4,12 @@ import { trackCTAClick } from '../../src/utils/tracking';
 type SearchResult = { title: string; url: string; snippet: string; date?: string };
 
 interface HeroSectionProps {
-  onSearch?: (query: string) => void;         // full sonar-pro brief (result click)
-  onInstantSearch?: (query: string) => void;  // Search API (form submit)
+  onSearch?: (query: string) => void;
+  onInstantSearch?: (query: string) => void;
   onSignupClick?: () => void;
   searchResults?: SearchResult[];
   isSearching?: boolean;
 }
-
-/* Hero: all colors hardcoded for dark theme so section is always visible */
-const HERO_BG = '#0d1321';
-const HERO_TEXT = '#F5F5F5';
-const HERO_MUTED = 'rgba(248, 246, 240, 0.7)';
-const HERO_ORANGE = '#E67E22';
-const HERO_BORDER = '#1E2A45';
 
 export const HeroSection: React.FC<HeroSectionProps> = ({
   onSearch,
@@ -29,11 +22,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Fall back to placeholder so button always fires even if user hasn't typed
     const q = query.trim() || 'Ask: What should CMOs prioritize for AI in Q2 2026?';
     if (!query.trim()) setQuery(q);
     trackCTAClick('ai_search', 'homepage_hero');
-    // ASK opens the intelligence modal directly via /chat-intel
     onSearch?.(q);
   };
 
@@ -41,13 +32,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     <section
       style={{
         padding: '80px 120px',
-        backgroundColor: HERO_BG,
+        backgroundColor: 'var(--bg)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'flex-start',
         gap: '32px',
         minHeight: '640px',
         boxSizing: 'border-box',
+        transition: 'background-color 0.2s ease',
       }}
     >
       <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end' }}>
@@ -55,7 +47,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           style={{
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: '10px',
-            color: HERO_TEXT,
+            color: 'var(--text)',
             textTransform: 'uppercase',
             letterSpacing: '0.08em',
           }}
@@ -68,7 +60,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           style={{
             width: '2px',
             height: '80px',
-            backgroundColor: HERO_ORANGE,
+            backgroundColor: 'var(--orange)',
             flexShrink: 0,
           }}
         />
@@ -76,7 +68,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           style={{
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: '10px',
-            color: HERO_TEXT,
+            color: 'var(--text)',
             textTransform: 'uppercase',
             letterSpacing: '0.1em',
           }}
@@ -90,24 +82,24 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           fontWeight: 700,
           fontSize: '64px',
           lineHeight: 1.1,
-          color: HERO_TEXT,
+          color: 'var(--text)',
           maxWidth: '720px',
           margin: 0,
         }}
       >
-        The signal exists. Most teams are still reading noise.
+        Track the agentic shift before your clients ask
       </h1>
       <p
         style={{
           fontFamily: "'Inter', sans-serif",
           fontSize: '18px',
           lineHeight: 1.7,
-          color: HERO_MUTED,
+          color: 'var(--muted)',
           maxWidth: '580px',
           margin: 0,
         }}
       >
-        Marketing orgs adopted AI at 78% in 2025. Only 6% reached maturity. The gap isn&apos;t tools — it&apos;s intelligence. signal2noise delivers 3 daily briefs synthesized from McKinsey, Gartner, and Google so your team moves on signal, not speculation.
+        Marketing teams are buying AI agents, not point solutions. OpenAI Operator, Anthropic Computer Use, Google Gemini — which one delivers ROI?
       </p>
       <p
         style={{
@@ -115,11 +107,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           fontSize: '11px',
           textTransform: 'uppercase',
           letterSpacing: '0.15em',
-          color: HERO_ORANGE,
+          color: 'var(--orange)',
           margin: 0,
         }}
       >
-        3 SIGNALS DAILY. TIER-1 SOURCES ONLY. ZERO RESEARCH TIME.
+        3 SIGNALS DAILY · CLIENTS READY · ZERO RESEARCH TIME
       </p>
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <button
@@ -130,8 +122,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           }}
           style={{
             padding: '14px 32px',
-            backgroundColor: HERO_ORANGE,
-            color: HERO_BG,
+            backgroundColor: 'var(--orange)',
+            color: 'var(--bg)',
             border: 'none',
             cursor: 'pointer',
             fontFamily: "'IBM Plex Mono', monospace",
@@ -152,8 +144,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           style={{
             padding: '14px 32px',
             backgroundColor: 'transparent',
-            color: HERO_ORANGE,
-            border: `1px solid ${HERO_ORANGE}`,
+            color: 'var(--orange)',
+            border: '1px solid var(--orange)',
             cursor: 'pointer',
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: '12px',
@@ -164,7 +156,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           SEE EXAMPLE
         </button>
       </div>
-      {/* AI Search Bar — Perplexity-powered */}
+
+      {/* AI Search Bar */}
       <form
         onSubmit={handleSearch}
         style={{
@@ -179,8 +172,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           style={{
             display: 'flex',
             alignItems: 'stretch',
-            border: `1px solid ${HERO_BORDER}`,
-            backgroundColor: '#0A0F1E',
+            border: '1px solid var(--border)',
+            backgroundColor: 'var(--bg-input)',
           }}
         >
           <input
@@ -193,7 +186,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               background: 'transparent',
               border: 'none',
               outline: 'none',
-              color: HERO_TEXT,
+              color: 'var(--text)',
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: '13px',
               padding: '14px 16px',
@@ -203,8 +196,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             type="submit"
             style={{
               padding: '14px 24px',
-              backgroundColor: HERO_ORANGE,
-              color: HERO_BG,
+              backgroundColor: 'var(--orange)',
+              color: 'var(--bg)',
               border: 'none',
               cursor: 'pointer',
               fontFamily: "'IBM Plex Mono', monospace",
@@ -225,33 +218,33 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             fontSize: '10px',
             textTransform: 'uppercase',
             letterSpacing: '0.08em',
-            color: HERO_MUTED,
+            color: 'var(--muted)',
           }}
         >
           {isSearching ? 'Searching...' : 'Powered by Perplexity · Real-time intelligence from 1,000+ sources'}
         </span>
       </form>
 
-      {/* Instant search results — shown before full sonar-pro brief loads */}
+      {/* Instant search results */}
       {searchResults && searchResults.length > 0 && (
         <div
           style={{
             width: '100%',
             maxWidth: '640px',
-            border: `1px solid ${HERO_BORDER}`,
-            backgroundColor: '#0A0F1E',
-            marginTop: '-24px', // tight with search form
+            border: '1px solid var(--border)',
+            backgroundColor: 'var(--bg-input)',
+            marginTop: '-24px',
           }}
         >
           <div
             style={{
               padding: '8px 16px',
-              borderBottom: `1px solid ${HERO_BORDER}`,
+              borderBottom: '1px solid var(--border)',
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: '10px',
               textTransform: 'uppercase',
               letterSpacing: '0.1em',
-              color: HERO_MUTED,
+              color: 'var(--muted)',
             }}
           >
             {searchResults.length} results · click to generate full brief
@@ -266,7 +259,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 padding: '12px 16px',
                 background: 'transparent',
                 border: 'none',
-                borderBottom: i < Math.min(searchResults.length, 5) - 1 ? `1px solid ${HERO_BORDER}` : 'none',
+                borderBottom: i < Math.min(searchResults.length, 5) - 1 ? '1px solid var(--border)' : 'none',
                 cursor: 'pointer',
                 textAlign: 'left',
                 display: 'block',
@@ -277,7 +270,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   fontFamily: "'IBM Plex Mono', monospace",
                   fontSize: '12px',
                   fontWeight: 600,
-                  color: HERO_TEXT,
+                  color: 'var(--text)',
                   marginBottom: '4px',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
@@ -290,7 +283,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 style={{
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '12px',
-                  color: HERO_MUTED,
+                  color: 'var(--muted)',
                   lineHeight: 1.5,
                   overflow: 'hidden',
                   display: '-webkit-box',
@@ -308,7 +301,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       <div
         style={{
           width: '100%',
-          borderTop: `1px solid ${HERO_BORDER}`,
+          borderTop: '1px solid var(--border)',
           paddingTop: '16px',
           display: 'flex',
           justifyContent: 'center',
@@ -320,7 +313,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             fontSize: '10px',
             textTransform: 'uppercase',
             letterSpacing: '0.1em',
-            color: HERO_MUTED,
+            color: 'var(--muted)',
           }}
         >
           Powered by Tier-1 Research

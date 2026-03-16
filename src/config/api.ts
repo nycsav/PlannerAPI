@@ -132,6 +132,33 @@ export const ENDPOINTS = {
    * Method: GET
    */
   copilotHealth: `${API_CONFIG.cloudFunctions}/copilotHealth`,
+
+  /**
+   * Signal Scores Dashboard: Top 5 marketing signals with 7-day sparkline data
+   * Used by: SignalDashboard component
+   * Method: POST
+   * Body: {}
+   * Returns: { signals: SignalScore[], generated_at: string }
+   */
+  getSignalScores: `${API_CONFIG.cloudFunctions}/getSignalScores`,
+
+  /**
+   * Source Reports: Latest Notion research entries for a given source
+   * Used by: SourceLogosMinimal (popover on source pill click)
+   * Method: POST
+   * Body: { source: string }
+   * Returns: { reports: NotionReport[], notionDbUrl: string }
+   */
+  getSourceReports: `${API_CONFIG.cloudFunctions}/getSourceReports`,
+
+  /**
+   * Signal Insight: Enriched modal data for a single brief
+   * Used by: IntelligenceModal (background enrichment)
+   * Method: POST
+   * Body: { title: string, snippet: string }
+   * Returns: { signal_score, signal_type, why_it_matters, affected_brands, data_point, visual_metaphor, linkedin_hook }
+   */
+  getSignalInsight: `${API_CONFIG.cloudFunctions}/getSignalInsight`,
 } as const;
 
 /**

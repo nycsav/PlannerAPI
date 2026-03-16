@@ -18,10 +18,15 @@ export { enrichPremiumBriefFunction as enrichPremiumBrief } from './enrichPremiu
 // CopilotKit Runtime
 export { copilotRuntime, copilotHealth } from './copilot-runtime';
 
-// Perplexity API v2 Endpoints (four modes)
+// Perplexity API v2 Endpoints (six modes)
 export {
   perplexitySearch,
   perplexityResearch,
   perplexityRawSearch,
   perplexitySearchInstant,
+  getSignalScores,
+  getSignalInsight,
 } from './perplexity-endpoints';
+
+// Notion API Endpoints
+export { getSourceReports } from './notion-endpoints';

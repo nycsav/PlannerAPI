@@ -365,7 +365,7 @@ function parsePerplexityResponse(content: string, citations: string[]): PlannerC
     .filter((url): url is string => url !== null);
 
   // Auto-build graphData.comparisons from signal stats
-  const comparisons: PlannerChatResponse['graphData']['comparisons'] = [];
+  const comparisons: Array<{ label: string; value: number; unit: string; context: string; source?: string }> = [];
   signals.forEach((signal) => {
     if (!signal.stat) return;
     const stat = signal.stat;

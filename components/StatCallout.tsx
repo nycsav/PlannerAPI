@@ -7,12 +7,6 @@ export interface StatCalloutProps {
   source?: string;
 }
 
-/* All colors hardcoded for dark theme so section is always visible */
-const STAT_BG = '#0d1321';
-const STAT_TEXT = '#F5F5F5';
-const STAT_MUTED = 'rgba(248, 246, 240, 0.7)';
-const STAT_ORANGE = '#E67E22';
-
 export const StatCallout: React.FC<StatCalloutProps> = ({
   stat = '78/6',
   label = 'The AI Maturity Gap',
@@ -23,11 +17,12 @@ export const StatCallout: React.FC<StatCalloutProps> = ({
     <section
       aria-label={`Key stat: ${label}`}
       style={{
-        backgroundColor: STAT_BG,
+        backgroundColor: 'var(--bg)',
         padding: '80px 0',
         borderTop: '1px solid rgba(230, 126, 34, 0.2)',
         borderBottom: '1px solid rgba(230, 126, 34, 0.2)',
         textAlign: 'center',
+        transition: 'background-color 0.2s ease',
       }}
     >
       <div style={{ maxWidth: '640px', margin: '0 auto', padding: '0 24px' }}>
@@ -37,7 +32,7 @@ export const StatCallout: React.FC<StatCalloutProps> = ({
             fontWeight: 700,
             fontSize: 'clamp(80px, 12vw, 144px)',
             lineHeight: 0.9,
-            color: STAT_ORANGE,
+            color: 'var(--orange)',
             marginBottom: '28px',
           }}
         >
@@ -48,7 +43,7 @@ export const StatCallout: React.FC<StatCalloutProps> = ({
             fontFamily: "'Playfair Display', serif",
             fontWeight: 700,
             fontSize: '32px',
-            color: STAT_TEXT,
+            color: 'var(--text)',
             marginBottom: '24px',
           }}
         >
@@ -59,7 +54,7 @@ export const StatCallout: React.FC<StatCalloutProps> = ({
             fontFamily: "'Inter', sans-serif",
             fontSize: '17px',
             lineHeight: 1.8,
-            color: STAT_MUTED,
+            color: 'var(--muted)',
             marginBottom: '24px',
           }}
         >
@@ -71,7 +66,7 @@ export const StatCallout: React.FC<StatCalloutProps> = ({
             fontSize: '11px',
             letterSpacing: '0.15em',
             textTransform: 'uppercase',
-            color: STAT_ORANGE,
+            color: 'var(--orange)',
           }}
         >
           {source}

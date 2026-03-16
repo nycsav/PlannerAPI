@@ -6,46 +6,50 @@ export const ThemeToggle: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  // Prevent hydration mismatch
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    toggleTheme();
-  };
-
   if (!mounted) {
-    // Return a placeholder with the same dimensions to prevent layout shift
-    return (
-      <div className="relative w-12 h-6 rounded-full bg-gray-300">
-        <div className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-md" />
-      </div>
-    );
+    return <div style={{ width: '36px', height: '36px' }} />;
   }
+
+  const isDark = theme === 'dark';
 
   return (
     <button
-      onClick={handleClick}
-      className="relative w-12 h-6 rounded-full bg-gray-300 dark:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-bureau-signal focus:ring-offset-2 dark:focus:ring-offset-gray-800 cursor-pointer"
-      aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleTheme();
+      }}
       type="button"
+      aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+      title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '32px',
+        height: '32px',
+        borderRadius: '4px',
+        border: '1px solid var(--border)',
+        backgroundColor: 'transparent',
+        color: 'var(--muted)',
+        cursor: 'pointer',
+        flexShrink: 0,
+        transition: 'color 0.15s, border-color 0.15s',
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLElement).style.color = 'var(--orange)';
+        (e.currentTarget as HTMLElement).style.borderColor = 'var(--orange)';
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLElement).style.color = 'var(--muted)';
+        (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)';
+      }}
     >
-      <div
-        className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white dark:bg-gray-900 shadow-md transform transition-transform duration-200 ${
-          theme === 'dark' ? 'translate-x-6' : 'translate-x-0'
-        }`}
-      >
-        <div className="flex items-center justify-center h-full">
-          {theme === 'light' ? (
-            <Sun className="w-3 h-3 text-yellow-500" />
-          ) : (
-            <Moon className="w-3 h-3 text-blue-400" />
-          )}
-        </div>
-      </div>
+      {isDark ? <Sun size={14} /> : <Moon size={14} />}
     </button>
   );
 };

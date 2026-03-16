@@ -1,10 +1,5 @@
 import React, { useState } from 'react';
 
-const BG = '#0A1128';
-const ACCENT = '#E67E22';
-const TEXT = '#F5F5F5';
-const MUTED = 'rgba(245, 245, 245, 0.65)';
-
 const cards = [
   {
     icon: '🎯',
@@ -43,9 +38,10 @@ export const AudienceGrid: React.FC = () => {
     <section
       id="who-this-is-for"
       style={{
-        backgroundColor: BG,
-        padding: '80px 1.5rem 120px',
-        borderTop: '1px solid rgba(245,245,245,0.1)',
+        backgroundColor: 'var(--bg-card)',
+        padding: '80px 120px',
+        borderTop: '1px solid var(--border-subtle)',
+        transition: 'background-color 0.2s ease',
       }}
     >
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
@@ -61,10 +57,10 @@ export const AudienceGrid: React.FC = () => {
                 style={{
                   textAlign: 'left',
                   padding: '48px',
-                  backgroundColor: 'rgba(245,245,245,0.04)',
-                  border: '1px solid rgba(245,245,245,0.12)',
+                  backgroundColor: 'var(--overlay-light)',
+                  border: `1px solid ${isExpanded ? 'var(--orange)' : 'var(--border-subtle)'}`,
                   cursor: 'pointer',
-                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
                   minHeight: isExpanded ? '220px' : '160px',
                   transform: isExpanded ? 'scale(1.02)' : 'scale(1)',
                   boxShadow: isExpanded ? '0 0 24px rgba(230, 126, 34, 0.15)' : 'none',
@@ -78,7 +74,7 @@ export const AudienceGrid: React.FC = () => {
                     fontFamily: "'Inter', sans-serif",
                     fontWeight: 600,
                     fontSize: '1rem',
-                    color: TEXT,
+                    color: 'var(--text)',
                     display: 'block',
                     marginBottom: '0.25rem',
                   }}
@@ -89,7 +85,7 @@ export const AudienceGrid: React.FC = () => {
                   style={{
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '0.8125rem',
-                    color: MUTED,
+                    color: 'var(--muted)',
                     display: 'block',
                     marginBottom: '0.75rem',
                   }}
@@ -101,7 +97,7 @@ export const AudienceGrid: React.FC = () => {
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '0.875rem',
                     lineHeight: 1.45,
-                    color: MUTED,
+                    color: 'var(--muted)',
                     maxHeight: isExpanded ? '120px' : 0,
                     overflow: 'hidden',
                     transition: 'max-height 0.2s ease',
@@ -113,7 +109,7 @@ export const AudienceGrid: React.FC = () => {
             );
           })}
         </div>
-        {/* Mobile: stacked, tap to expand (only one at a time) */}
+        {/* Mobile: stacked, tap to expand */}
         <div className="sm:hidden flex flex-col gap-3">
           {cards.map((card, i) => {
             const isExpanded = expanded === i;
@@ -125,8 +121,8 @@ export const AudienceGrid: React.FC = () => {
                 style={{
                   textAlign: 'left',
                   padding: '32px',
-                  backgroundColor: 'rgba(245,245,245,0.04)',
-                  border: `1px solid ${isExpanded ? ACCENT : 'rgba(245,245,245,0.12)'}`,
+                  backgroundColor: 'var(--overlay-light)',
+                  border: `1px solid ${isExpanded ? 'var(--orange)' : 'var(--border-subtle)'}`,
                   cursor: 'pointer',
                   transition: 'border-color 0.2s ease',
                 }}
@@ -137,7 +133,7 @@ export const AudienceGrid: React.FC = () => {
                     fontFamily: "'Inter', sans-serif",
                     fontWeight: 600,
                     fontSize: '1rem',
-                    color: TEXT,
+                    color: 'var(--text)',
                     display: 'block',
                     marginBottom: '0.25rem',
                   }}
@@ -148,7 +144,7 @@ export const AudienceGrid: React.FC = () => {
                   style={{
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '0.8125rem',
-                    color: MUTED,
+                    color: 'var(--muted)',
                     display: 'block',
                     marginBottom: '0.75rem',
                   }}
@@ -160,7 +156,7 @@ export const AudienceGrid: React.FC = () => {
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '0.875rem',
                     lineHeight: 1.45,
-                    color: MUTED,
+                    color: 'var(--muted)',
                     maxHeight: isExpanded ? '200px' : 0,
                     overflow: 'hidden',
                     transition: 'max-height 0.25s ease-in-out',
@@ -175,4 +171,4 @@ export const AudienceGrid: React.FC = () => {
       </div>
     </section>
   );
-}
+};

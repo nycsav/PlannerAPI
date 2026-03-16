@@ -4,20 +4,64 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Site is always dark; no light/cream theme. Hardcoded fallbacks for html/body. */
-html,
-body {
-  background-color: #0d1117 !important;
+/* ─── Light mode (default) ─────────────────────────────────────────── */
+:root {
+  --bg: #F8F6F0;
+  --bg-card: #EEEAE3;
+  --bg-input: #F0EDE8;
+  --text: #0A1128;
+  --muted: rgba(10, 17, 40, 0.65);
+  --orange: #E67E22;
+  --border: #D4CFC6;
+  --nav-link: rgba(10, 17, 40, 0.65);
+  --source-logo-filter: brightness(0) saturate(0);
+
+  /* legacy aliases kept for components that still reference them */
+  --navy: #F8F6F0;
+  --navy-card: #EEEAE3;
+  --cream: #f8f6f0;
+  --accent: #E67E22;
+  --accent-muted: rgba(230, 126, 34, 0.15);
+  --border-subtle: rgba(10, 17, 40, 0.08);
+  --border-light: rgba(10, 17, 40, 0.06);
+  --text-muted: rgba(10, 17, 40, 0.65);
+  --text-muted-60: rgba(10, 17, 40, 0.6);
+  --text-muted-45: rgba(10, 17, 40, 0.45);
+  --text-muted-50: rgba(10, 17, 40, 0.5);
+  --text-muted-20: rgba(10, 17, 40, 0.2);
+  --overlay-subtle: rgba(10, 17, 40, 0.03);
+  --overlay-light: rgba(10, 17, 40, 0.04);
+  --overlay-medium: rgba(10, 17, 40, 0.06);
+  --overlay-hover: rgba(10, 17, 40, 0.08);
+  --overlay-border: rgba(10, 17, 40, 0.12);
+
+  /* Logo vars */
+  --logo-bg: #F8F6F0;
+  --logo-primary: #0A1128;
+  --logo-signal: #E67E22;
+  --logo-blue: #1D4ED8;
+  --logo-white: #FFFFFF;
+
+  /* Tailwind layer compat */
+  --color-surface: #F8F6F0;
+  --color-ink: #0A1128;
 }
 
-:root {
-  /* Redesign variables (PlannerAPI v2) – dark theme only */
-  --navy: #0A1128;
-  --navy-card: #0D1631;
-  --orange: #E67E22;
+/* ─── Dark mode ─────────────────────────────────────────────────────── */
+html.dark {
+  --bg: #0d1321;
+  --bg-card: #0A1128;
+  --bg-input: #0A0F1E;
   --text: #F5F5F5;
-  --muted: #7A8BA0;
+  --muted: rgba(248, 246, 240, 0.7);
+  --orange: #E67E22;
   --border: #1E2A45;
+  --nav-link: rgba(245, 245, 245, 0.7);
+  --source-logo-filter: brightness(0) invert(1);
+
+  /* legacy aliases */
+  --navy: #0d1321;
+  --navy-card: #0A1128;
   --cream: #f8f6f0;
   --accent: #E67E22;
   --accent-muted: rgba(230, 126, 34, 0.15);
@@ -33,200 +77,61 @@ body {
   --overlay-medium: rgba(248, 246, 240, 0.06);
   --overlay-hover: rgba(248, 246, 240, 0.1);
   --overlay-border: rgba(248, 246, 240, 0.15);
-  --source-logo-filter: brightness(0) invert(1);
-}
 
-/* Override html.light if ever applied: force dark values so site never shows cream */
-html.light {
-  --navy: #0d1321 !important;
-  --cream: #f8f6f0 !important;
-  --text: #F5F5F5 !important;
-  --muted: rgba(248, 246, 240, 0.7) !important;
-}
+  /* Logo vars */
+  --logo-bg: #1E293B;
+  --logo-primary: #F1F5F9;
+  --logo-signal: #FF6B35;
+  --logo-blue: #60A5FA;
+  --logo-white: #F1F5F9;
 
-/* Dark mode (default; class applied by index.html script and ThemeContext) */
-html.dark {
-  --navy: #0d1321;
-  --cream: #f8f6f0;
-  --text: #F5F5F5;
-  --muted: rgba(248, 246, 240, 0.7);
-  --accent: #e8b86d;
-  --accent-muted: rgba(232, 184, 109, 0.15);
-  --border-subtle: rgba(248, 246, 240, 0.1);
-  --border-light: rgba(248, 246, 240, 0.08);
-  --text-muted: rgba(248, 246, 240, 0.75);
-  --text-muted-60: rgba(248, 246, 240, 0.6);
-  --text-muted-45: rgba(248, 246, 240, 0.45);
-  --text-muted-50: rgba(248, 246, 240, 0.5);
-  --text-muted-20: rgba(248, 246, 240, 0.2);
-  --overlay-subtle: rgba(248, 246, 240, 0.03);
-  --overlay-light: rgba(248, 246, 240, 0.04);
-  --overlay-medium: rgba(248, 246, 240, 0.06);
-  --overlay-hover: rgba(248, 246, 240, 0.1);
-  --overlay-border: rgba(248, 246, 240, 0.15);
-  --source-logo-filter: brightness(0) invert(1);
+  /* Tailwind layer compat */
+  --color-surface: #0d1117;
+  --color-ink: #F8FAFC;
 }
 
 @layer base {
-  :root {
-    --color-surface: #0d1117;
-    --color-ink: #F8FAFC;
-  }
-
-  .dark {
-    --color-surface: #0d1117;
-    --color-ink: #F8FAFC;
-  }
-
   html {
-    background-color: #0d1117 !important;
     transition: background-color 0.2s ease;
   }
 
-  html.dark,
-  html.light {
-    background-color: #0d1117 !important;
-  }
-
   body {
-    background-color: #0d1117 !important;
+    background-color: var(--bg);
+    color: var(--text);
     margin: 0;
-    color: #F8FAFC;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-family: 'Inter', system-ui, sans-serif;
     transition: background-color 0.2s ease, color 0.2s ease;
   }
 
-  html.dark body,
-  html.light body {
-    background-color: #0d1117 !important;
-    color: #F8FAFC !important;
+  /* Ensure dark mode overrides Tailwind's .bg-white / .text-gray-900 in dark mode only */
+  html.dark .bg-white {
+    background-color: #0d1117;
   }
 
-  /* Override dark text colors in dark mode - make them light for visibility */
   html.dark .text-gray-900,
   html.dark .text-bureau-ink {
-    color: #F1F5F9 !important; /* slate-100 - high contrast */
+    color: #F1F5F9;
   }
 
   html.dark .text-gray-800,
   html.dark .text-gray-700 {
-    color: #E2E8F0 !important; /* slate-200 - good contrast */
+    color: #E2E8F0;
   }
 
   html.dark .text-gray-600 {
-    color: #CBD5E1 !important; /* slate-300 - readable */
+    color: #CBD5E1;
   }
 
   html.dark .text-gray-500,
   html.dark .text-gray-400 {
-    color: #94A3B8 !important; /* slate-400 - visible on dark */
-  }
-
-  html.dark .text-slate-500,
-  html.dark .text-slate-400 {
-    color: #94A3B8 !important; /* visible on dark when no dark: variant */
-  }
-
-  /* Force high contrast for modal sidebar panels in dark mode */
-  html.dark .dark\:bg-slate-800 h3,
-  html.dark .dark\:bg-slate-800 h4,
-  html.dark .dark\:bg-slate-800 .font-display {
-    color: #F1F5F9 !important; /* slate-100 - high contrast for headings */
-  }
-
-  html.dark .dark\:bg-slate-800 p,
-  html.dark .dark\:bg-slate-800 span:not([class*="text-"]),
-  html.dark .dark\:bg-slate-800 li {
-    color: #E2E8F0 !important; /* slate-200 - good contrast for body text */
-  }
-
-  /* Force dark mode backgrounds - high specificity to override Tailwind */
-  html.dark .bg-white,
-  html.light .bg-white {
-    background-color: #0d1117 !important;
-  }
-
-  html.dark .dark\:bg-slate-900,
-  html.light .dark\:bg-slate-900 {
-    background-color: #0d1117 !important;
-  }
-
-  /* Override section backgrounds */
-  html.dark .section-zebra,
-  html.light .section-zebra {
-    background-color: #0d1117 !important;
-  }
-
-  /* Ensure navbar is dark */
-  html.dark nav,
-  html.light nav {
-    background-color: #0d1117 !important;
-  }
-
-  /* Homepage nav: force dark bar and visible text (overrides var() from old/cached bundle) */
-  .homepage-nav {
-    background-color: #0d1321 !important;
-    border-top-color: #E67E22 !important;
-  }
-  .homepage-nav .homepage-nav-logo-text,
-  .homepage-nav span {
-    color: #F5F5F5 !important;
-  }
-  .homepage-nav button {
-    color: #E67E22 !important;
-    border-color: #E67E22 !important;
-  }
-
-  /* Homepage footer: force dark bg and visible text (overrides var() from old/cached bundle) */
-  .homepage-footer {
-    background-color: #0d1321 !important;
-    border-top-color: #1E2A45 !important;
-  }
-  .homepage-footer .homepage-footer-brand,
-  .homepage-footer > div > div > span,
-  .homepage-footer > div > p {
-    color: #F5F5F5 !important;
-  }
-  .homepage-footer > div > p {
-    color: rgba(248, 246, 240, 0.7) !important;
-  }
-  .homepage-footer .homepage-footer-footnote span {
-    color: rgba(248, 246, 240, 0.7) !important;
-  }
-
-  /* Logo SVG color variables for dark mode */
-  :root {
-    --logo-bg: #111827;
-    --logo-primary: #111827;
-    --logo-signal: #EF4444;
-    --logo-blue: #1D4ED8;
-    --logo-white: #FFFFFF;
-  }
-
-  html.dark {
-    --logo-bg: #1E293B;
-    --logo-primary: #F1F5F9;
-    --logo-signal: #FF6B35;
-    --logo-blue: #60A5FA;
-    --logo-white: #F1F5F9;
-  }
-
-  /* Main layout and containers */
-  html.dark main,
-  html.light main {
-    background-color: #0d1117 !important;
-  }
-
-  html.dark [class*="min-h-screen"],
-  html.light [class*="min-h-screen"] {
-    background-color: #0d1117 !important;
+    color: #94A3B8;
   }
 
   /* Display font for headlines */
   h1, h2, h3, .font-display {
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-family: 'Outfit', system-ui, sans-serif;
   }
 
   /* Mono font for data/labels */
@@ -237,7 +142,7 @@ html.dark {
 
 @layer utilities {
   .section-divider {
-    border-top: 1px solid #E2E8F0;
+    border-top: 1px solid var(--border);
   }
 
   .app-padding-x {
@@ -254,20 +159,20 @@ html.dark {
 
   .btn-action {
     padding: 10px 20px;
-    font-family: "Roboto Mono", monospace;
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 0.75rem;
     text-transform: uppercase;
     font-weight: 700;
     letter-spacing: 0.05em;
   }
 
-  /* Ensure placeholder text is visible in dark mode */
-  html.dark input::placeholder {
-    color: #CBD5E1 !important; /* gray-300 */
+  /* Placeholder text */
+  input::placeholder {
+    color: var(--muted);
     opacity: 1;
   }
 
-  /* Allow smooth transitions for interactive feedback */
+  /* Smooth transitions for interactive elements */
   button,
   a,
   [role="button"],
@@ -278,7 +183,6 @@ html.dark {
     transition: all 0.2s ease-out;
   }
 
-  /* Exception: Remove transitions from disabled elements */
   :disabled,
   [aria-disabled="true"] {
     transition: none !important;
@@ -300,7 +204,7 @@ html.dark {
     animation: card-enter 0.5s ease-out forwards;
   }
 
-  /* Pulse animation for live indicators */
+  /* Pulse glow for live indicators */
   @keyframes pulse-glow {
     0%, 100% {
       opacity: 1;
@@ -316,14 +220,10 @@ html.dark {
     animation: pulse-glow 2s ease-in-out infinite;
   }
 
-  /* Shimmer animation for skeleton loading */
+  /* Shimmer for skeleton loading */
   @keyframes shimmer {
-    0% {
-      background-position: -1000px 0;
-    }
-    100% {
-      background-position: 1000px 0;
-    }
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
   }
 
   .animate-shimmer {
@@ -331,30 +231,16 @@ html.dark {
     background: linear-gradient(
       to right,
       transparent 0%,
-      rgba(255, 255, 255, 0.1) 50%,
+      rgba(128, 128, 128, 0.1) 50%,
       transparent 100%
     );
     background-size: 1000px 100%;
   }
 
-  html.dark .animate-shimmer {
-    background: linear-gradient(
-      to right,
-      transparent 0%,
-      rgba(255, 255, 255, 0.05) 50%,
-      transparent 100%
-    );
-    background-size: 1000px 100%;
-  }
-
-  /* Smooth loading spinner animation */
+  /* Smooth spinner */
   @keyframes spin-smooth {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 
   .animate-spin-smooth {
@@ -377,26 +263,18 @@ html.dark {
     animation: pulse-glow-enhanced 2s ease-in-out infinite;
   }
 
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
-  /* Scrollbar hide utility for sliders */
+  .no-scrollbar::-webkit-scrollbar,
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
 
+  .no-scrollbar,
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
 
-  /* Footer footnote: remove selection/tap highlight so it doesn't look like highlighted text */
+  /* Footer footnote: remove tap highlight */
   .homepage-footer-footnote {
     -webkit-tap-highlight-color: transparent;
   }

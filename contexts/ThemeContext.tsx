@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 type Theme = 'light' | 'dark';
 
@@ -10,31 +10,44 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-/** Site is always dark; no light theme or prefers-color-scheme. */
-const FORCED_THEME: Theme = 'dark';
+const DEFAULT_THEME: Theme = 'dark';
+
+function applyTheme(theme: Theme) {
+  const root = document.documentElement;
+  root.classList.remove('light', 'dark');
+  root.classList.add(theme);
+  root.style.colorScheme = theme;
+  localStorage.setItem('theme', theme);
+}
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('theme') as Theme | null;
+      if (saved === 'light' || saved === 'dark') return saved;
+    }
+    return DEFAULT_THEME;
+  });
+
   useEffect(() => {
-    const root = document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(FORCED_THEME);
-    document.body.classList.remove('light', 'dark');
-    document.body.classList.add(FORCED_THEME);
-    document.body.style.backgroundColor = '#0d1117';
-    root.style.colorScheme = 'dark';
-    localStorage.setItem('theme', FORCED_THEME);
-  }, []);
+    applyTheme(theme);
+  }, [theme]);
 
   const toggleTheme = () => {
-    /* No-op: site is always dark. Kept for API compatibility. */
+    setThemeState(prev => {
+      const next: Theme = prev === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+      return next;
+    });
   };
 
-  const setTheme = (_newTheme: Theme) => {
-    /* Ignore: site is always dark. Kept for API compatibility. */
+  const setTheme = (newTheme: Theme) => {
+    applyTheme(newTheme);
+    setThemeState(newTheme);
   };
 
   return (
-    <ThemeContext.Provider value={{ theme: FORCED_THEME, toggleTheme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
       {children}
     </ThemeContext.Provider>
   );

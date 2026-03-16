@@ -1,15 +1,14 @@
 import React from 'react';
 import { Navbar } from './Navbar';
 import { HeroSection } from './HeroSection';
-import { ValuePropositionCallout } from './ValuePropositionCallout';
 import { StatCallout } from '../StatCallout';
 import { RecentSignalsTab } from '../RecentSignalsTab';
-import { SignalPulseChart } from '../SignalPulseChart';
 import { SourceLogosMinimal } from '../SourceLogosMinimal';
 import { HowItWorks3Column } from '../HowItWorks3Column';
 import { ExampleCardPreview } from '../ExampleCardPreview';
 import { AudienceGrid } from '../AudienceGrid';
 import { FAQAccordion } from '../FAQAccordion';
+import { SignalDashboard } from '../SignalDashboard';
 import { Footer } from './Footer';
 
 type SearchResult = { title: string; url: string; snippet: string; date?: string };
@@ -31,7 +30,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   isInstantSearching,
 }) => {
   return (
-    <div style={{ backgroundColor: 'var(--navy)', minHeight: '100vh' }}>
+    <div style={{ backgroundColor: 'var(--bg)', minHeight: '100vh', transition: 'background-color 0.2s ease' }}>
       {/* 1. Navigation */}
       <Navbar onSignupClick={onSignupClick} />
 
@@ -44,55 +43,36 @@ export const HomePage: React.FC<HomePageProps> = ({
         isSearching={isInstantSearching}
       />
 
-      {/* 3. Value Proposition Callout (preserved) */}
-      <ValuePropositionCallout />
+      {/* 3. Stat Callout */}
+      <StatCallout />
 
-      {/* 4. Stat Callout — 160px after */}
-      <div style={{ marginBottom: '160px' }}>
-        <StatCallout />
-      </div>
+      {/* 4. Live Signal Dashboard */}
+      <SignalDashboard />
 
-      {/* 5. Recent Signals — 120px after */}
-      <div style={{ marginBottom: '120px' }}>
-        <RecentSignalsTab
-          onReadMore={(signal) => onSearch?.(signal.title)}
-        />
-      </div>
+      {/* 5. Recent Signals */}
+      <RecentSignalsTab
+        onReadMore={(signal) => onSearch?.(signal.title)}
+      />
 
-      {/* 5b. Signal Pulse Chart — live pillar distribution */}
-      <div style={{ marginBottom: '80px' }}>
-        <SignalPulseChart />
-      </div>
+      {/* 6. Source Logos Minimal */}
+      <SourceLogosMinimal />
 
-      {/* 6. Source Logos Minimal — 80px after */}
-      <div style={{ marginBottom: '80px' }}>
-        <SourceLogosMinimal />
-      </div>
+      {/* 6. How It Works */}
+      <HowItWorks3Column />
 
-      {/* 7. How It Works — 160px after */}
-      <div style={{ marginBottom: '160px' }}>
-        <HowItWorks3Column />
-      </div>
+      {/* 7. Example Card Preview */}
+      <ExampleCardPreview
+        onAskFollowUp={() => onSearch?.('What are the implementation costs for Anthropic Computer Use at mid-market scale?')}
+      />
 
-      {/* 8. Example Card Preview — 120px after */}
-      <div style={{ marginBottom: '120px' }}>
-        <ExampleCardPreview
-          onAskFollowUp={() => onSearch?.('What are the implementation costs for Anthropic Computer Use at mid-market scale?')}
-        />
-      </div>
+      {/* 8. Audience Grid */}
+      <AudienceGrid />
 
-      {/* 9. Audience Grid — 120px after */}
-      <div style={{ marginBottom: '120px' }}>
-        <AudienceGrid />
-      </div>
+      {/* 9. FAQ */}
+      <FAQAccordion />
 
-      {/* 10. FAQ — 160px after */}
-      <div style={{ marginBottom: '160px' }}>
-        <FAQAccordion />
-      </div>
-
-      {/* 11. Footer */}
-      <Footer />
+      {/* 10. Footer */}
+      <Footer onSignupClick={onSignupClick} />
     </div>
   );
 };
