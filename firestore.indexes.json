@@ -29,6 +29,20 @@
       ]
     },
     {
+      "collectionGroup": "discover_cards",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "publishedAt",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "priority",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "premium_briefs",
       "queryScope": "COLLECTION",
       "fields": [
