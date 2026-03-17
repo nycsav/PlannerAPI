@@ -56,6 +56,29 @@ function ScoreBar({ score }: { score: number }) {
   );
 }
 
+const DAY_LABELS = ['6d ago', '5d ago', '4d ago', '3d ago', '2d ago', 'Yesterday', 'Today'];
+
+function SparklineTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.[0]) return null;
+  const value = payload[0].value;
+  const dayLabel = DAY_LABELS[label] || `Day ${label}`;
+  return (
+    <div style={{
+      backgroundColor: 'var(--bg-card)',
+      border: '1px solid var(--border)',
+      borderRadius: '6px',
+      padding: '4px 8px',
+      fontFamily: "'IBM Plex Mono', monospace",
+      fontSize: '10px',
+      color: 'var(--text)',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    }}>
+      <span style={{ color: 'var(--muted)' }}>{dayLabel}:</span>{' '}
+      <span style={{ fontWeight: 700 }}>{value}</span>
+    </div>
+  );
+}
+
 function Sparkline({ data, momentum }: { data: number[]; momentum: string }) {
   const chartData = data.map((v, i) => ({ v, i }));
   const color = MOMENTUM_COLORS[momentum] || 'var(--orange)';
@@ -69,10 +92,12 @@ function Sparkline({ data, momentum }: { data: number[]; momentum: string }) {
             stroke={color}
             strokeWidth={1.5}
             dot={false}
+            activeDot={{ r: 3, fill: color, stroke: 'var(--bg)', strokeWidth: 1 }}
             isAnimationActive={true}
           />
           <Tooltip
-            content={() => null}
+            content={<SparklineTooltip />}
+            cursor={{ stroke: 'var(--border)', strokeDasharray: '3 3' }}
           />
         </LineChart>
       </ResponsiveContainer>
