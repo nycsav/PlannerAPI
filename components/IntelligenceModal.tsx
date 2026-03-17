@@ -352,10 +352,11 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
     frameworks[0]?.id || null
   );
 
-  // Follow-up chat state
+  // Follow-up chat state with thread persistence
   const [followUpMessages, setFollowUpMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([]);
   const [followUpInput, setFollowUpInput] = useState('');
   const [followUpLoading, setFollowUpLoading] = useState(false);
+  const [threadId, setThreadId] = useState<string | null>(null);
   const conversationEndRef = useRef<HTMLDivElement>(null);
 
   // Dashboard visualization state
@@ -385,6 +386,13 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
 
   // Quick chat modal state
   const [showQuickChat, setShowQuickChat] = useState(false);
+
+  // Reset thread when a new card/query opens
+  useEffect(() => {
+    setFollowUpMessages([]);
+    setThreadId(null);
+    setFollowUpInput('');
+  }, [payload?.query]);
 
   // Auto-scroll to latest message in conversation
   useEffect(() => {
@@ -534,6 +542,32 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
     setFollowUpInput('');
     setFollowUpLoading(true);
 
+    // Persist user message to thread (fire-and-forget)
+    const persistMessage = async (msg: { role: string; content: string }, currentThreadId: string | null) => {
+      try {
+        const resp = await fetch(ENDPOINTS.chatThreadCreate, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            threadId: currentThreadId,
+            cardId: cardId,
+            topic: effectivePayload?.query || question,
+            message: msg,
+          }),
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          if (!currentThreadId && data.threadId) {
+            setThreadId(data.threadId);
+            return data.threadId;
+          }
+        }
+      } catch { /* non-critical — thread persistence is best-effort */ }
+      return currentThreadId;
+    };
+
+    const newThreadId = await persistMessage(userMessage, threadId);
+
     try {
       const resp = await fetchWithTimeout(
         ENDPOINTS.perplexitySearch,
@@ -548,32 +582,26 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
       if (!resp.ok) throw new Error(`Backend error: ${resp.status}`);
       const data = await resp.json();
 
-      // Backend returns { answer: "Summary: ...\n\nSignals:\n- ...\n\nMoves for leaders:\n- ..." }
-      // or { content: "..." } format
       const rawText = data.answer ?? data.content ?? '';
 
       // Format the response for conversational display
       let formattedResponse = '';
 
-      // Parse sections: "Summary:", "Signals:", "Moves for leaders:"
       const summaryMatch = rawText.match(/Summary:\s*\n\n(.+?)(?=\n\nSignals:|$)/s);
       if (summaryMatch) {
         formattedResponse += `**Summary**\n\n${summaryMatch[1].trim()}\n\n`;
       }
 
-      // Extract Signals section (bullet points)
       const signalsMatch = rawText.match(/Signals:\s*\n((?:[-*•]\s+.+\n?)+)/);
       if (signalsMatch) {
         formattedResponse += `**Key Signals**\n\n${signalsMatch[1].trim()}\n\n`;
       }
 
-      // Extract Moves for leaders section (bullet points)
       const movesMatch = rawText.match(/Moves for leaders:\s*\n((?:[-*•]\s+.+\n?)+)/);
       if (movesMatch) {
         formattedResponse += `**Actions**\n\n${movesMatch[1].trim()}`;
       }
 
-      // If no structured format found, use raw text
       if (!formattedResponse) {
         formattedResponse = rawText;
       }
@@ -581,6 +609,9 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
       // Add assistant message to conversation
       const assistantMessage = { role: 'assistant' as const, content: formattedResponse };
       setFollowUpMessages(prev => [...prev, assistantMessage]);
+
+      // Persist assistant response to thread
+      persistMessage(assistantMessage, newThreadId);
 
       if (onFollowUp) onFollowUp(question);
     } catch (error) {
