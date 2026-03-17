@@ -30,7 +30,7 @@ const openai = new OpenAI({
     : undefined, // Uses default OpenAI URL
   defaultHeaders: useOpenRouter 
     ? {
-        'HTTP-Referer': 'https://plannerapi.com',
+        'HTTP-Referer': 'https://signals.ensolabs.ai',
         'X-Title': 'signal2noise Intelligence Brief',
       }
     : undefined,

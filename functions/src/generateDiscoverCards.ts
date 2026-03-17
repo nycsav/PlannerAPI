@@ -13,7 +13,7 @@ const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 const PPLX_API_KEY = defineSecret('PPLX_API_KEY');
 
 const ALERT_WEBHOOK_URL =
-  'https://r16-sav.app.n8n.cloud/webhook/signal2noise-failure-alert';
+  process.env.N8N_FAILURE_WEBHOOK || 'https://r16-sav.app.n8n.cloud/webhook/signal2noise-failure-alert';
 
 // All supported pillars
 const PILLARS = [
@@ -174,7 +174,7 @@ async function generateCardForPillar(pillar: string): Promise<any> {
 async function processNotionTriaged(): Promise<any[]> {
   try {
     const response = await getNotion().databases.query({
-      database_id: '2fa0bdffe59e80049d52c6171ae1630d',
+      database_id: '2fa0bdff-e59e-8075-a696-000b88058c9e',
       filter: { property: 'Status', select: { equals: 'Triaged' } },
       page_size: 5,
     });
@@ -303,6 +303,7 @@ export const generateDiscoverCards = functions
         await fetch(ALERT_WEBHOOK_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(5000),
           body: JSON.stringify({
             timestamp: new Date().toISOString(),
             successCount: allCards.length,

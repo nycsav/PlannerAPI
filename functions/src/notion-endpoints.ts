@@ -10,9 +10,10 @@
  */
 
 import * as functions from 'firebase-functions';
+import { handlePreflight } from './utils/cors';
 
 const NOTION_DB_ID = '2fa0bdff-e59e-8075-a696-000b88058c9e';
-const NOTION_DB_URL = 'https://www.notion.so/2fa0bdffe59e80049d52c6171ae1630d';
+const NOTION_DB_URL = 'https://www.notion.so/2fa0bdff-e59e-8075-a696-000b88058c9e';
 
 export interface NotionReport {
   id: string;
@@ -32,11 +33,7 @@ export interface NotionReport {
  *   Returns: { reports: NotionReport[], notionDbUrl: string }
  */
 export const getSourceReports = functions.https.onRequest(async (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+  if (handlePreflight(req, res)) return;
   if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed. Use POST.' }); return; }
 
   const notionToken = process.env.NOTION_TOKEN;

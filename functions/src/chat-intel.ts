@@ -11,6 +11,7 @@
 import * as functions from 'firebase-functions';
 import * as dotenv from 'dotenv';
 import { sonarChatCompletion } from './perplexityClient';
+import { handlePreflight, setCorsHeaders } from './utils/cors';
 
 // Load environment variables
 dotenv.config();
@@ -81,16 +82,7 @@ type PlannerChatResponse = {
  * Cloud Function handler
  */
 export const chatIntel = functions.https.onRequest(async (req, res) => {
-  // CORS headers
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
-
-  // Handle OPTIONS preflight
-  if (req.method === 'OPTIONS') {
-    res.status(204).send('');
-    return;
-  }
+  if (handlePreflight(req, res)) return;
 
   // Only allow POST
   if (req.method !== 'POST') {
@@ -429,10 +421,7 @@ function extractSection(content: string, sectionName: string): string | null {
  *   data: {"type":"done","signals":[...],"implications":[...],"actions":[...]}\n\n
  */
 export const chatIntelStream = functions.https.onRequest(async (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Accept');
-
+  setCorsHeaders(res, 'POST, OPTIONS', 'Content-Type, Accept');
   if (req.method === 'OPTIONS') {
     res.status(204).send('');
     return;
@@ -493,7 +482,23 @@ export const chatIntelStream = functions.https.onRequest(async (req, res) => {
 
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
+      if (done) {
+        // Flush remaining buffer on stream end
+        if (buffer.trim()) {
+          const remaining = buffer.trim();
+          if (remaining.startsWith('data: ') && remaining.slice(6).trim() !== '[DONE]') {
+            try {
+              const parsed = JSON.parse(remaining.slice(6).trim());
+              const chunk = parsed.choices?.[0]?.delta?.content || '';
+              if (chunk) {
+                fullContent += chunk;
+                sendEvent({ type: 'chunk', content: chunk });
+              }
+            } catch { /* ignore parse errors */ }
+          }
+        }
+        break;
+      }
 
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');

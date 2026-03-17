@@ -79,7 +79,7 @@ export const TestNewHomepage: React.FC = () => {
       }
     };
     fetchCardById();
-  }, []); // intentionally run once on mount
+  }, [location.pathname]);
 
   const openModal = (payload: IntelligencePayload, cardId?: string) => {
     setIntelligencePayload(payload);

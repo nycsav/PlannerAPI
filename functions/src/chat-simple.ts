@@ -10,6 +10,7 @@
 
 import * as functions from 'firebase-functions';
 import * as dotenv from 'dotenv';
+import { handlePreflight } from './utils/cors';
 
 // Load environment variables
 dotenv.config();
@@ -39,16 +40,7 @@ interface PerplexityResponse {
  * Cloud Function handler for simple conversational responses
  */
 export const chatSimple = functions.https.onRequest(async (req, res) => {
-  // CORS headers
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
-
-  // Handle preflight OPTIONS request
-  if (req.method === 'OPTIONS') {
-    res.status(204).send('');
-    return;
-  }
+  if (handlePreflight(req, res)) return;
 
   // Only accept POST requests
   if (req.method !== 'POST') {
@@ -81,6 +73,7 @@ export const chatSimple = functions.https.onRequest(async (req, res) => {
     // Call Perplexity API for conversational response
     const perplexityResponse = await fetch(PERPLEXITY_API_URL, {
       method: 'POST',
+      signal: AbortSignal.timeout(30000),
       headers: {
         'Authorization': `Bearer ${PPLX_API_KEY}`,
         'Content-Type': 'application/json',

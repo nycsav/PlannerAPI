@@ -135,7 +135,7 @@ export const SignalDashboard: React.FC<SignalDashboardProps> = ({ signals: propS
       }
     };
     fetchScores();
-  }, []);
+  }, [propSignals]);
 
   if (error) return null;
 

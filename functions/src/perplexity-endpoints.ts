@@ -10,6 +10,7 @@
 
 import * as functions from 'firebase-functions';
 import { sonarChatCompletion, agenticResearch, rawSearch, parseSearchResults } from './perplexityClient';
+import { handlePreflight } from './utils/cors';
 
 /**
  * Endpoint 1: Sonar Chat Completions
@@ -26,15 +27,7 @@ import { sonarChatCompletion, agenticResearch, rawSearch, parseSearchResults } f
  *   }
  */
 export const perplexitySearch = functions.https.onRequest(async (req, res) => {
-  // CORS headers
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    res.status(204).send('');
-    return;
-  }
+  if (handlePreflight(req, res)) return;
 
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed. Use POST.' });
@@ -100,15 +93,7 @@ CRITICAL: Every bullet point must be a complete, finished sentence. Never trunca
  *   }
  */
 export const perplexityResearch = functions.https.onRequest(async (req, res) => {
-  // CORS headers
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    res.status(204).send('');
-    return;
-  }
+  if (handlePreflight(req, res)) return;
 
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed. Use POST.' });
@@ -163,15 +148,7 @@ export const perplexityResearch = functions.https.onRequest(async (req, res) => 
  *   }
  */
 export const perplexityRawSearch = functions.https.onRequest(async (req, res) => {
-  // CORS headers
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    res.status(204).send('');
-    return;
-  }
+  if (handlePreflight(req, res)) return;
 
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed. Use POST.' });
@@ -219,14 +196,7 @@ export const perplexityRawSearch = functions.https.onRequest(async (req, res) =>
  *   Returns: { results: Array<{ title, url, snippet, date }>, query }
  */
 export const perplexitySearchInstant = functions.https.onRequest(async (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    res.status(204).send('');
-    return;
-  }
+  if (handlePreflight(req, res)) return;
 
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed. Use POST.' });
@@ -283,11 +253,7 @@ export const perplexitySearchInstant = functions.https.onRequest(async (req, res
  *   Returns: { signals: SignalScore[], generated_at: string }
  */
 export const getSignalScores = functions.https.onRequest(async (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+  if (handlePreflight(req, res)) return;
   if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed. Use POST.' }); return; }
 
   try {
@@ -368,11 +334,7 @@ Return ONLY valid JSON. No commentary, no markdown, no <think> blocks.`;
  *   Returns: SignalInsight object
  */
 export const getSignalInsight = functions.https.onRequest(async (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+  if (handlePreflight(req, res)) return;
   if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed. Use POST.' }); return; }
 
   try {
