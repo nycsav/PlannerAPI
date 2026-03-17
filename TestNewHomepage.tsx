@@ -162,7 +162,7 @@ export const TestNewHomepage: React.FC = () => {
     }
   };
 
-  // ASK button → chatIntel endpoint (non-streaming, publicly accessible)
+  // ASK button → chatIntelStream SSE endpoint (streaming, token-by-token)
   const handleSearch = async (query: string) => {
     if (!query.trim()) return;
     setIsLoading(true);
@@ -173,31 +173,76 @@ export const TestNewHomepage: React.FC = () => {
     setSearchResults([]);
 
     try {
-      const response = await fetch(ENDPOINTS.chatIntel, {
+      const response = await fetch(ENDPOINTS.chatIntelStream, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query }),
-        signal: AbortSignal.timeout(35000),
+        signal: AbortSignal.timeout(60000),
       });
 
       if (!response.ok) throw new Error(`Backend error: ${response.status}`);
-      const data = await response.json();
 
-      const payload: IntelligencePayload = {
-        query,
-        summary: data.executiveSummary || data.signals?.[0]?.summary || data.implications?.[0] || '',
-        keySignals: data.implications || [],
-        signals: data.signals || [],
-        movesForLeaders: data.actions?.length > 0 ? data.actions : [
-          'Within 30 days: Audit current AI tools and calculate cost-per-outcome. Metric: total AI spend vs. industry median.',
-          'Within 60 days: Run a pilot comparing shortlisted solutions on a real workflow. Metric: time saved, cost per task.',
-          'Within 90 days: Present ROI findings to leadership with a structured vendor recommendation.',
-        ],
-        graphData: data.graphData,
-      };
-      setIntelligencePayload(payload);
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No response body');
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let accumulated = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const dataStr = line.slice(6).trim();
+          if (!dataStr) continue;
+
+          try {
+            const event = JSON.parse(dataStr);
+
+            if (event.type === 'chunk' && event.content) {
+              accumulated += event.content;
+              setStreamingText(accumulated);
+            } else if (event.type === 'done') {
+              // Final structured payload from backend
+              const payload: IntelligencePayload = {
+                query,
+                summary: event.executiveSummary || accumulated.split('\n')[0] || '',
+                keySignals: event.implications || [],
+                signals: event.signals || [],
+                movesForLeaders: event.actions?.length > 0 ? event.actions : [
+                  'Within 30 days: Audit current AI tools and calculate cost-per-outcome.',
+                  'Within 60 days: Run a pilot comparing shortlisted solutions on a real workflow.',
+                  'Within 90 days: Present ROI findings to leadership with a structured vendor recommendation.',
+                ],
+                graphData: event.graphData,
+              };
+              setIntelligencePayload(payload);
+            } else if (event.type === 'error') {
+              throw new Error(event.message || 'Stream error');
+            }
+          } catch (parseErr) {
+            // Ignore individual SSE parse errors
+          }
+        }
+      }
+
+      // If we never got a 'done' event, build payload from accumulated text
+      if (!intelligencePayload) {
+        setIntelligencePayload({
+          query,
+          summary: accumulated || 'Analysis complete.',
+          keySignals: [],
+          movesForLeaders: [],
+        });
+      }
     } catch (error) {
-      console.error('[handleSearch] error:', error);
+      console.error('[handleSearch] streaming error:', error);
       setIntelligencePayload({
         query,
         summary: 'Unable to retrieve intelligence right now. Please try again.',
@@ -206,7 +251,6 @@ export const TestNewHomepage: React.FC = () => {
       });
     } finally {
       setIsLoading(false);
-      setStreamingText('');
     }
   };
 

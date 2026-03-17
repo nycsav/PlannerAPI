@@ -16,6 +16,8 @@ export interface SignalScore {
 interface SignalDashboardProps {
   /** Pre-fetched signals — pass from parent if already loaded */
   signals?: SignalScore[];
+  /** Called when user clicks a signal row — opens research modal */
+  onSignalClick?: (topic: string) => void;
 }
 
 const MOMENTUM_COLORS: Record<string, string> = {
@@ -106,7 +108,7 @@ function SkeletonRow() {
   );
 }
 
-export const SignalDashboard: React.FC<SignalDashboardProps> = ({ signals: propSignals }) => {
+export const SignalDashboard: React.FC<SignalDashboardProps> = ({ signals: propSignals, onSignalClick }) => {
   const [signals, setSignals] = useState<SignalScore[]>(propSignals || []);
   const [loading, setLoading] = useState(!propSignals || propSignals.length === 0);
   const [error, setError] = useState(false);
@@ -237,6 +239,10 @@ export const SignalDashboard: React.FC<SignalDashboardProps> = ({ signals: propS
             return (
               <div
                 key={s.rank}
+                role={onSignalClick ? 'button' : undefined}
+                tabIndex={onSignalClick ? 0 : undefined}
+                onClick={() => onSignalClick?.(s.topic)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && onSignalClick) onSignalClick(s.topic); }}
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '24px 1fr 80px 80px 48px 80px',
@@ -245,6 +251,7 @@ export const SignalDashboard: React.FC<SignalDashboardProps> = ({ signals: propS
                   padding: '14px 0',
                   borderBottom: '1px solid var(--border-light)',
                   transition: 'background-color 0.15s',
+                  cursor: onSignalClick ? 'pointer' : 'default',
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--overlay-hover)')}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}

@@ -337,8 +337,21 @@ export const DailyIntelligence: React.FC = () => {
             tabIndex={0}
             aria-label={`Read featured intelligence: ${featuredCard.title}`}
           >
+            {/* Hero image */}
+            {featuredCard.images?.[0]?.image_url && (
+              <div className="w-full h-48 overflow-hidden relative">
+                <img
+                  src={featuredCard.images[0].image_url}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none'; }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
+              </div>
+            )}
+
             {/* Featured badge */}
-            <div className="absolute top-0 right-0 bg-planner-orange text-white text-xs font-bold px-3 py-1.5 rounded-bl-xl uppercase tracking-wide">
+            <div className="absolute top-0 right-0 bg-planner-orange text-white text-xs font-bold px-3 py-1.5 rounded-bl-xl uppercase tracking-wide z-20">
               Featured
             </div>
 
@@ -436,6 +449,16 @@ export const DailyIntelligence: React.FC = () => {
             tabIndex={0}
             aria-label={`Read intelligence: ${card.title}`}
           >
+            {card.images?.[0]?.image_url && (
+              <div className="w-full h-32 -mx-[var(--space-lg)] -mt-[var(--space-lg)] mb-3 overflow-hidden rounded-t-xl" style={{ marginLeft: 'calc(-1 * var(--space-lg))', marginTop: 'calc(-1 * var(--space-lg))', width: 'calc(100% + 2 * var(--space-lg))' }}>
+                <img
+                  src={card.images[0].image_url}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none'; }}
+                />
+              </div>
+            )}
             <div className="flex items-center gap-2 mb-3 flex-wrap">
               <span className={`${PILLAR_COLORS[card.pillar]} text-white/95 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wide`}>
                 {PILLAR_LABELS[card.pillar]}

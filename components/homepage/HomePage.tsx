@@ -20,6 +20,7 @@ interface HomePageProps {
   onInstantSearch?: (query: string) => void;
   searchResults?: SearchResult[];
   isInstantSearching?: boolean;
+  onSignalClick?: (topic: string) => void;
 }
 
 export const HomePage: React.FC<HomePageProps> = ({
@@ -28,6 +29,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   onInstantSearch,
   searchResults,
   isInstantSearching,
+  onSignalClick,
 }) => {
   return (
     <div style={{ backgroundColor: 'var(--bg)', minHeight: '100vh', transition: 'background-color 0.2s ease' }}>
@@ -47,7 +49,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       <StatCallout />
 
       {/* 4. Live Signal Dashboard */}
-      <SignalDashboard />
+      <SignalDashboard onSignalClick={onSignalClick || onSearch} />
 
       {/* 5. Recent Signals */}
       <RecentSignalsTab
