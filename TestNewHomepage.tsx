@@ -162,7 +162,7 @@ export const TestNewHomepage: React.FC = () => {
     }
   };
 
-  // ASK button → chatIntelStream SSE endpoint (streaming, token-by-token)
+  // ASK button → try SSE streaming first, fall back to chatIntel if stream fails
   const handleSearch = async (query: string) => {
     if (!query.trim()) return;
     setIsLoading(true);
@@ -172,77 +172,109 @@ export const TestNewHomepage: React.FC = () => {
     setIntelligenceOpen(true);
     setSearchResults([]);
 
-    try {
-      const response = await fetch(ENDPOINTS.chatIntelStream, {
+    // Helper: try SSE streaming endpoint
+    const tryStream = async (): Promise<boolean> => {
+      try {
+        const response = await fetch(ENDPOINTS.chatIntelStream, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query }),
+          signal: AbortSignal.timeout(60000),
+        });
+
+        if (!response.ok) return false;
+
+        const reader = response.body?.getReader();
+        if (!reader) return false;
+
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let accumulated = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const dataStr = line.slice(6).trim();
+            if (!dataStr) continue;
+
+            try {
+              const event = JSON.parse(dataStr);
+
+              if (event.type === 'chunk' && event.content) {
+                accumulated += event.content;
+                setStreamingText(accumulated);
+              } else if (event.type === 'done') {
+                setIntelligencePayload({
+                  query,
+                  summary: event.executiveSummary || accumulated.split('\n')[0] || '',
+                  keySignals: event.implications || [],
+                  signals: event.signals || [],
+                  movesForLeaders: event.actions?.length > 0 ? event.actions : [
+                    'Within 30 days: Audit current AI tools and calculate cost-per-outcome.',
+                    'Within 60 days: Run a pilot comparing shortlisted solutions on a real workflow.',
+                    'Within 90 days: Present ROI findings to leadership with a structured vendor recommendation.',
+                  ],
+                  graphData: event.graphData,
+                });
+                return true;
+              } else if (event.type === 'error') {
+                return false;
+              }
+            } catch { /* ignore parse errors */ }
+          }
+        }
+
+        if (accumulated) {
+          setIntelligencePayload({ query, summary: accumulated, keySignals: [], movesForLeaders: [] });
+          return true;
+        }
+        return false;
+      } catch {
+        return false;
+      }
+    };
+
+    // Helper: non-streaming fallback
+    const fallbackToNonStreaming = async () => {
+      const response = await fetch(ENDPOINTS.chatIntel, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query }),
-        signal: AbortSignal.timeout(60000),
+        signal: AbortSignal.timeout(35000),
       });
 
       if (!response.ok) throw new Error(`Backend error: ${response.status}`);
+      const data = await response.json();
 
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No response body');
+      setIntelligencePayload({
+        query,
+        summary: data.executiveSummary || data.signals?.[0]?.summary || data.implications?.[0] || '',
+        keySignals: data.implications || [],
+        signals: data.signals || [],
+        movesForLeaders: data.actions?.length > 0 ? data.actions : [
+          'Within 30 days: Audit current AI tools and calculate cost-per-outcome.',
+          'Within 60 days: Run a pilot comparing shortlisted solutions on a real workflow.',
+          'Within 90 days: Present ROI findings to leadership with a structured vendor recommendation.',
+        ],
+        graphData: data.graphData,
+      });
+    };
 
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let accumulated = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const dataStr = line.slice(6).trim();
-          if (!dataStr) continue;
-
-          try {
-            const event = JSON.parse(dataStr);
-
-            if (event.type === 'chunk' && event.content) {
-              accumulated += event.content;
-              setStreamingText(accumulated);
-            } else if (event.type === 'done') {
-              // Final structured payload from backend
-              const payload: IntelligencePayload = {
-                query,
-                summary: event.executiveSummary || accumulated.split('\n')[0] || '',
-                keySignals: event.implications || [],
-                signals: event.signals || [],
-                movesForLeaders: event.actions?.length > 0 ? event.actions : [
-                  'Within 30 days: Audit current AI tools and calculate cost-per-outcome.',
-                  'Within 60 days: Run a pilot comparing shortlisted solutions on a real workflow.',
-                  'Within 90 days: Present ROI findings to leadership with a structured vendor recommendation.',
-                ],
-                graphData: event.graphData,
-              };
-              setIntelligencePayload(payload);
-            } else if (event.type === 'error') {
-              throw new Error(event.message || 'Stream error');
-            }
-          } catch (parseErr) {
-            // Ignore individual SSE parse errors
-          }
-        }
-      }
-
-      // If we never got a 'done' event, build payload from accumulated text
-      if (!intelligencePayload) {
-        setIntelligencePayload({
-          query,
-          summary: accumulated || 'Analysis complete.',
-          keySignals: [],
-          movesForLeaders: [],
-        });
+    try {
+      const streamed = await tryStream();
+      if (!streamed) {
+        console.log('[handleSearch] SSE failed, falling back to chatIntel');
+        await fallbackToNonStreaming();
       }
     } catch (error) {
-      console.error('[handleSearch] streaming error:', error);
+      console.error('[handleSearch] error:', error);
       setIntelligencePayload({
         query,
         summary: 'Unable to retrieve intelligence right now. Please try again.',
