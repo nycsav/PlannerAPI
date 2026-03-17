@@ -7,7 +7,7 @@ import { Client } from '@notionhq/client';
 // Initialize Firebase Admin
 if (!admin.apps.length) admin.initializeApp();
 
-// Secret Manager secrets — replaces deprecated functions.config()
+// Secret Manager secrets
 const NOTION_API_KEY = defineSecret('NOTION_API_KEY');
 const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 const PPLX_API_KEY = defineSecret('PPLX_API_KEY');
@@ -15,27 +15,13 @@ const PPLX_API_KEY = defineSecret('PPLX_API_KEY');
 const ALERT_WEBHOOK_URL =
   process.env.N8N_FAILURE_WEBHOOK || 'https://r16-sav.app.n8n.cloud/webhook/signal2noise-failure-alert';
 
-// All supported pillars
+// Core pillars for card distribution
 const PILLARS = [
   'ai_strategy',
   'brand_performance',
   'competitive_intel',
   'media_trends',
-  'platform_innovation',
-  'measurement_analytics',
-  'content_strategy',
-];
-
-// Perplexity query per pillar
-const PILLAR_QUERIES: Record<string, string> = {
-  ai_strategy: 'AI adoption, AI strategy, and AI operating models for enterprise marketing teams and CMOs',
-  brand_performance: 'brand equity measurement, creative effectiveness, and brand performance for marketers',
-  competitive_intel: 'competitive intelligence, market share shifts, and agency moves in advertising and marketing',
-  media_trends: 'media trends, platform algorithm changes, programmatic advertising, CTV, and retail media',
-  platform_innovation: 'platform innovations from Google, Meta, TikTok, Amazon, and LinkedIn for advertisers and marketers',
-  measurement_analytics: 'marketing measurement, attribution models, and marketing analytics trends',
-  content_strategy: 'content strategy, AI-generated content, content marketing, and creator economy trends',
-};
+] as const;
 
 // Lazy client getters — secrets only available at function runtime
 let _anthropic: Anthropic | null = null;
@@ -59,16 +45,14 @@ function getNotion(): Client {
   return _notion;
 }
 
-interface PerplexityResult {
+// ─── Step 1: Single Perplexity call for ALL pillars ───────────────────────
+
+async function fetchAllPillarResearch(): Promise<{
   content: string;
   images: any[];
   citations: Array<{ url: string; title: string }>;
-}
-
-async function queryPerplexity(pillar: string): Promise<PerplexityResult> {
-  const query = PILLAR_QUERIES[pillar];
+}> {
   const pplxKey = PPLX_API_KEY.value() || process.env.PPLX_API_KEY;
-
   if (!pplxKey) throw new Error('PPLX_API_KEY not configured');
 
   const response = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -77,17 +61,25 @@ async function queryPerplexity(pillar: string): Promise<PerplexityResult> {
       Authorization: `Bearer ${pplxKey}`,
       'Content-Type': 'application/json',
     },
+    signal: AbortSignal.timeout(60000),
     body: JSON.stringify({
       model: 'sonar-pro',
       messages: [
         {
           role: 'user',
-          content: `Find 3 significant developments in ${query} in the past 48 hours. Focus on data-backed insights from McKinsey, Gartner, Forrester, BCG, Google, or major platforms. Return specific statistics, named companies, and concrete trends.`,
+          content: `Find the 10 most significant marketing and AI developments from the past 24 hours across these four areas:
+
+1. AI STRATEGY: AI adoption, operating models, governance for enterprise marketing teams and CMOs
+2. BRAND PERFORMANCE: Brand equity, attribution, measurement, creative effectiveness
+3. COMPETITIVE INTEL: Market share shifts, agency moves, holding company strategy
+4. MEDIA TRENDS: Platform changes, programmatic, CTV, retail media, search/AEO/GEO
+
+Focus on data-backed insights from McKinsey, Gartner, Forrester, BCG, Google, Meta, Anthropic, or major platforms. Include specific statistics, named companies, and concrete trends. Organize clearly by area.`,
         },
       ],
       return_images: true,
       search_recency_filter: 'day',
-      max_tokens: 1000,
+      max_tokens: 4000,
     }),
   });
 
@@ -98,40 +90,98 @@ async function queryPerplexity(pillar: string): Promise<PerplexityResult> {
 
   const data = (await response.json()) as any;
   const content = data.choices?.[0]?.message?.content || '';
-  const images: string[] = data.images || [];
+  const images: any[] = data.images || [];
   const rawCitations: string[] = data.citations || [];
-  const citations = rawCitations.map((url, i) => ({ url, title: `Source ${i + 1}` }));
+  const citations = rawCitations.map((url: string, i: number) => ({ url, title: `Source ${i + 1}` }));
 
+  console.log(`[PERPLEXITY] Single call complete | ${content.length} chars | ${images.length} images | ${citations.length} citations`);
   return { content, images, citations };
 }
 
-const CLAUDE_SYSTEM_PROMPT = `You are an editorial AI for signal2noise, a marketing intelligence platform for CMOs and agency strategists. Convert raw research into a structured intelligence card.
+// ─── Step 2: Fetch last 7 days titles for deduplication ───────────────────
 
-TITLE RULES — use tension framing:
-- "The X% Problem: [implication]"
-- "Two Camps Are Emerging: [context]"
-- "The Window Is Closing On [trend]"
+async function getRecentTitles(): Promise<string[]> {
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-CONTENT RULES:
-- summary: 2 sentences max, lead with data
-- signals: 3 items, each naming a winner/loser or a specific number
-- moves: 3 items, first MUST start with exactly "Your Monday move:"
-- source: most credible source name found in the research
-- sourceTier: 1=McKinsey/Gartner/Forrester/BCG, 2=Google/OpenAI/Meta/Anthropic, 3=AdAge/Adweek/Digiday, 4=eMarketer/WARC/Kantar, 5=other
-- No emojis. No hype words: revolutionary, game-changing, paradigm shift, unprecedented
+  const snapshot = await admin
+    .firestore()
+    .collection('discover_cards')
+    .where('publishedAt', '>=', admin.firestore.Timestamp.fromDate(sevenDaysAgo))
+    .select('title')
+    .get();
 
-Return valid JSON only — no markdown, no prose:
-{"title": string, "summary": string, "signals": string[], "moves": string[], "source": string, "sourceTier": number, "pillar": string, "type": "brief"}`;
+  return snapshot.docs.map((doc) => doc.data().title as string);
+}
 
-async function synthesizeWithClaude(pillar: string, researchContent: string): Promise<any> {
+// ─── Step 3: Single Claude call → 10 structured cards ────────────────────
+
+const CLAUDE_SYSTEM_PROMPT = `You are the editorial engine for signal2noise, a marketing intelligence platform for CMOs at $50M-$500M companies. Convert raw research into exactly 10 intelligence cards distributed across 4 pillars.
+
+OUTPUT: Return a JSON array of exactly 10 card objects. No markdown, no prose — pure JSON array.
+
+PILLAR DISTRIBUTION (aim for):
+- ai_strategy: 3 cards
+- brand_performance: 2 cards
+- competitive_intel: 2 cards
+- media_trends: 3 cards
+
+EACH CARD MUST HAVE:
+{
+  "title": string,       // Tension-framed: "The X% Problem:", "Two Camps Are Emerging:", "The Window Is Closing On..."
+  "summary": string,     // 2 sentences max. Lead with a number or named source.
+  "signals": string[],   // Exactly 3 items. Each names a winner/loser or cites a specific number.
+  "moves": string[],     // Exactly 3 items. First MUST start with "Your Monday move:"
+  "source": string,      // Most credible source (McKinsey, Gartner, Google, etc.)
+  "sourceUrl": string,   // URL to the source article (from citations if available)
+  "sourceTier": number,  // 1=McKinsey/Gartner/Forrester/BCG/Bain/Deloitte, 2=Google/OpenAI/Meta/Anthropic, 3=AdAge/Digiday, 4=eMarketer/WARC, 5=other
+  "pillar": string,      // One of: ai_strategy, brand_performance, competitive_intel, media_trends
+  "type": "brief",       // Always "brief" for daily cards
+  "priority": number     // 1-100. Higher = more important. Use 80+ for Tier 1-2 sources with strong data.
+}
+
+EDITORIAL RULES:
+- No emojis. No hype words (revolutionary, game-changing, paradigm shift, unprecedented).
+- Every card must cite a specific number, percentage, or dollar amount.
+- Titles use tension framing — name the conflict, not the topic.
+- "Your Monday move:" must be a concrete, actionable first step.
+- Diversify sources: max 2 cards per source. Aim for 60%+ Tier 1-2 sources.`;
+
+interface GeneratedCard {
+  title: string;
+  summary: string;
+  signals: string[];
+  moves: string[];
+  source: string;
+  sourceUrl?: string;
+  sourceTier: number;
+  pillar: string;
+  type: string;
+  priority: number;
+}
+
+async function synthesizeAllCards(
+  research: string,
+  citations: Array<{ url: string; title: string }>,
+  recentTitles: string[],
+): Promise<GeneratedCard[]> {
+  const citationList = citations
+    .slice(0, 20)
+    .map((c, i) => `[${i + 1}] ${c.url}`)
+    .join('\n');
+
+  const dedupeBlock = recentTitles.length > 0
+    ? `\n\nDEDUPLICATION — Do NOT create cards similar to these recent titles:\n${recentTitles.slice(0, 30).map((t) => `- ${t}`).join('\n')}`
+    : '';
+
   const message = await getAnthropic().messages.create({
-    model: 'claude-sonnet-4-5',
-    max_tokens: 1500,
+    model: 'claude-sonnet-4-6',
+    max_tokens: 8000,
     system: CLAUDE_SYSTEM_PROMPT,
     messages: [
       {
         role: 'user',
-        content: `Pillar: ${pillar}\n\nResearch:\n${researchContent}\n\nReturn valid JSON only.`,
+        content: `RESEARCH:\n${research}\n\nAVAILABLE CITATIONS:\n${citationList}${dedupeBlock}\n\nReturn a JSON array of exactly 10 cards. No markdown fences — raw JSON array only.`,
       },
     ],
   });
@@ -139,38 +189,30 @@ async function synthesizeWithClaude(pillar: string, researchContent: string): Pr
   const content = message.content[0];
   if (content.type !== 'text') throw new Error('Unexpected response type from Claude');
 
-  const jsonMatch = content.text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('No JSON found in Claude response');
+  // Extract JSON array from response
+  const jsonMatch = content.text.match(/\[[\s\S]*\]/);
+  if (!jsonMatch) throw new Error('No JSON array found in Claude response');
 
-  const card = JSON.parse(jsonMatch[0]);
-  if (!card.title || !card.summary || !card.signals || !card.moves) {
-    throw new Error('Missing required fields in Claude response');
-  }
+  const cards: GeneratedCard[] = JSON.parse(jsonMatch[0]);
 
-  return card;
+  // Validate each card has required fields
+  const validCards = cards.filter((card) => {
+    if (!card.title || !card.summary || !card.signals?.length || !card.moves?.length) {
+      console.warn(`[VALIDATE] Skipping card missing fields: "${card.title || 'untitled'}"`);
+      return false;
+    }
+    if (!PILLARS.includes(card.pillar as any)) {
+      card.pillar = 'ai_strategy'; // fallback
+    }
+    return true;
+  });
+
+  console.log(`[CLAUDE] Generated ${validCards.length} valid cards from ${cards.length} total`);
+  return validCards;
 }
 
-async function generateCardForPillar(pillar: string): Promise<any> {
-  console.log(`[CARD START] Pillar: ${pillar}`);
+// ─── Optional: Notion secondary source (unchanged, non-blocking) ─────────
 
-  const { content, images, citations } = await queryPerplexity(pillar);
-  console.log(`[PERPLEXITY OK] Pillar: ${pillar} | images: ${images.length} | citations: ${citations.length}`);
-
-  const card = await synthesizeWithClaude(pillar, content);
-
-  card.id = admin.firestore().collection('discover_cards').doc().id;
-  card.pillar = pillar;
-  card.type = card.type || 'brief';
-  card.publishedAt = admin.firestore.Timestamp.now();
-  card.images = images;
-  card.citations = citations;
-  card.createdBy = 'agent-v2';
-
-  console.log(`[CARD OK] Pillar: ${pillar} → "${card.title}"`);
-  return card;
-}
-
-// Optional Notion secondary source — processes Triaged items; never throws
 async function processNotionTriaged(): Promise<any[]> {
   try {
     const response = await getNotion().databases.query({
@@ -197,10 +239,24 @@ async function processNotionTriaged(): Promise<any[]> {
 
         if (!title || !excerpts) continue;
 
-        const card = await synthesizeWithClaude(
-          pillar,
-          `Title: ${title}\nExcerpt: ${excerpts}\nURL: ${url}`,
-        );
+        // For Notion items, use a lightweight Claude call
+        const message = await getAnthropic().messages.create({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 1000,
+          system: CLAUDE_SYSTEM_PROMPT,
+          messages: [
+            {
+              role: 'user',
+              content: `Pillar: ${pillar}\n\nResearch:\nTitle: ${title}\nExcerpt: ${excerpts}\nURL: ${url}\n\nReturn a single JSON object (not array) for one intelligence card.`,
+            },
+          ],
+        });
+
+        const text = message.content[0];
+        if (text.type !== 'text') continue;
+        const jsonMatch = text.text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) continue;
+        const card = JSON.parse(jsonMatch[0]);
 
         card.id = admin.firestore().collection('discover_cards').doc().id;
         card.pillar = pillar;
@@ -208,10 +264,9 @@ async function processNotionTriaged(): Promise<any[]> {
         card.publishedAt = admin.firestore.Timestamp.now();
         card.images = [];
         card.citations = url ? [{ url, title }] : [];
-        card.createdBy = 'agent-v2-notion';
+        card.createdBy = 'agent-v3-notion';
         cards.push(card);
 
-        // Mark as Published in Notion
         await getNotion().pages.update({
           page_id: page.id,
           properties: { Status: { select: { name: 'Published' } } },
@@ -230,7 +285,8 @@ async function processNotionTriaged(): Promise<any[]> {
   }
 }
 
-// Main Cloud Function — runs daily at 7am ET via Cloud Scheduler
+// ─── Main Cloud Function ─────────────────────────────────────────────────
+
 export const generateDiscoverCards = functions
   .runWith({
     timeoutSeconds: 540,
@@ -240,65 +296,97 @@ export const generateDiscoverCards = functions
   .pubsub.schedule('0 7 * * *')
   .timeZone('America/New_York')
   .onRun(async () => {
-    // Reset lazy clients so secrets are re-read on each cold start
     _anthropic = null;
     _notion = null;
 
     const startTime = Date.now();
     console.log('========================================');
-    console.log('STARTING DISCOVER CARDS GENERATION v2');
+    console.log('DISCOVER CARDS GENERATION v3 (1+1 architecture)');
     console.log('========================================');
 
-    // Primary: generate one card per pillar from Perplexity
-    const primaryResults = await Promise.allSettled(
-      PILLARS.map((pillar) => generateCardForPillar(pillar)),
-    );
+    try {
+      // Step 1: Single Perplexity call for all pillars
+      const { content: research, images, citations } = await fetchAllPillarResearch();
 
-    const successfulCards = primaryResults
-      .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled')
-      .map((r) => r.value);
+      // Step 2: Fetch recent titles for deduplication
+      const recentTitles = await getRecentTitles();
+      console.log(`[DEDUP] ${recentTitles.length} recent titles loaded for deduplication`);
 
-    const failedPillars = PILLARS.filter(
-      (_, i) => primaryResults[i].status === 'rejected',
-    ).map((pillar, i) => ({
-      pillar,
-      error: (primaryResults[PILLARS.indexOf(pillar)] as PromiseRejectedResult).reason?.message,
-    }));
+      // Step 3: Single Claude call → 10 structured cards
+      const generatedCards = await synthesizeAllCards(research, citations, recentTitles);
 
-    if (failedPillars.length > 0) {
-      console.log('FAILED PILLARS:');
-      failedPillars.forEach(({ pillar, error }) =>
-        console.log(`  [FAIL] ${pillar}: ${error}`),
-      );
-    }
+      // Distribute images across cards (round-robin from Perplexity results)
+      const imageList = Array.isArray(images) ? images : [];
+      const enrichedCards = generatedCards.map((card, i) => ({
+        ...card,
+        id: admin.firestore().collection('discover_cards').doc().id,
+        publishedAt: admin.firestore.Timestamp.now(),
+        images: imageList.length > 0
+          ? [imageList[i % imageList.length]].filter(Boolean).map((img: any) =>
+              typeof img === 'string'
+                ? { image_url: img, origin_url: img }
+                : img,
+            )
+          : [],
+        citations: card.sourceUrl
+          ? [{ url: card.sourceUrl, title: card.source || 'Source' }, ...citations.slice(0, 2)]
+          : citations.slice(0, 3),
+        createdBy: 'agent-v3',
+      }));
 
-    // Secondary: Notion Triaged items (non-blocking)
-    const notionCards = await processNotionTriaged();
-    const allCards = [...successfulCards, ...notionCards];
+      // Step 4: Optional Notion secondary source
+      const notionCards = await processNotionTriaged();
+      const allCards = [...enrichedCards, ...notionCards];
 
-    // Write all cards to Firestore
-    if (allCards.length > 0) {
-      const batch = admin.firestore().batch();
-      allCards.forEach((card) => {
-        const docRef = admin.firestore().collection('discover_cards').doc(card.id);
-        batch.set(docRef, card);
-      });
-      await batch.commit();
-      console.log(`[FIRESTORE] Saved ${allCards.length} cards`);
-    }
+      // Step 5: Write all cards to Firestore
+      if (allCards.length > 0) {
+        const batch = admin.firestore().batch();
+        allCards.forEach((card) => {
+          const docRef = admin.firestore().collection('discover_cards').doc(card.id);
+          batch.set(docRef, card);
+        });
+        await batch.commit();
+        console.log(`[FIRESTORE] Saved ${allCards.length} cards`);
+      }
 
-    const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
-    console.log('========================================');
-    console.log('GENERATION SUMMARY');
-    console.log('========================================');
-    console.log(`Primary (Perplexity): ${successfulCards.length}/${PILLARS.length} succeeded`);
-    console.log(`Secondary (Notion): ${notionCards.length} processed`);
-    console.log(`Total saved: ${allCards.length}`);
-    console.log(`Total time: ${elapsed}s`);
-    console.log('========================================');
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+      const pillarCounts = PILLARS.map(
+        (p) => `${p}: ${enrichedCards.filter((c) => c.pillar === p).length}`,
+      ).join(', ');
 
-    // Dead man's switch — alert if zero cards were generated
-    if (allCards.length === 0) {
+      console.log('========================================');
+      console.log('GENERATION SUMMARY (v3)');
+      console.log('========================================');
+      console.log(`API calls: 1 Perplexity + 1 Claude (was 14+ in v2)`);
+      console.log(`Primary cards: ${enrichedCards.length}`);
+      console.log(`Pillar distribution: ${pillarCounts}`);
+      console.log(`Notion cards: ${notionCards.length}`);
+      console.log(`Total saved: ${allCards.length}`);
+      console.log(`Dedup titles checked: ${recentTitles.length}`);
+      console.log(`Total time: ${elapsed}s`);
+      console.log('========================================');
+
+      // Alert if zero cards
+      if (allCards.length === 0) {
+        try {
+          await fetch(ALERT_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: AbortSignal.timeout(5000),
+            body: JSON.stringify({
+              timestamp: new Date().toISOString(),
+              successCount: 0,
+              error: 'Zero cards generated in v3 pipeline',
+            }),
+          });
+          console.log('[ALERT] Failure notification sent');
+        } catch (alertError: any) {
+          console.warn('[ALERT] Failed to send notification:', alertError.message);
+        }
+      }
+    } catch (error: any) {
+      console.error('[FATAL] Generation pipeline failed:', error.message);
+
       try {
         await fetch(ALERT_WEBHOOK_URL, {
           method: 'POST',
@@ -306,15 +394,11 @@ export const generateDiscoverCards = functions
           signal: AbortSignal.timeout(5000),
           body: JSON.stringify({
             timestamp: new Date().toISOString(),
-            successCount: allCards.length,
-            failedPillars: failedPillars.map((f) => f.pillar).join(', '),
-            error: failedPillars[0]?.error || 'All pillars failed with no error message',
+            successCount: 0,
+            error: error.message,
           }),
         });
-        console.log('[ALERT] Failure notification sent to n8n');
-      } catch (alertError: any) {
-        console.warn('[ALERT] Failed to send failure notification:', alertError.message);
-      }
+      } catch { /* ignore alert failure */ }
     }
 
     return null;

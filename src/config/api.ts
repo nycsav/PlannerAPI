@@ -159,6 +159,24 @@ export const ENDPOINTS = {
    * Returns: { signal_score, signal_type, why_it_matters, affected_brands, data_point, visual_metaphor, linkedin_hook }
    */
   getSignalInsight: `${API_CONFIG.cloudFunctions}/getSignalInsight`,
+
+  /**
+   * Chat Thread Create: Create or append to a conversation thread
+   * Used by: IntelligenceModal (conversation persistence)
+   * Method: POST
+   * Body: { threadId?: string, cardId?: string, topic: string, message: { role, content } }
+   * Returns: { threadId: string, messageCount: number }
+   */
+  chatThreadCreate: `${API_CONFIG.cloudFunctions}/chatThreadCreate`,
+
+  /**
+   * Chat Thread Get: Retrieve a conversation thread
+   * Used by: IntelligenceModal (restore thread on reopen)
+   * Method: POST
+   * Body: { threadId: string }
+   * Returns: ChatThread object
+   */
+  chatThreadGet: `${API_CONFIG.cloudFunctions}/chatThreadGet`,
 } as const;
 
 /**

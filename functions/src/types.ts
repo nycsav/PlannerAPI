@@ -71,3 +71,20 @@ export type PillarConfig = {
   cardCount: number;
   diverseQueries?: string[]; // Different query angles for content diversity
 };
+
+/**
+ * Chat Thread - Persistent conversation for IntelligenceModal
+ */
+export type ChatThread = {
+  id: string;
+  userId?: string;
+  cardId?: string;
+  topic: string;
+  messages: Array<{
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: string;
+  }>;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+};
