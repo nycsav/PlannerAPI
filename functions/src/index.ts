@@ -33,3 +33,9 @@ export { getSourceReports } from './notion-endpoints';
 
 // Chat Thread Persistence
 export { chatThreadCreate, chatThreadGet } from './chat-threads';
+
+// Multi-Platform Distribution Engine
+export { distributeTopSignal, distributeTopSignalManual, publishApprovedPost } from './distributeTopSignal';
+
+// Dynamic OG Meta Tags for Social Sharing
+export { ogMetaTags } from './ogMetaTags';

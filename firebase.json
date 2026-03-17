@@ -17,6 +17,10 @@
     ],
     "rewrites": [
       {
+        "source": "/brief/**",
+        "function": "ogMetaTags"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
