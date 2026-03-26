@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { X, Download, Share2, Mail, Loader2, FileText, Zap, Target, ExternalLink, Send, BookOpen, MessageCircle, BarChart2, BarChart3, FileSearch, Sparkles, Link } from 'lucide-react';
+import { X, Download, Share2, Mail, Loader2, FileText, Zap, Target, ExternalLink, Send, BookOpen, MessageCircle, BarChart2, BarChart3, FileSearch, Sparkles, Link, Microscope } from 'lucide-react';
 import { BriefBarChart } from './BriefBarChart';
 import { parseMarkdown, parseInlineMarkdown, parsePerplexityMarkdown } from '../utils/markdown';
 import { exportIntelligenceBriefToPDF } from '../utils/exportPDF';
@@ -387,6 +387,73 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
   // Quick chat modal state
   const [showQuickChat, setShowQuickChat] = useState(false);
 
+  // Deep Research state (Perplexity Agent API)
+  const [deepResearchData, setDeepResearchData] = useState<any>(null);
+  const [deepResearchLoading, setDeepResearchLoading] = useState(false);
+  const [deepResearchStreaming, setDeepResearchStreaming] = useState('');
+  const [showDeepResearch, setShowDeepResearch] = useState(false);
+
+  const handleDeepResearch = useCallback(async () => {
+    const query = displayPayload?.query || payload?.query;
+    if (!query) return;
+    setShowDeepResearch(true);
+    setDeepResearchLoading(true);
+    setDeepResearchStreaming('');
+    setDeepResearchData(null);
+
+    try {
+      const res = await fetch(ENDPOINTS.deepResearchStream, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, preset: 'deep-research' }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error('No response body');
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let accumulated = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const parsed = JSON.parse(line.slice(6));
+            if (parsed.type === 'chunk') {
+              accumulated += parsed.content;
+              setDeepResearchStreaming(accumulated);
+            } else if (parsed.type === 'done') {
+              setDeepResearchData(parsed);
+              setDeepResearchLoading(false);
+            } else if (parsed.type === 'error') {
+              console.error('[DeepResearch] Error:', parsed.message);
+              setDeepResearchLoading(false);
+            }
+          } catch { /* ignore parse errors */ }
+        }
+      }
+    } catch (err) {
+      console.error('[DeepResearch] Stream error:', err);
+      setDeepResearchLoading(false);
+    }
+  }, [displayPayload?.query, payload?.query]);
+
+  // Reset deep research when card changes
+  useEffect(() => {
+    setDeepResearchData(null);
+    setDeepResearchStreaming('');
+    setShowDeepResearch(false);
+    setDeepResearchLoading(false);
+  }, [payload?.query]);
+
   // Reset thread when a new card/query opens
   useEffect(() => {
     setFollowUpMessages([]);
@@ -763,6 +830,28 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
               </button>
             );
           })()}
+
+          {/* Deep Research button — triggers Perplexity Agent API multi-step research */}
+          {effectivePayload && !deepResearchLoading && (
+            <button
+              onClick={handleDeepResearch}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 ${
+                showDeepResearch
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-500/20'
+              }`}
+              title="Deep Research — comprehensive 10-step analysis via Perplexity Agent API"
+            >
+              <Microscope className="w-4 h-4" />
+              Deep Research
+            </button>
+          )}
+          {deepResearchLoading && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Researching...
+            </div>
+          )}
 
           {/* Export buttons - only show when we have content to export */}
           {effectivePayload && (
@@ -1372,6 +1461,150 @@ export const IntelligenceModal: React.FC<IntelligenceModalProps> = ({
                 ))}
               </div>
             </div>
+          )}
+
+          {/* Deep Research Panel — Perplexity Agent API multi-step results */}
+          {showDeepResearch && (
+            <section data-section="deep-research" className="mt-12 pt-8 border-t-2 border-orange-300/40 dark:border-orange-500/30">
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <Microscope className="w-6 h-6 text-orange-500" />
+                  <h3 className="font-display text-xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">
+                    Deep Research
+                  </h3>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-500/15 text-orange-700 dark:text-orange-300">
+                    AGENT API
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                  10-step multi-source analysis via <span className="font-semibold text-orange-600 dark:text-orange-400">Perplexity Deep Research</span>
+                </p>
+              </div>
+
+              {/* Streaming text while loading */}
+              {deepResearchLoading && deepResearchStreaming && (
+                <div className="p-6 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-slate-700 mb-6 max-h-[500px] overflow-y-auto">
+                  <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-gray-800 dark:text-gray-200 leading-relaxed">
+                    {deepResearchStreaming}
+                    <span className="inline-block w-2 h-4 bg-orange-500 animate-pulse ml-0.5" />
+                  </div>
+                </div>
+              )}
+
+              {/* Loading state without stream content yet */}
+              {deepResearchLoading && !deepResearchStreaming && (
+                <div className="flex items-center justify-center py-16">
+                  <div className="text-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-orange-500 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Running multi-step research...</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">This may take 30-60 seconds</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Structured deep research results */}
+              {deepResearchData && (
+                <div className="space-y-8">
+                  {/* Executive Summary */}
+                  {deepResearchData.executiveSummary && (
+                    <div className="p-6 bg-orange-50/50 dark:bg-orange-500/5 rounded-xl border border-orange-200/50 dark:border-orange-500/20">
+                      <h4 className="text-sm font-bold text-orange-700 dark:text-orange-400 uppercase tracking-wider mb-3">Executive Summary</h4>
+                      <div className="prose prose-sm dark:prose-invert max-w-none text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap">
+                        {deepResearchData.executiveSummary}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Deep Signals */}
+                  {deepResearchData.deepSignals?.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-4">Deep Signals ({deepResearchData.deepSignals.length})</h4>
+                      <div className="space-y-4">
+                        {deepResearchData.deepSignals.map((signal: any, i: number) => (
+                          <div key={i} className="p-5 bg-white dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-orange-300 dark:hover:border-orange-500/40 transition-colors">
+                            <div className="flex items-start justify-between mb-2">
+                              <h5 className="font-bold text-gray-900 dark:text-gray-100 text-sm leading-tight flex-1">{signal.title}</h5>
+                              <div className="flex items-center gap-2 ml-3 shrink-0">
+                                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
+                                  signal.momentum?.toLowerCase().includes('rising')
+                                    ? 'bg-green-100 dark:bg-green-500/15 text-green-700 dark:text-green-400'
+                                    : signal.momentum?.toLowerCase().includes('falling')
+                                    ? 'bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-400'
+                                    : 'bg-gray-100 dark:bg-gray-500/15 text-gray-700 dark:text-gray-400'
+                                }`}>
+                                  {signal.momentum || 'Stable'}
+                                </span>
+                                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-500/15 text-orange-700 dark:text-orange-300">
+                                  {signal.impact_score}/10
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-2">{signal.evidence}</p>
+                            {signal.your_move && (
+                              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-slate-700">
+                                <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider">Your Move: </span>
+                                <span className="text-sm text-gray-700 dark:text-gray-300">{signal.your_move}</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Competitive Landscape */}
+                  {deepResearchData.competitiveLandscape && (
+                    <div className="p-6 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-slate-700">
+                      <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3">Competitive Landscape</h4>
+                      <div className="prose prose-sm dark:prose-invert max-w-none text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap">
+                        {deepResearchData.competitiveLandscape}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 30-Day Action Plan */}
+                  {deepResearchData.actionPlan?.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-4">30-Day Action Plan</h4>
+                      <div className="space-y-3">
+                        {deepResearchData.actionPlan.map((step: any, i: number) => (
+                          <div key={i} className="flex gap-3 items-start p-4 bg-white dark:bg-slate-800/50 rounded-lg border border-gray-200 dark:border-slate-700">
+                            <span className="shrink-0 w-7 h-7 rounded-full bg-orange-100 dark:bg-orange-500/15 text-orange-700 dark:text-orange-300 text-xs font-bold flex items-center justify-center">
+                              {i + 1}
+                            </span>
+                            <div>
+                              {step.week && <span className="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase">{step.week}: </span>}
+                              <span className="text-sm text-gray-700 dark:text-gray-300">{step.action}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Citations */}
+                  {deepResearchData.citations?.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3">Sources ({deepResearchData.citations.length})</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {deepResearchData.citations.map((cite: any, i: number) => (
+                          <a
+                            key={i}
+                            href={cite.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md hover:bg-orange-50 dark:hover:bg-orange-500/10 hover:text-orange-700 dark:hover:text-orange-400 transition-colors"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            {cite.sourceName || cite.title || new URL(cite.url).hostname.replace('www.', '')}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
           )}
 
           {/* Follow-up Chat Section - Conversational Interface */}

@@ -323,4 +323,174 @@ export function searchResultsToCitations(searchResults: any[]): string[] {
     .filter((url): url is string => typeof url === 'string');
 }
 
+/**
+ * Mode 4: Agent API (v1/agent)
+ * Best for: Multi-step agentic research with web_search + fetch_url tools
+ * Presets: fast-search, pro-search, deep-research, advanced-deep-research
+ * Cost: varies by preset model + $0.005/web_search + $0.0005/fetch_url
+ */
+export async function agentApiCall(params: {
+  input: string;
+  preset?: 'fast-search' | 'pro-search' | 'deep-research' | 'advanced-deep-research';
+  model?: string;
+  instructions?: string;
+  tools?: Array<{
+    type: 'web_search' | 'fetch_url' | 'function';
+    search_domain_filter?: string[];
+    search_recency_filter?: 'day' | 'week' | 'month' | 'year';
+    max_tokens_per_page?: number;
+    name?: string;
+    description?: string;
+    parameters?: object;
+    strict?: boolean;
+  }>;
+  temperature?: number;
+  max_output_tokens?: number;
+  response_format?: {
+    type: 'json_schema';
+    json_schema: { name: string; schema: object };
+  };
+  previous_response_id?: string;
+  timeout?: number;
+}): Promise<{
+  id: string;
+  output_text: string;
+  output: any[];
+  search_results: any[];
+  usage: any;
+  status: string;
+}> {
+  const {
+    input,
+    preset,
+    model,
+    instructions,
+    tools,
+    temperature,
+    max_output_tokens,
+    response_format,
+    previous_response_id,
+    timeout = 120000, // 2 min default for deep research
+  } = params;
+
+  if (!preset && !model) {
+    throw new Error('Agent API requires either a preset or model parameter');
+  }
+
+  const pplxKey = process.env.PPLX_API_KEY;
+  if (!pplxKey) throw new Error('PPLX_API_KEY not configured');
+
+  const body: Record<string, any> = { input };
+  if (preset) body.preset = preset;
+  if (model) body.model = model;
+  if (instructions) body.instructions = instructions;
+  if (tools) body.tools = tools;
+  if (temperature !== undefined) body.temperature = temperature;
+  if (max_output_tokens) body.max_output_tokens = max_output_tokens;
+  if (response_format) body.response_format = response_format;
+  if (previous_response_id) body.previous_response_id = previous_response_id;
+
+  return withRetry(
+    async () => {
+      const fetchPromise = fetch('https://api.perplexity.ai/v1/agent', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${pplxKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+
+      const raw = await withTimeout(fetchPromise, timeout, 'Agent API');
+
+      if (!raw.ok) {
+        const errorText = await raw.text().catch(() => 'unknown');
+        throw new Error(`Agent API error ${raw.status}: ${errorText}`);
+      }
+
+      const json = await raw.json() as any;
+
+      // Extract text from output items
+      const outputText = (json.output || [])
+        .filter((item: any) => item.type === 'message')
+        .flatMap((item: any) => (item.content || []))
+        .filter((c: any) => c.type === 'output_text')
+        .map((c: any) => c.text)
+        .join('\n\n');
+
+      // Extract search results from output items
+      const searchResults = (json.output || [])
+        .filter((item: any) => item.type === 'search_results')
+        .flatMap((item: any) => item.results || []);
+
+      return {
+        id: json.id || '',
+        output_text: outputText || json.output_text || '',
+        output: json.output || [],
+        search_results: searchResults,
+        usage: json.usage || {},
+        status: json.status || 'completed',
+      };
+    },
+    'Agent API',
+    2 // Only 2 retries for agent API (longer requests)
+  );
+}
+
+/**
+ * Agent API streaming variant
+ * Returns a ReadableStream of SSE events from the Agent API
+ */
+export async function agentApiStream(params: {
+  input: string;
+  preset?: 'fast-search' | 'pro-search' | 'deep-research' | 'advanced-deep-research';
+  model?: string;
+  instructions?: string;
+  tools?: Array<{
+    type: 'web_search' | 'fetch_url' | 'function';
+    search_domain_filter?: string[];
+    search_recency_filter?: 'day' | 'week' | 'month' | 'year';
+    max_tokens_per_page?: number;
+  }>;
+  temperature?: number;
+  max_output_tokens?: number;
+}): Promise<Response> {
+  const {
+    input,
+    preset,
+    model,
+    instructions,
+    tools,
+    temperature,
+    max_output_tokens,
+  } = params;
+
+  const pplxKey = process.env.PPLX_API_KEY;
+  if (!pplxKey) throw new Error('PPLX_API_KEY not configured');
+
+  const body: Record<string, any> = { input, stream: true };
+  if (preset) body.preset = preset;
+  if (model) body.model = model;
+  if (instructions) body.instructions = instructions;
+  if (tools) body.tools = tools;
+  if (temperature !== undefined) body.temperature = temperature;
+  if (max_output_tokens) body.max_output_tokens = max_output_tokens;
+
+  const response = await fetch('https://api.perplexity.ai/v1/agent', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${pplxKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => 'unknown');
+    throw new Error(`Agent API stream error ${response.status}: ${errorText}`);
+  }
+
+  return response;
+}
+
 export default getPerplexityClient;

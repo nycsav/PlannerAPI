@@ -28,6 +28,9 @@ export {
   getSignalInsight,
 } from './perplexity-endpoints';
 
+// Perplexity Agent API — Deep Research (multi-step reasoning)
+export { deepResearch, deepResearchStream } from './deep-research';
+
 // Notion API Endpoints
 export { getSourceReports } from './notion-endpoints';
 

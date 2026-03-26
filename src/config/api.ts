@@ -161,6 +161,28 @@ export const ENDPOINTS = {
   getSignalInsight: `${API_CONFIG.cloudFunctions}/getSignalInsight`,
 
   /**
+   * Deep Research: Comprehensive multi-step research via Perplexity Agent API
+   * Uses deep-research preset (10 reasoning steps, web_search + fetch_url tools)
+   * Used by: IntelligenceModal (Deep Research mode), future standalone page
+   * Method: POST
+   * Body: { query: string, preset?: 'fast-search'|'pro-search'|'deep-research'|'advanced-deep-research', previous_response_id?: string }
+   * Returns: { executiveSummary, deepSignals[], competitiveLandscape, implications[], actionPlan[], citations[], response_id, usage }
+   */
+  deepResearch: `${API_CONFIG.cloudFunctions}/deepResearch`,
+
+  /**
+   * Deep Research Stream: SSE streaming variant of deepResearch
+   * Used by: IntelligenceModal (Deep Research mode with live streaming)
+   * Method: POST
+   * Body: { query: string, preset?: string }
+   * Response: text/event-stream
+   *   data: {"type":"status","message":"Starting deep-research..."}\n\n
+   *   data: {"type":"chunk","content":"..."}\n\n  (repeated)
+   *   data: {"type":"done","executiveSummary":"...","deepSignals":[...],...}\n\n
+   */
+  deepResearchStream: `${API_CONFIG.cloudFunctions}/deepResearchStream`,
+
+  /**
    * Chat Thread Create: Create or append to a conversation thread
    * Used by: IntelligenceModal (conversation persistence)
    * Method: POST

@@ -85,6 +85,46 @@ All endpoints centralized. New entries:
 
 ---
 
+## Session: March 25, 2026 — Perplexity Agent API Integration
+
+### Perplexity Agent API (`/v1/agent`) — Deep Research
+
+**What:** Integrated the new Perplexity Agent API for multi-step agentic research. This enables 10-step reasoning loops with `web_search` + `fetch_url` tools, producing comprehensive competitive intelligence briefs.
+
+#### Backend Changes
+
+**`functions/src/perplexityClient.ts`** — Added Mode 4:
+- `agentApiCall()` — non-streaming Agent API with preset support, custom functions, retry logic
+- `agentApiStream()` — streaming variant returning raw SSE Response for piping
+
+**`functions/src/deep-research.ts`** — New file, two Firebase Functions:
+- `deepResearch` — Non-streaming endpoint, returns structured deep research payload
+- `deepResearchStream` — SSE streaming endpoint with real-time token delivery
+- 300s timeout, 512MB memory allocation for deep research workloads
+- Structured response parsing: Executive Summary, Deep Signals (5-7), Competitive Landscape, Implications, 30-Day Action Plan
+- 4 presets: fast-search, pro-search, deep-research, advanced-deep-research
+- Multi-turn follow-up support via `previous_response_id`
+
+**`functions/src/index.ts`** — Added exports: `deepResearch`, `deepResearchStream`
+
+#### Frontend Changes
+
+**`src/config/api.ts`** — Added endpoints:
+- `deepResearch` → `${cloudFunctions}/deepResearch`
+- `deepResearchStream` → `${cloudFunctions}/deepResearchStream`
+
+**`components/IntelligenceModal.tsx`** — Deep Research UI:
+- "Deep Research" button in modal toolbar (Microscope icon, orange accent)
+- Loading state with animated spinner
+- Live SSE streaming with typing cursor while researching
+- Structured results panel: Executive Summary, Deep Signals cards with momentum badges + impact scores + "Your Move" actions, Competitive Landscape, 30-Day Action Plan with numbered steps, Source citations
+- Auto-reset when switching between cards
+
+#### PRD Updated
+- `docs/PRD.md` — Added Phase 2.5: Perplexity Agent API Integration section with architecture, presets, and cost analysis
+
+---
+
 ### n8n LinkedIn Daily Engine — v3
 
 **Workflow ID**: `FzmX8ySSOeCti3o5`

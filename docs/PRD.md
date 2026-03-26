@@ -229,6 +229,39 @@ Alternative (simpler, recommended for Phase 1):
 11. Multiple Perplexity calls + Claude synthesis
 12. Returns 3 angles with full citations and images
 
+### Phase 2.5: Perplexity Agent API Integration (Implemented 2026-03-25)
+
+**What:** Integrated the new Perplexity Agent API (`/v1/agent`) for multi-step deep research. This replaces our single-call sonar queries with 10-step agentic reasoning loops that use `web_search` + `fetch_url` tools for comprehensive competitive intelligence.
+
+**Architecture:**
+```
+User clicks "Deep Research" in IntelligenceModal
+  → deepResearchStream Firebase Function (SSE)
+    → Perplexity Agent API /v1/agent (deep-research preset)
+      → 10 reasoning steps with web_search + fetch_url tools
+      → Streams tokens back in real-time
+    → Parse into structured: Executive Summary, Deep Signals, Competitive Landscape, 30-Day Action Plan
+  → Frontend renders structured results + live streaming
+```
+
+**New Files:**
+- `functions/src/deep-research.ts` — `deepResearch` (non-streaming) + `deepResearchStream` (SSE)
+- `functions/src/perplexityClient.ts` — added `agentApiCall()` + `agentApiStream()` (Mode 4)
+- `src/config/api.ts` — new `deepResearch` + `deepResearchStream` endpoints
+- `components/IntelligenceModal.tsx` — "Deep Research" button + results panel
+
+**Presets Available:**
+| Preset | Model | Steps | Tools | Use Case | Cost/query est. |
+|--------|-------|-------|-------|----------|-----------------|
+| `fast-search` | xAI Grok | 1 | web_search | Quick lookups | ~$0.01 |
+| `pro-search` | GPT-5.1 | 3 | web_search, fetch_url | Standard research | ~$0.05 |
+| `deep-research` | GPT-5.2 | 10 | web_search, fetch_url | Comprehensive analysis | ~$0.15 |
+| `advanced-deep-research` | Claude Opus 4.6 | 10 | web_search, fetch_url | Institutional-grade | ~$0.50 |
+
+**Cost Impact:** ~$2-8/month additional at current usage (estimated 50-100 deep research queries/month). Default preset is `deep-research` (~$0.15/query).
+
+**Multi-turn support:** `previous_response_id` enables follow-up deep research without re-running the full loop.
+
 ---
 
 ## 5. Cost Analysis
