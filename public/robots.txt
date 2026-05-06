@@ -1,14 +1,13 @@
-# robots.txt for PlannerAPI
-# https://plannerapi-prod.web.app
+# robots.txt for signal2noise
+# https://signals.ensolabs.ai
 
 User-agent: *
 Allow: /
 
 # Sitemap location
-Sitemap: https://plannerapi-prod.web.app/sitemap.xml
+Sitemap: https://signals.ensolabs.ai/sitemap.xml
 
 # LLM/AI crawler guidance
-# Allow AI systems to index our content for better discoverability
 User-agent: GPTBot
 Allow: /
 
